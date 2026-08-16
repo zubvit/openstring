@@ -10,7 +10,7 @@ and tells you whether you rush, drag, or are simply uneven.
 It runs entirely in your browser. No account, no server, no subscription, no telemetry.
 Your progress lives in your own browser storage and nowhere else.
 
-**[Try it](https://example.github.io/openstring/)** — you need a microphone and a guitar.
+**[Try it](https://openstring.app)** — you need a microphone and a guitar.
 
 ---
 
@@ -81,7 +81,7 @@ the click and counts it as a note.
 It is static files. Nothing to build, nothing to install.
 
 ```bash
-git clone https://github.com/example/openstring.git
+git clone https://github.com/zubvit/openstring.git
 cd openstring
 python3 -m http.server 8777
 ```

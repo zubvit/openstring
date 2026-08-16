@@ -524,8 +524,48 @@ $('resetBtn').addEventListener('click', () => {
   renderProgress();
 });
 
+// ================================================================ first run
+
+// The welcome doubles as the landing page. Shown when there is no history yet,
+// or on demand from the "?" button. A stranger arriving from a link needs to know
+// what this is, that it wants a microphone and why, and that nothing is uploaded -
+// before a permission prompt appears, not after.
+const welcome = $('welcome');
+
+function showWelcome() {
+  $('unsupported').hidden = audio.supported;
+  welcome.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function hideWelcome() {
+  welcome.hidden = true;
+  document.body.style.overflow = '';
+  progress.data.seenWelcome = true;
+  progress.save();
+}
+
+$('welcomeStart').addEventListener('click', async () => {
+  hideWelcome();
+  // Go straight into a session: the button promised a start, so start.
+  if (!read.active) $('startRead').click();
+});
+$('welcomeSkip').addEventListener('click', hideWelcome);
+$('helpBtn').addEventListener('click', showWelcome);
+
+/** Warn if progress cannot actually be saved - private browsing, full quota. */
+function checkStorage() {
+  const el = $('storageWarn');
+  if (progress.save()) { el.hidden = true; return; }
+  el.hidden = false;
+  el.textContent = 'This browser is not letting the page save anything, so your progress '
+    + 'will vanish when you close the tab. Private browsing usually causes this.';
+}
+
 // ===================================================================== init
 
+if (!progress.data.seenWelcome && progress.data.sessions.length === 0) showWelcome();
+checkStorage();
 renderStageHeader();
 fillPatterns();
 drawStrip();

@@ -222,3 +222,44 @@ table.heatmap td { padding: 1px; }
   .tabs { order: 3; width: 100%; justify-content: center; }
   .mic-state { margin-left: auto; }
 }
+
+/* ------------------------------------------------------------ first run */
+
+.welcome {
+  position: fixed; inset: 0; z-index: 50;
+  background: var(--bg);
+  overflow-y: auto;
+  display: grid; place-items: start center;
+  padding: 2rem 1rem 3rem;
+}
+.welcome[hidden] { display: none; }
+.welcome-inner { max-width: 560px; }
+.welcome h1 { font-size: clamp(1.5rem, 4.5vw, 2.1rem); line-height: 1.15; letter-spacing: -.025em; margin: .3rem 0 .6rem; }
+.lede { font-size: 1.05rem; color: var(--ink-soft); margin-bottom: 1.4rem; }
+
+.need { list-style: none; padding: 0; margin: 0 0 1.3rem; display: grid; gap: .75rem; }
+.need li { display: flex; gap: .7rem; align-items: flex-start; font-size: .92rem; }
+.need li span { font-size: 1.3rem; line-height: 1.2; flex: 0 0 auto; }
+.need li div { color: var(--ink-soft); }
+.need li strong { color: var(--ink); font-weight: 600; }
+
+.privacy {
+  background: var(--accent-soft); border-radius: var(--radius);
+  padding: .8rem .9rem; font-size: .88rem; color: var(--ink-soft);
+}
+.privacy strong { color: var(--ink); }
+
+.welcome-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin: 1.3rem 0 1rem; }
+.btn.big { padding: .7rem 1.2rem; font-size: 1rem; }
+
+.newbie { font-size: .88rem; color: var(--ink-soft); border-left: 3px solid var(--accent-soft); padding-left: .7rem; }
+.unsupported { font-size: .88rem; color: var(--bad); }
+
+.help-btn {
+  width: 24px; height: 24px; border-radius: 50%; flex: 0 0 auto;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink-soft);
+  cursor: pointer; font: inherit; font-size: .8rem; line-height: 1; padding: 0;
+}
+.help-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.storage-warn { font-size: .86rem; color: var(--bad); }

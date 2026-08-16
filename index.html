@@ -10,6 +10,45 @@
 </head>
 <body>
 
+<!-- First run. This doubles as the landing page: one URL, no marketing site to
+     keep in sync with an app that contradicts it. -->
+<div class="welcome" id="welcome" hidden>
+  <div class="welcome-inner">
+    <h1>Learn to read music on the guitar</h1>
+    <p class="lede">
+      A note appears on the staff. You play it. Openstring listens and tells you
+      whether you found it, how long you took, and what to work on next.
+    </p>
+
+    <ul class="need">
+      <li><span aria-hidden="true">🎸</span> <div><strong>A guitar</strong><br>Acoustic, classical or electric. Roughly in tune — there is a tuner built in.</div></li>
+      <li><span aria-hidden="true">🎤</span> <div><strong>A microphone</strong><br>Your laptop's built-in one is fine. The browser will ask permission in a moment.</div></li>
+      <li><span aria-hidden="true">🎧</span> <div><strong>Headphones, for the rhythm drill</strong><br>Otherwise the microphone hears the metronome and counts it as you playing.</div></li>
+    </ul>
+
+    <p class="privacy">
+      <strong>Nothing you play leaves this device.</strong> The audio is analysed in your
+      browser and never recorded or uploaded. There is no account and no subscription —
+      your progress is saved in this browser only.
+    </p>
+
+    <div class="welcome-actions">
+      <button class="btn primary big" id="welcomeStart">Start — it takes a minute</button>
+      <button class="btn" id="welcomeSkip">Look around first</button>
+    </div>
+
+    <p class="newbie">
+      <strong>Never read music before?</strong> That is fine — start anyway. The first stage
+      is eight notes in one octave, and it shows you where each one lives whenever you ask.
+    </p>
+
+    <p class="unsupported" id="unsupported" hidden>
+      This browser cannot record audio, so the listening part will not work. Try Chrome,
+      Edge, Safari or Firefox — and note the page must be served over <strong>https</strong>.
+    </p>
+  </div>
+</div>
+
 <header class="topbar">
   <div class="brand">Openstring</div>
   <nav class="tabs" role="tablist">
@@ -17,6 +56,7 @@
     <button class="tab" data-view="rhythm" role="tab">Rhythm</button>
     <button class="tab" data-view="progress" role="tab">Progress</button>
   </nav>
+  <button class="help-btn" id="helpBtn" title="What is this?" aria-label="What is this?">?</button>
   <div class="mic-state" id="micState" aria-live="polite"><span class="dot"></span><span id="micLabel">mic off</span></div>
 </header>
 
@@ -146,6 +186,7 @@
   <div class="card">
     <h2>Your data</h2>
     <p class="muted">Everything lives in this browser only. Nothing is uploaded anywhere. Export it if you want a backup or want to move machines.</p>
+    <p class="storage-warn" id="storageWarn" hidden></p>
     <div class="controls">
       <button class="btn small" id="exportBtn">Export</button>
       <label class="btn small file">Import<input type="file" id="importFile" accept="application/json" hidden></label>

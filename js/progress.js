@@ -14,6 +14,7 @@ const blank = () => ({
   sessions: [],     // { date, ms, asked, correct, stageId }
   rhythm: [],       // { date, bpm, patternId, meanAbsErrorMs, verdict }
   stageId: null,    // where the curriculum has got to
+  seenWelcome: false,
   createdAt: Date.now(),
 });
 
