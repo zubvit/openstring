@@ -282,6 +282,19 @@ export function initPieceView({ audio, ensureAudio }) {
 
   // ------------------------------------------------------------------- init
 
+  // Redraw the piece view too - its labels are built in JavaScript.
+  window.addEventListener('openstring:redraw', () => {
+    if (!st.piece) return;
+    renderHead();
+    renderChunkList();
+    if (st.current) {
+      const cur = st.states[st.current.id];
+      renderChunkStaff(st.current);
+      renderLayers(cur);
+      $('chunkTempo').textContent = t('piece.tempoAiming', { bpm: cur.bpm, target: st.targetBpm });
+    }
+  });
+
   if (load()) { renderHead(); renderChunkList(); nextChunk(); }
   else renderHead();
 

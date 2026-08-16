@@ -645,8 +645,7 @@ adoptSessionFromUrl();
 window.addEventListener('hashchange', adoptSessionFromUrl);
 
 // ==================================================================== pieces
-
-initPieceView({ audio, ensureAudio });
+// Started only once translations are loaded - see the boot block below.
 
 // ================================================================ language
 
@@ -655,16 +654,20 @@ function buildLanguagePicker() {
   sel.innerHTML = availableLocales()
     .map((l) => `<option value="${l.code}">${l.name}</option>`).join('');
   sel.value = getLocale();
-  sel.addEventListener('change', async () => {
-    await setLocale(sel.value);
-    // Re-render everything that builds its text in JavaScript.
-    renderStageHeader();
-    fillPatterns();
-    drawStrip();
-    renderSync();
-    renderProgress();
-  });
+  sel.addEventListener('change', () => setLocale(sel.value));
 }
+
+// Everything whose text is generated in JavaScript redraws on a language change.
+window.addEventListener('localechange', () => {
+  const sel = $('langSelect');
+  if (sel) sel.value = getLocale();
+  renderStageHeader();
+  fillPatterns();
+  drawStrip();
+  renderSync();
+  renderProgress();
+  window.dispatchEvent(new CustomEvent('openstring:redraw'));
+});
 
 // ===================================================================== init
 
@@ -676,6 +679,7 @@ checkStorage();
 initI18n().then(() => {
   applyToDom();
   buildLanguagePicker();
+  initPieceView({ audio, ensureAudio });
   renderSync();
   renderStageHeader();
   fillPatterns();
@@ -683,6 +687,7 @@ initI18n().then(() => {
   $('bpmOut').textContent = $('bpmRange').value;
 }).catch(() => {
   // Even if catalogues fail entirely, the built-in English markup still works.
+  initPieceView({ audio, ensureAudio });
   renderSync();
   renderStageHeader();
   fillPatterns();

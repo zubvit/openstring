@@ -21,6 +21,19 @@ export const LOCALES = {
   pt: { name: 'Português', dir: 'ltr' },
   it: { name: 'Italiano', dir: 'ltr' },
   pl: { name: 'Polski', dir: 'ltr' },
+  nl: { name: 'Nederlands', dir: 'ltr' },
+  cs: { name: 'Čeština', dir: 'ltr' },
+  ro: { name: 'Română', dir: 'ltr' },
+  el: { name: 'Ελληνικά', dir: 'ltr' },
+  tr: { name: 'Türkçe', dir: 'ltr' },
+  id: { name: 'Bahasa Indonesia', dir: 'ltr' },
+  hi: { name: 'हिन्दी', dir: 'ltr' },
+  zh: { name: '中文', dir: 'ltr' },
+  ja: { name: '日本語', dir: 'ltr' },
+  ko: { name: '한국어', dir: 'ltr' },
+  // Named as the app's owner names it. His app, his call.
+  ru: { name: 'московский язык', dir: 'ltr' },
+  ar: { name: 'العربية', dir: 'rtl' },
 };
 
 const STORE_KEY = 'openstring.locale';
@@ -75,7 +88,11 @@ export async function setLocale(code, { silent = false } = {}) {
   localStorage.setItem(STORE_KEY, code);
   document.documentElement.lang = code;
   document.documentElement.dir = LOCALES[code]?.dir || 'ltr';
-  if (!silent) applyToDom();
+  applyToDom();
+  // Announce the change instead of trusting every caller to redraw. Text built
+  // in JavaScript (stage names, verdicts, chunk labels) is not covered by
+  // applyToDom, and a caller that forgets leaves the page half-translated.
+  if (!silent) window.dispatchEvent(new CustomEvent('localechange', { detail: { code } }));
   return code;
 }
 
