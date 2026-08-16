@@ -120,8 +120,9 @@ main { max-width: 720px; margin: 0 auto; padding: 1rem; }
 
 svg.staff { width: min(100%, 320px); height: auto; }
 .staff-line { stroke: var(--ink); stroke-width: 1.1; opacity: .75; }
-.clef { fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.clef-eight { fill: var(--ink); font-size: 11px; font-family: inherit; }
+/* An engraved outline, so it is filled - the thick-and-thin of the stroke is in
+   the shape itself. fill-rule matters: the clef's counters are cut by direction. */
+.clef { fill: var(--ink); fill-rule: nonzero; stroke: none; }
 .accidental { fill: var(--ink); font-size: 19px; }
 .notehead { fill: var(--ink); }
 .notehead.correct { fill: var(--good); }

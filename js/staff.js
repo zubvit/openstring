@@ -1,8 +1,9 @@
 // Staff rendering, hand-drawn as SVG.
 //
-// No notation library and no music font: both would be a download, and a missing
-// glyph renders as a tofu box, which is worse than no clef at all. Everything here
-// is paths and ellipses, so the page is self-contained and works offline forever.
+// No notation library and no webfont: both would be a download, and a font that
+// fails to load leaves a tofu box where the clef should be. Everything here is
+// paths and ellipses - including the clef, whose outline is baked in from a music
+// font at build time - so the page is self-contained and works offline forever.
 //
 // Vertical placement is the part that has to be exactly right. Staff position is
 // diatonic, not chromatic: F and F# sit on the same line, and the accidental says
@@ -10,6 +11,7 @@
 // never from the midi number.
 
 import { spell } from './theory.js';
+import { G_CLEF, G_CLEF_8VB, UNITS_PER_SPACE } from './clef-glyphs.js';
 
 export const LINE_GAP = 12;              // pixels between staff lines
 const BOTTOM_LINE_DIATONIC = 4 * 7 + 2;  // E4 - the bottom line of a treble staff
@@ -33,38 +35,25 @@ export function ledgersFor(diatonic) {
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+/** x of the clef's left edge. The staff lines start at 14; this leaves it air. */
+const CLEF_X = 26;
+
 /**
- * A treble clef drawn as a path. Hand-fitted rather than taken from a font, so it
- * is approximate - but it reads unmistakably as a G clef at the size used here,
- * and it costs no download.
+ * The treble clef, as an engraved outline.
+ *
+ * The glyph's own origin sits on the G line, so placement is a translate and a
+ * scale - no fudge factors. y is flipped because font units point up.
+ *
+ * `withEight` picks the clef that carries its own 8 below (guitar sounds an
+ * octave lower than written); the 8 is part of the engraved glyph rather than
+ * a text element, so it can never drift out of alignment or pick up the page font.
  */
-function trebleClefPaths(x, bottomY) {
-  // Everything is anchored to the G4 line - that is what a G clef declares, and
-  // the spiral must wrap it or the symbol is simply wrong.
-  const gy = yForDiatonic(4 * 7 + 4, bottomY);
-  const g = LINE_GAP;
-  const p = (px, py) => `${(x + px * g).toFixed(2)},${(gy + py * g).toFixed(2)}`;
-
-  // The vertical stroke: down from above the staff, through the spiral, ending
-  // in the tail that hooks left below the staff.
-  const stem = [
-    `M ${p(0.45, -3.30)}`,
-    `C ${p(0.45, -2.00)} ${p(0.22, -1.00)} ${p(0.06, 0.20)}`,
-    `C ${p(-0.10, 1.40)} ${p(-0.20, 2.40)} ${p(-0.35, 3.10)}`,
-    `C ${p(-0.50, 3.75)} ${p(-1.10, 3.65)} ${p(-1.08, 3.00)}`,
-  ].join(' ');
-
-  // The sweep: upper hook, across and down the right side, round the big lower
-  // loop, then spiralling back in to sit on the G line.
-  const sweep = [
-    `M ${p(0.45, -3.30)}`,
-    `C ${p(-0.55, -2.95)} ${p(-1.05, -2.00)} ${p(-0.92, -1.10)}`,
-    `C ${p(-0.80, -0.15)} ${p(0.90, 0.30)} ${p(0.96, 1.20)}`,
-    `C ${p(1.02, 2.05)} ${p(0.10, 2.55)} ${p(-0.55, 2.02)}`,
-    `C ${p(-1.18, 1.50)} ${p(-1.00, 0.40)} ${p(-0.08, 0.05)}`,
-  ].join(' ');
-
-  return [stem, sweep];
+function trebleClef(bottomY, withEight) {
+  const gy = yForDiatonic(4 * 7 + 4, bottomY);       // the G4 line
+  const s = (LINE_GAP / UNITS_PER_SPACE).toFixed(5); // font units -> pixels
+  const d = withEight ? G_CLEF_8VB : G_CLEF;
+  return `<g transform="translate(${CLEF_X},${gy}) scale(${s},-${s})">`
+    + `<path d="${d}" class="clef"/></g>`;
 }
 
 /**
@@ -96,11 +85,7 @@ export function renderNote(writtenMidi, {
     parts.push(`<line x1="14" y1="${y}" x2="${width - 14}" y2="${y}" class="staff-line"/>`);
   }
 
-  for (const d of trebleClefPaths(40, bottomY)) parts.push(`<path d="${d}" class="clef"/>`);
-  if (showOctaveEight) {
-    // The little 8 below the clef: guitar sounds an octave lower than written.
-    parts.push(`<text x="40" y="${bottomY + LINE_GAP * 3.05}" class="clef-eight" text-anchor="middle">8</text>`);
-  }
+  parts.push(trebleClef(bottomY, showOctaveEight));
 
   if (writtenMidi != null) {
     const sp = spell(writtenMidi, preferFlats);
@@ -212,10 +197,7 @@ export function renderPhrase(notes, {
     const y = bottomY - i * LINE_GAP;
     parts.push(`<line x1="14" y1="${y}" x2="${width - 14}" y2="${y}" class="staff-line"/>`);
   }
-  for (const d of trebleClefPaths(40, bottomY)) parts.push(`<path d="${d}" class="clef"/>`);
-  if (showOctaveEight) {
-    parts.push(`<text x="40" y="${bottomY + LINE_GAP * 3.05}" class="clef-eight" text-anchor="middle">8</text>`);
-  }
+  parts.push(trebleClef(bottomY, showOctaveEight));
 
   // Space notes by musical position so the picture matches the rhythm.
   const first = notes[0].beat ?? 0;

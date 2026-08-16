@@ -111,3 +111,8 @@ Known limits:
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
+
+The treble clef is drawn from outlines taken from the **Bravura** music font,
+© Steinberg Media Technologies GmbH, used under the SIL Open Font License 1.1
+([full text](licenses/BRAVURA-OFL.txt)). The outlines are baked into the page as
+SVG paths, so no font is downloaded or redistributed.
