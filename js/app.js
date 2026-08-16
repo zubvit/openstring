@@ -10,6 +10,7 @@ import { pickNext, isFluent, emptyStat } from './srs.js';
 import { Progress } from './progress.js';
 import { STAGES, stageById, nextStage, poolFor, readyToAdvance, RHYTHMS, expectedOnsets } from './curriculum.js';
 import { gradeTiming } from './onset.js';
+import { initPieceView } from './piece-view.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -567,6 +568,10 @@ function checkStorage() {
   el.textContent = 'This browser is not letting the page save anything, so your progress '
     + 'will vanish when you close the tab. Private browsing usually causes this.';
 }
+
+// ==================================================================== pieces
+
+initPieceView({ audio, ensureAudio });
 
 // ===================================================================== init
 

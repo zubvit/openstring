@@ -10,8 +10,15 @@
 //   - BIAS (rushing or dragging) is only as good as the offset compensation, so
 //     it is calibratable and the app says so rather than pretending otherwise.
 
-import { detectPitch, PitchTracker } from './pitch.js';
+import { detectPitch, PitchTracker, rms } from './pitch.js';
 import { OnsetDetector } from './onset.js';
+import { brightness } from './spectral.js';
+
+// How long after an attack to sample the note. Immediately at the onset the
+// string is still a click rather than a pitch; too late and a fast passage has
+// already moved on. 12 ms in, 2048 samples wide, works from low E upward.
+const NOTE_DELAY_S = 0.012;
+const NOTE_WINDOW = 2048;
 
 export class AudioEngine {
   constructor() {
@@ -30,6 +37,12 @@ export class AudioEngine {
     // Onset sample counts are relative to the last reset; this records where that
     // reset sat on the audio clock so the two timelines can be compared at all.
     this.captureEpoch = 0;
+    // Note events pair each attack with what was actually played there.
+    this.onNoteEvent = null;    // ({time, sounding, hz, loudness, brightness}) => void
+    this._ring = null;
+    this._ringWrite = 0;
+    this._samplesWritten = 0;   // must stay in step with the onset detector's counter
+    this._pendingNotes = [];
   }
 
   get supported() {
@@ -67,6 +80,8 @@ export class AudioEngine {
     this.latencyOffsetMs = Math.round(base * 1000);
 
     this._onsets = new OnsetDetector({ sampleRate: this.sampleRate });
+    // Two seconds of history is plenty to look back at an attack we just heard.
+    this._ring = new Float32Array(Math.ceil(this.sampleRate * 2));
     const source = this.ctx.createMediaStreamSource(this.stream);
 
     // Pitch runs off an analyser polled per frame - it needs a window, not a stream.
@@ -84,14 +99,15 @@ export class AudioEngine {
   }
 
   async #attachCapture(source) {
-    const handleChunk = (samples, startSample) => {
+    const handleChunk = (samples) => {
       const found = this._onsets.push(samples);
-      if (found.length && this.onOnset) {
-        for (const s of found) {
-          // Audio-clock seconds, so this can be compared with metronome beats.
-          this.onOnset(this.captureEpoch + s / this.sampleRate - this.latencyOffsetMs / 1000);
-        }
+      this.#writeRing(samples);
+      for (const s of found) {
+        const t = this.captureEpoch + s / this.sampleRate - this.latencyOffsetMs / 1000;
+        if (this.onOnset) this.onOnset(t);
+        if (this.onNoteEvent) this._pendingNotes.push({ sample: s, time: t });
       }
+      this.#drainPendingNotes();
     };
 
     if (this.ctx.audioWorklet) {
@@ -120,6 +136,57 @@ export class AudioEngine {
     this.captureMode = 'scriptprocessor';
   }
 
+  #writeRing(samples) {
+    const ring = this._ring;
+    if (!ring) return;
+    for (let i = 0; i < samples.length; i++) {
+      ring[this._ringWrite] = samples[i];
+      this._ringWrite = (this._ringWrite + 1) % ring.length;
+    }
+    this._samplesWritten += samples.length;
+  }
+
+  /** Read `len` samples starting at an absolute stream position, or null if gone. */
+  #readRing(startSample, len) {
+    const ring = this._ring;
+    if (!ring) return null;
+    const newest = this._samplesWritten;
+    const oldest = Math.max(0, newest - ring.length);
+    if (startSample < oldest || startSample + len > newest) return null;
+    const out = new Float32Array(len);
+    let idx = (this._ringWrite - (newest - startSample) + ring.length * 2) % ring.length;
+    for (let i = 0; i < len; i++) {
+      out[i] = ring[idx];
+      idx = (idx + 1) % ring.length;
+    }
+    return out;
+  }
+
+  /** Once enough audio has arrived after an attack, measure what was played. */
+  #drainPendingNotes() {
+    const delay = Math.round(NOTE_DELAY_S * this.sampleRate);
+    const still = [];
+    for (const p of this._pendingNotes) {
+      const win = this.#readRing(p.sample + delay, NOTE_WINDOW);
+      if (!win) {
+        // Not arrived yet - keep waiting, unless it has aged out of the buffer.
+        if (this._samplesWritten - p.sample < this._ring.length) still.push(p);
+        continue;
+      }
+      const det = detectPitch(win, this.sampleRate);
+      const level = rms(win);
+      this.onNoteEvent({
+        time: p.time,
+        hz: det ? det.hz : null,
+        sounding: det ? Math.round(69 + 12 * Math.log2(det.hz / 440)) : null,
+        loudness: level,
+        brightness: det ? brightness(win, this.sampleRate, det.hz) : null,
+        clarity: det ? det.clarity : 0,
+      });
+    }
+    this._pendingNotes = still;
+  }
+
   #pollPitch() {
     if (!this.running) return;
     this.analyser.getFloatTimeDomainData(this._analysisBuf);
@@ -137,6 +204,13 @@ export class AudioEngine {
   resetTracking() {
     this._tracker.reset();
     this._onsets?.reset();
+    this._pendingNotes = [];
+    // The onset detector restarts its sample count from zero, so the ring's
+    // counter must too - otherwise every lookup lands outside the buffer and
+    // note events silently stop arriving.
+    this._samplesWritten = 0;
+    this._ringWrite = 0;
+    if (this._ring) this._ring.fill(0);
     this.captureEpoch = this.ctx ? this.ctx.currentTime : 0;
   }
 

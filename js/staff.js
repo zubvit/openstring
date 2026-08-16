@@ -183,3 +183,76 @@ export function renderFretboard({
 
   return `<svg viewBox="0 0 ${width} ${height}" class="fretboard" role="img" aria-label="fretboard diagram">${parts.join('')}</svg>`;
 }
+
+/**
+ * A phrase on a single staff.
+ *
+ * Reading is a horizontal skill: you take in a line, not a series of isolated
+ * cards. Rendering each note on its own staff would quietly turn piece practice
+ * back into flashcards, which is the thing this app exists to avoid.
+ *
+ * @param notes  [{ written, beat, beats, isRest }] - beats position them
+ */
+export function renderPhrase(notes, {
+  width = 520, preferFlats = false, showOctaveEight = true, states = {},
+} = {}) {
+  const sounded = notes.filter((n) => !n.isRest && n.written != null);
+  if (!sounded.length) return renderNote(null, { width });
+
+  const spelled = sounded.map((n) => ({ n, sp: spell(n.written, preferFlats) }));
+  const ledgers = spelled.map(({ sp }) => ledgersFor(sp.diatonic));
+  const below = Math.max(0, ...ledgers.map((l) => l.filter((d) => d < BOTTOM_LINE_DIATONIC).length));
+  const above = Math.max(0, ...ledgers.map((l) => l.filter((d) => d > BOTTOM_LINE_DIATONIC).length));
+  const headroom = Math.max(0, above - 1) * LINE_GAP;
+  const height = 150 + below * LINE_GAP + headroom;
+  const bottomY = LINE_GAP * 4 + 28 + headroom;
+
+  const parts = [];
+  for (let i = 0; i < 5; i++) {
+    const y = bottomY - i * LINE_GAP;
+    parts.push(`<line x1="14" y1="${y}" x2="${width - 14}" y2="${y}" class="staff-line"/>`);
+  }
+  for (const d of trebleClefPaths(40, bottomY)) parts.push(`<path d="${d}" class="clef"/>`);
+  if (showOctaveEight) {
+    parts.push(`<text x="40" y="${bottomY + LINE_GAP * 3.05}" class="clef-eight" text-anchor="middle">8</text>`);
+  }
+
+  // Space notes by musical position so the picture matches the rhythm.
+  const first = notes[0].beat ?? 0;
+  const span = Math.max(
+    1,
+    Math.max(...notes.map((n) => (n.beat ?? 0) + (n.beats ?? 1))) - first,
+  );
+  const left = 78;
+  const right = width - 26;
+  const xFor = (beat) => left + ((beat - first) / span) * (right - left);
+
+  const middle = BOTTOM_LINE_DIATONIC + 4;
+  spelled.forEach(({ n, sp }, i) => {
+    const x = xFor(n.beat ?? i);
+    const y = yForDiatonic(sp.diatonic, bottomY);
+    for (const d of ledgersFor(sp.diatonic)) {
+      const ly = yForDiatonic(d, bottomY);
+      parts.push(`<line x1="${x - 11}" y1="${ly}" x2="${x + 11}" y2="${ly}" class="staff-line"/>`);
+    }
+    if (sp.accidental !== 0) {
+      parts.push(`<text x="${x - 20}" y="${y + 5}" class="accidental" text-anchor="middle">${sp.accidental === 1 ? '♯' : '♭'}</text>`);
+    }
+    const state = states[i] || '';
+    parts.push(`<ellipse cx="${x}" cy="${y}" rx="7" ry="5.2" class="notehead ${state}" transform="rotate(-20 ${x} ${y})"/>`);
+    if (sp.diatonic >= middle) {
+      parts.push(`<line x1="${x - 6.7}" y1="${y + 1}" x2="${x - 6.7}" y2="${y + LINE_GAP * 3.2}" class="stem"/>`);
+    } else {
+      parts.push(`<line x1="${x + 6.7}" y1="${y - 1}" x2="${x + 6.7}" y2="${y - LINE_GAP * 3.2}" class="stem"/>`);
+    }
+  });
+
+  // Rests are drawn as a small mark so silence is visibly part of the line.
+  for (const n of notes) {
+    if (!n.isRest) continue;
+    const x = xFor(n.beat ?? 0);
+    parts.push(`<rect x="${x - 5}" y="${bottomY - LINE_GAP * 2.5}" width="10" height="4" class="rest-mark"/>`);
+  }
+
+  return `<svg viewBox="0 0 ${width} ${height}" class="staff phrase" role="img" aria-label="phrase of ${sounded.length} notes">${parts.join('')}</svg>`;
+}

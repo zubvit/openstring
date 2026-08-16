@@ -54,6 +54,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab is-active" data-view="read" role="tab">Read</button>
     <button class="tab" data-view="rhythm" role="tab">Rhythm</button>
+    <button class="tab" data-view="piece" role="tab">Pieces</button>
     <button class="tab" data-view="progress" role="tab">Progress</button>
   </nav>
   <button class="help-btn" id="helpBtn" title="What is this?" aria-label="What is this?">?</button>
@@ -157,6 +158,69 @@
       </label>
     </details>
   </div>
+</section>
+
+<!-- -------------------------------------------------------------- PIECES -->
+<section class="view" id="view-piece">
+
+  <div class="card" id="pieceEmpty">
+    <h2>Practise a piece</h2>
+    <p class="muted">
+      Bring in a piece as MusicXML — Guitar Pro and MuseScore both export it
+      (<em>File → Export → MusicXML</em>, uncompressed <code>.musicxml</code> or <code>.xml</code>).
+      Openstring splits it into short chunks, drills each one, then drills the joins
+      between them, raising the tempo only when you play it clean.
+    </p>
+    <div class="controls">
+      <label class="btn primary file">Choose a MusicXML file<input type="file" id="pieceFile" accept=".xml,.musicxml,text/xml,application/xml" hidden></label>
+    </div>
+    <p class="import-error" id="importError" hidden></p>
+  </div>
+
+  <div class="card" id="pieceHead" hidden>
+    <div class="stage-bar">
+      <div>
+        <div class="stage-title" id="pieceTitle"></div>
+        <div class="stage-blurb" id="pieceMeta"></div>
+      </div>
+      <div class="stage-mastery">
+        <div class="ring" id="pieceRing"><span id="piecePct">0%</span></div>
+        <div class="muted small">solid</div>
+      </div>
+    </div>
+    <p class="octave-note" id="octaveNote"></p>
+    <div class="controls">
+      <label>Target tempo <output id="targetOut">80</output> bpm
+        <input type="range" id="targetBpm" min="40" max="160" step="4" value="80">
+      </label>
+      <button class="btn small" id="dropPiece">Remove piece</button>
+    </div>
+  </div>
+
+  <div class="card drill" id="pieceDrill" hidden>
+    <div class="chunk-label" id="chunkLabel"></div>
+    <div id="chunkStaff" class="chunk-staff"></div>
+
+    <div class="verdict">
+      <div class="verdict-main" id="pVerdictMain">Press start.</div>
+      <div class="verdict-sub" id="pVerdictSub"></div>
+    </div>
+
+    <div class="layer-row" id="layerRow"></div>
+
+    <div class="controls">
+      <button class="btn primary" id="startPiece">Start</button>
+      <button class="btn" id="stopPiece" disabled>Stop</button>
+      <span class="muted small" id="chunkTempo"></span>
+    </div>
+  </div>
+
+  <div class="card" id="chunkListCard" hidden>
+    <h2>Chunks</h2>
+    <p class="muted">Seams are the joins between chunks. They get extra attention because that is where pieces come apart.</p>
+    <div class="chunk-list" id="chunkList"></div>
+  </div>
+
 </section>
 
 <!-- ----------------------------------------------------------- PROGRESS -->
