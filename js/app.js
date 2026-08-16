@@ -12,6 +12,7 @@ import { STAGES, stageById, nextStage, poolFor, readyToAdvance, RHYTHMS, expecte
 import { gradeTiming } from './onset.js';
 import { initPieceView } from './piece-view.js';
 import { Sync } from './sync.js';
+import { initI18n, setLocale, getLocale, availableLocales, applyToDom, t } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -38,15 +39,15 @@ function setMic(state, label) {
 
 async function ensureAudio() {
   if (audio.running) return true;
-  setMic('', 'starting…');
+  setMic('', t('mic.starting'));
   try {
     await audio.start();
-    setMic('live', audio.captureMode === 'worklet' ? 'listening' : 'listening (fallback)');
+    setMic('live', t(audio.captureMode === 'worklet' ? 'mic.listening' : 'mic.fallback'));
     $('latRange').value = String(audio.latencyOffsetMs);
     $('latOut').textContent = String(audio.latencyOffsetMs);
     return true;
   } catch (err) {
-    setMic('error', 'mic unavailable');
+    setMic('error', t('mic.unavailable'));
     $('verdictMain').textContent = err.message;
     $('verdictMain').className = 'verdict-main bad';
     return false;
@@ -69,9 +70,9 @@ const read = {
 };
 
 function renderStageHeader() {
-  $('stageTitle').textContent = stage.title;
-  $('stageBlurb').textContent = stage.blurb;
-  $('stageAdvice').textContent = stage.advice || '';
+  $('stageTitle').textContent = t(`stage.${stage.id}.title`);
+  $('stageBlurb').textContent = t(`stage.${stage.id}.blurb`);
+  $('stageAdvice').textContent = t(`stage.${stage.id}.advice`);
   const pct = Math.round(progress.mastery(poolFor(stage)) * 100);
   $('masteryRing').style.setProperty('--pct', pct);
   $('masteryPct').textContent = `${pct}%`;
@@ -90,7 +91,7 @@ function nextQuestion() {
   audio.resetTracking();
 
   $('staffHost').innerHTML = renderNote(read.target.written, { label: '' });
-  $('verdictMain').textContent = 'Play it.';
+  $('verdictMain').textContent = t('read.playIt');
   $('verdictMain').className = 'verdict-main';
   $('verdictSub').textContent = '';
   updateHint();
@@ -129,15 +130,16 @@ function judge(heardMidi, hz) {
   const sub = $('verdictSub');
   if (exact) {
     const cents = centsFromTarget(hz, target);
-    main.textContent = `${pitchClassName(target)} — yes`;
+    main.textContent = t('read.correct', { note: pitchClassName(target) });
     main.className = 'verdict-main good';
-    sub.textContent = `${(ms / 1000).toFixed(1)}s${Math.abs(cents) > 25 ? ` · ${cents > 0 ? 'a little sharp' : 'a little flat'} (${cents > 0 ? '+' : ''}${cents} cents)` : ''}`;
+    const tuning = Math.abs(cents) > 25 ? ` · ${t(cents > 0 ? 'read.sharp' : 'read.flat')} (${cents > 0 ? '+' : ''}${cents})` : '';
+    sub.textContent = t('read.seconds', { seconds: (ms / 1000).toFixed(1) }) + tuning;
   } else {
-    main.textContent = `That was ${noteName(heardMidi)} — wanted ${pitchClassName(target)}`;
+    main.textContent = t('read.wrong', { heard: noteName(heardMidi), wanted: pitchClassName(target) });
     main.className = 'verdict-main bad';
     sub.textContent = sameClass
-      ? 'Right note, wrong octave — you are on the wrong string.'
-      : `It is string ${read.target.string}, fret ${read.target.fret}.`;
+      ? t('read.wrongOctave')
+      : t('read.whereItWas', { string: read.target.string, fret: read.target.fret });
   }
 
   $('staffHost').innerHTML = renderNote(read.target.written, { state: exact ? 'correct' : 'wrong' });
@@ -198,7 +200,7 @@ $('startRead').addEventListener('click', async () => {
   if (!(await ensureAudio())) return;
   read.active = true;
   read.asked = 0; read.correct = 0; read.times = []; read.startedAt = Date.now();
-  $('startRead').textContent = 'Pause';
+  $('startRead').textContent = t('read.pause');
   $('skipNote').disabled = false;
   nextQuestion();
 });
@@ -223,9 +225,11 @@ function endReadSession() {
   }
   read.active = false;
   read.target = null;
-  $('startRead').textContent = 'Start listening';
+  $('startRead').textContent = t('read.start');
   $('skipNote').disabled = true;
-  $('verdictMain').textContent = read.asked ? `Session done — ${read.correct} of ${read.asked} right first time.` : 'Press start, then play the note you see.';
+  $('verdictMain').textContent = read.asked
+    ? t('read.sessionDone', { correct: read.correct, asked: read.asked })
+    : t('read.prompt');
   $('verdictMain').className = 'verdict-main';
   renderStageHeader();
 }
@@ -238,7 +242,11 @@ function fillPatterns() {
   const sel = $('patternSelect');
   const allowed = stage.rhythm || Object.keys(RHYTHMS);
   sel.innerHTML = Object.entries(RHYTHMS)
-    .map(([id, p]) => `<option value="${id}"${allowed.includes(id) ? '' : ' data-extra="1"'}>${p.title}${allowed.includes(id) ? '' : ' (beyond this stage)'}</option>`)
+    .map(([id]) => {
+      const title = t(`rhythmPattern.${id}`);
+      const label = allowed.includes(id) ? title : t('rhythmPattern.beyondStage', { title });
+      return `<option value="${id}">${label}</option>`;
+    })
     .join('');
   sel.value = allowed[0];
 }
@@ -313,7 +321,7 @@ $('startRhythm').addEventListener('click', async () => {
   rhythm.endsAt = rhythm.startTime + pat.meter[0] * bars * beat + 0.6;
 
   audio.resetTracking();
-  $('rVerdictMain').textContent = 'Count-in…';
+  $('rVerdictMain').textContent = t('rhythm.countingIn');
   $('rVerdictSub').textContent = '';
   drawStrip();
 
@@ -321,16 +329,16 @@ $('startRhythm').addEventListener('click', async () => {
   const total = pat.meter[0] * bars * beat;
   const tick = () => {
     if (!rhythm.running) return;
-    const t = audio.now();
+    const tNow = audio.now();
     if (cursor) {
-      const rel = (t - rhythm.startTime) / total;
+      const rel = (tNow - rhythm.startTime) / total;
       cursor.style.display = rel >= 0 && rel <= 1 ? 'block' : 'none';
       cursor.style.left = `${4 + Math.max(0, Math.min(1, rel)) * 92}%`;
     }
-    if (t > rhythm.startTime && $('rVerdictMain').textContent === 'Count-in…') {
-      $('rVerdictMain').textContent = 'Playing…';
+    if (tNow > rhythm.startTime && $('rVerdictMain').textContent === t('rhythm.countingIn')) {
+      $('rVerdictMain').textContent = t('rhythm.playing');
     }
-    if (t >= rhythm.endsAt) { finishRhythm(); return; }
+    if (tNow >= rhythm.endsAt) { finishRhythm(); return; }
     rhythm.raf = requestAnimationFrame(tick);
   };
   tick();
@@ -354,7 +362,7 @@ function finishRhythm(aborted = false) {
   $('stopRhythm').disabled = true;
 
   if (aborted && rhythm.played.length === 0) {
-    $('rVerdictMain').textContent = 'Stopped.';
+    $('rVerdictMain').textContent = t('rhythm.stopped');
     return;
   }
 
@@ -363,25 +371,20 @@ function finishRhythm(aborted = false) {
   const sub = $('rVerdictSub');
 
   if (result.hitCount === 0) {
-    main.textContent = 'Nothing heard';
+    main.textContent = t('rhythm.nothingHeard');
     main.className = 'verdict-main';
-    sub.textContent = 'Check the microphone is picking you up — the level bar on the Read tab should move when you play.';
+    sub.textContent = t('rhythm.nothingHeardWhy');
   } else {
-    const words = {
-      'in time': 'In time',
-      'rushing': 'Rushing — you are ahead of the click',
-      'dragging': 'Dragging — you are behind the click',
-      'uneven': 'Uneven — no steady bias, just scattered',
-    };
-    main.textContent = words[result.verdict] || result.verdict;
+    const verdictKey = { 'in time': 'rhythm.inTime', rushing: 'rhythm.rushing', dragging: 'rhythm.dragging', uneven: 'rhythm.uneven' }[result.verdict];
+    main.textContent = verdictKey ? t(verdictKey) : result.verdict;
     main.className = `verdict-main ${result.verdict === 'in time' ? 'good' : ''}`;
     const bits = [
-      `${result.hitCount} of ${rhythm.expected.length} notes`,
-      `typically ${result.meanAbsErrorMs} ms off`,
-      `spread ${result.spreadMs} ms`,
+      t('rhythm.noteCount', { count: result.hitCount, total: rhythm.expected.length }),
+      t('rhythm.typicallyOff', { ms: result.meanAbsErrorMs }),
+      t('rhythm.spread', { ms: result.spreadMs }),
     ];
-    if (result.missed) bits.push(`${result.missed} missed`);
-    if (result.extra) bits.push(`${result.extra} extra`);
+    if (result.missed) bits.push(t('rhythm.missed', { count: result.missed }));
+    if (result.extra) bits.push(t('rhythm.extra', { count: result.extra }));
     sub.textContent = bits.join(' · ');
     progress.recordRhythm({
       bpm: Number($('bpmRange').value),
@@ -417,15 +420,14 @@ function renderProgress() {
   const nudge = $('backupNudge');
   nudge.hidden = !progress.needsBackup();
   if (!nudge.hidden) {
-    nudge.textContent = 'You have a few weeks of practice saved here and no backup. '
-      + 'Clearing your browser data would erase it. Export takes one click.';
+    nudge.textContent = t('data.backupNudge');
   }
   $('statsGrid').innerHTML = [
-    ['Sessions', s.sessions],
-    ['Notes asked', s.asked],
-    ['Right first time', s.asked ? `${Math.round(s.accuracy * 100)}%` : '—'],
-    ['Minutes', s.minutes],
-    ['Day streak', s.currentStreak],
+    [t('progress.sessions'), s.sessions],
+    [t('progress.notesAsked'), s.asked],
+    [t('progress.rightFirstTime'), s.asked ? `${Math.round(s.accuracy * 100)}%` : '—'],
+    [t('progress.minutes'), s.minutes],
+    [t('progress.dayStreak'), s.currentStreak],
   ].map(([label, v]) => `<div class="stat"><b>${v}</b><span>${label}</span></div>`).join('');
 
   renderHeatmap();
@@ -435,18 +437,18 @@ function renderProgress() {
     ? weak.map(({ id, stat }) => {
         const { string, fret } = parsePositionId(id);
         const note = pitchClassName(soundingAt(string, fret));
-        const why = stat.accuracy < 0.7 ? 'often wrong' : `slow (${(stat.avgMs / 1000).toFixed(1)}s)`;
-        return `<li><strong>${note}</strong> — string ${string}, fret ${fret} · ${why}</li>`;
+        const why = stat.accuracy < 0.7 ? t('progress.oftenWrong') : t('progress.slow', { seconds: (stat.avgMs / 1000).toFixed(1) });
+        return `<li><strong>${note}</strong> — ${t('progress.weakItem', { string, fret })} · ${why}</li>`;
       }).join('')
-    : '<li class="muted">Nothing is lagging behind. Either you are doing well or you have not played much yet.</li>';
+    : `<li class="muted">${t('progress.weakNone')}</li>`;
 
   const check = readyToAdvance(stage, progress.data.stats);
   const nxt = nextStage(stage.id);
   $('advanceBox').innerHTML = check.ready
     ? (nxt
-      ? `<p><strong>Ready for the next stage.</strong> ${nxt.title}.</p><button class="btn primary small" id="advanceBtn">Move on</button>`
-      : '<p><strong>You have finished the whole plan.</strong> Keep the last stage running to stay sharp.</p>')
-    : `<p class="muted">Not yet — ${check.reason}.</p>`;
+      ? `<p><strong>${t('progress.readyNext')}</strong> ${t(`stage.${nxt.id}.title`)}.</p><button class="btn primary small" id="advanceBtn">${t('progress.moveOn')}</button>`
+      : `<p><strong>${t('progress.finishedPlan')}</strong></p>`)
+    : `<p class="muted">${t('progress.notYet', { reason: t(check.reasonKey, check.reasonVars) })}</p>`;
   const btn = $('advanceBtn');
   if (btn) btn.addEventListener('click', () => {
     stage = nxt;
@@ -460,7 +462,7 @@ function renderProgress() {
   $('stageList').innerHTML = STAGES.map((st, i) => {
     const done = readyToAdvance(st, progress.data.stats).ready;
     return `<div class="stage-row${st.id === stage.id ? ' current' : ''}">
-      <span class="n">${i + 1}</span><span>${st.title}</span>
+      <span class="n">${i + 1}</span><span>${t(`stage.${st.id}.title`)}</span>
       ${done ? '<span class="done">✓</span>' : ''}</div>`;
   }).join('');
 }
@@ -519,13 +521,13 @@ $('importFile').addEventListener('change', async (e) => {
     renderStageHeader();
     renderProgress();
   } catch (err) {
-    alert(`That file could not be read: ${err.message}`);
+    alert(t('data.importFailed', { message: err.message }));
   }
   e.target.value = '';
 });
 
 $('resetBtn').addEventListener('click', () => {
-  if (!confirm('Erase all progress on this machine? This cannot be undone.')) return;
+  if (!confirm(t('data.eraseConfirm'))) return;
   progress.reset();
   stage = STAGES[0];
   renderStageHeader();
@@ -566,8 +568,7 @@ function checkStorage() {
   const el = $('storageWarn');
   if (progress.save()) { el.hidden = true; return; }
   el.hidden = false;
-  el.textContent = 'This browser is not letting the page save anything, so your progress '
-    + 'will vanish when you close the tab. Private browsing usually causes this.';
+  el.textContent = t('data.storageBlocked');
 }
 
 // ====================================================================== sync
@@ -580,9 +581,11 @@ function renderSync() {
   inEl.hidden = !sync.signedIn;
   outEl.hidden = sync.signedIn;
   if (sync.signedIn) {
-    $('syncWho').textContent = sync.email || 'this device';
-    const t = sync.lastSync();
-    $('syncWhen').textContent = t ? `Last synced ${new Date(t).toLocaleString()}.` : 'Not synced yet.';
+    $('syncWho').textContent = sync.email || '—';
+    const when = sync.lastSync();
+    $('syncWhen').textContent = when
+      ? t('sync.lastSynced', { when: new Date(when).toLocaleString(getLocale()) })
+      : t('sync.neverSynced');
   }
 }
 
@@ -607,15 +610,15 @@ $('syncSend').addEventListener('click', async () => {
 });
 
 $('syncPush').addEventListener('click', async () => {
-  try { await sync.push(); syncMsg('syncMsg2', 'Sent. This device is now the copy of record.', true); renderSync(); }
+  try { await sync.push(); syncMsg('syncMsg2', t('sync.pushed'), true); renderSync(); }
   catch (e) { syncMsg('syncMsg2', e.message, false); renderSync(); }
 });
 
 $('syncPull').addEventListener('click', async () => {
-  if (!confirm('Replace this device\'s progress with what is stored? Anything practised here and not yet sent up will be lost.')) return;
+  if (!confirm(t('sync.pullConfirm'))) return;
   try {
     await sync.pull();
-    syncMsg('syncMsg2', 'Brought down. Reloading.', true);
+    syncMsg('syncMsg2', t('sync.pulled'), true);
     setTimeout(() => location.reload(), 700);
   } catch (e) { syncMsg('syncMsg2', e.message, false); renderSync(); }
 });
@@ -631,7 +634,7 @@ function adoptSessionFromUrl() {
   if (!sync.captureFromUrl()) return;
   // Arrived from a magic link: pull whatever is stored so the device is current.
   sync.pull()
-    .then(() => syncMsg('syncMsg2', 'Signed in. Progress brought down from the server.', true))
+    .then(() => syncMsg('syncMsg2', t('sync.signedIn'), true))
     .catch((e) => syncMsg('syncMsg2', e.message, false))
     .finally(() => { renderSync(); renderProgress(); });
 }
@@ -645,12 +648,44 @@ window.addEventListener('hashchange', adoptSessionFromUrl);
 
 initPieceView({ audio, ensureAudio });
 
+// ================================================================ language
+
+function buildLanguagePicker() {
+  const sel = $('langSelect');
+  sel.innerHTML = availableLocales()
+    .map((l) => `<option value="${l.code}">${l.name}</option>`).join('');
+  sel.value = getLocale();
+  sel.addEventListener('change', async () => {
+    await setLocale(sel.value);
+    // Re-render everything that builds its text in JavaScript.
+    renderStageHeader();
+    fillPatterns();
+    drawStrip();
+    renderSync();
+    renderProgress();
+  });
+}
+
 // ===================================================================== init
 
 if (!progress.data.seenWelcome && progress.data.sessions.length === 0) showWelcome();
 checkStorage();
-renderSync();
-renderStageHeader();
-fillPatterns();
-drawStrip();
-$('bpmOut').textContent = $('bpmRange').value;
+
+// Translations must land before anything renders, or the first paint is English
+// and then visibly flips - which looks broken in every language but English.
+initI18n().then(() => {
+  applyToDom();
+  buildLanguagePicker();
+  renderSync();
+  renderStageHeader();
+  fillPatterns();
+  drawStrip();
+  $('bpmOut').textContent = $('bpmRange').value;
+}).catch(() => {
+  // Even if catalogues fail entirely, the built-in English markup still works.
+  renderSync();
+  renderStageHeader();
+  fillPatterns();
+  drawStrip();
+  $('bpmOut').textContent = $('bpmRange').value;
+});

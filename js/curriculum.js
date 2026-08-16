@@ -91,7 +91,9 @@ export function nextStage(id) {
 export function readyToAdvance(stage, stats, { threshold = 0.8 } = {}) {
   const pool = poolFor(stage);
   const seen = pool.filter((id) => (stats[id]?.attempts || 0) >= 4).length;
-  if (seen < pool.length) return { ready: false, reason: 'not every note has been asked enough times yet' };
+  // A reason KEY, not a sentence: this string is shown to the user and must be
+  // translatable. Returning English here leaked into every other language.
+  if (seen < pool.length) return { ready: false, reasonKey: 'progress.notEnoughAttempts', reasonVars: {} };
   const fluent = pool.filter((id) => {
     const s = stats[id];
     return s && s.attempts >= 4 && s.accuracy >= 0.85 && s.avgMs <= 2000;
@@ -99,7 +101,7 @@ export function readyToAdvance(stage, stats, { threshold = 0.8 } = {}) {
   const ratio = fluent / pool.length;
   return ratio >= threshold
     ? { ready: true, ratio }
-    : { ready: false, ratio, reason: `${fluent} of ${pool.length} notes are fast and accurate` };
+    : { ready: false, ratio, reasonKey: 'progress.fluentRatio', reasonVars: { fluent, total: pool.length } };
 }
 
 // ------------------------------------------------------------------ rhythm

@@ -95,7 +95,8 @@ t('without fingering it falls back to the declared transposition', () => {
 t('with neither, it assumes sounding pitch and SAYS so', () => {
   const p = parseMusicXML(score({ notes: [{ midi: 55, dur: 4 }, { midi: 60, dur: 4 }], includeFingering: false }), P);
   assert.equal(p.octaveConvention.basis, 'assumed');
-  assert.match(p.octaveConvention.note, /octave switch/);
+  // The message is a translation key now, so the module stays language-neutral.
+  assert.equal(p.octaveConvention.noteKey, 'piece.octave.assumed');
 });
 
 t('a file whose fingering contradicts its pitches is flagged, not silently trusted', () => {
@@ -103,7 +104,7 @@ t('a file whose fingering contradicts its pitches is flagged, not silently trust
   const bogus = [{ midi: 62, string: 3, fret: 0, dur: 4 }, { midi: 67, string: 2, fret: 1, dur: 4 }, { midi: 71, string: 1, fret: 0, dur: 4 }];
   const p = parseMusicXML(score({ notes: bogus }), P);
   assert.equal(p.octaveConvention.basis, 'unverified');
-  assert.match(p.octaveConvention.note, /could not be confirmed/);
+  assert.equal(p.octaveConvention.noteKey, 'piece.octave.unverified');
 });
 
 t('durations become beats, and rests are kept', () => {

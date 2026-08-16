@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Openstring — guitar reading trainer that listens</title>
+<meta name="i18n-title" content="app.title">
 <meta name="description" content="Read a note, play it on the guitar, and be told what you actually played and when. Runs entirely in your browser. No account, no subscription.">
 <link rel="stylesheet" href="css/app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🎸</text></svg>">
@@ -14,19 +15,19 @@
      keep in sync with an app that contradicts it. -->
 <div class="welcome" id="welcome" hidden>
   <div class="welcome-inner">
-    <h1>Learn to read music on the guitar</h1>
-    <p class="lede">
+    <h1 data-i18n="welcome.heading">Learn to read music on the guitar</h1>
+    <p class="lede" data-i18n="welcome.lede">
       A note appears on the staff. You play it. Openstring listens and tells you
       whether you found it, how long you took, and what to work on next.
     </p>
 
     <ul class="need">
-      <li><span aria-hidden="true">🎸</span> <div><strong>A guitar</strong><br>Acoustic, classical or electric. Roughly in tune — there is a tuner built in.</div></li>
-      <li><span aria-hidden="true">🎤</span> <div><strong>A microphone</strong><br>Your laptop's built-in one is fine. The browser will ask permission in a moment.</div></li>
-      <li><span aria-hidden="true">🎧</span> <div><strong>Headphones, for the rhythm drill</strong><br>Otherwise the microphone hears the metronome and counts it as you playing.</div></li>
+      <li><span aria-hidden="true">🎸</span> <div><strong data-i18n="welcome.needGuitar">A guitar</strong><br><span data-i18n="welcome.needGuitarWhy">Acoustic, classical or electric. Roughly in tune — there is a tuner built in.</span></div></li>
+      <li><span aria-hidden="true">🎤</span> <div><strong data-i18n="welcome.needMic">A microphone</strong><br><span data-i18n="welcome.needMicWhy">Your laptop's built-in one is fine. The browser will ask permission in a moment.</span></div></li>
+      <li><span aria-hidden="true">🎧</span> <div><strong data-i18n="welcome.needPhones">Headphones, for the rhythm drill</strong><br><span data-i18n="welcome.needPhonesWhy">Otherwise the microphone hears the metronome and counts it as you playing.</span></div></li>
     </ul>
 
-    <p class="privacy">
+    <p class="privacy" data-i18n-html="welcome.privacyHtml">
       <strong>Nothing you play leaves this device.</strong> The audio is analysed in your
       browser and never recorded or uploaded — no recording is ever made. There is no
       subscription, ever. Your progress is saved in this browser; if you want it on your
@@ -35,16 +36,16 @@
     </p>
 
     <div class="welcome-actions">
-      <button class="btn primary big" id="welcomeStart">Start — it takes a minute</button>
-      <button class="btn" id="welcomeSkip">Look around first</button>
+      <button class="btn primary big" id="welcomeStart" data-i18n="welcome.start">Start — it takes a minute</button>
+      <button class="btn" id="welcomeSkip" data-i18n="welcome.skip">Look around first</button>
     </div>
 
-    <p class="newbie">
+    <p class="newbie" data-i18n-html="welcome.newbieHtml">
       <strong>Never read music before?</strong> That is fine — start anyway. The first stage
       is eight notes in one octave, and it shows you where each one lives whenever you ask.
     </p>
 
-    <p class="unsupported" id="unsupported" hidden>
+    <p class="unsupported" id="unsupported" data-i18n="welcome.unsupported" hidden>
       This browser cannot record audio, so the listening part will not work. Try Chrome,
       Edge, Safari or Firefox — and note the page must be served over <strong>https</strong>.
     </p>
@@ -52,15 +53,15 @@
 </div>
 
 <header class="topbar">
-  <div class="brand">Openstring</div>
+  <div class="brand" data-i18n="app.name">Openstring</div>
   <nav class="tabs" role="tablist">
-    <button class="tab is-active" data-view="read" role="tab">Read</button>
-    <button class="tab" data-view="rhythm" role="tab">Rhythm</button>
-    <button class="tab" data-view="piece" role="tab">Pieces</button>
-    <button class="tab" data-view="progress" role="tab">Progress</button>
+    <button class="tab is-active" data-view="read" role="tab" data-i18n="tab.read">Read</button>
+    <button class="tab" data-view="rhythm" role="tab" data-i18n="tab.rhythm">Rhythm</button>
+    <button class="tab" data-view="piece" role="tab" data-i18n="tab.pieces">Pieces</button>
+    <button class="tab" data-view="progress" role="tab" data-i18n="tab.progress">Progress</button>
   </nav>
-  <button class="help-btn" id="helpBtn" title="What is this?" aria-label="What is this?">?</button>
-  <div class="mic-state" id="micState" aria-live="polite"><span class="dot"></span><span id="micLabel">mic off</span></div>
+  <button class="help-btn" id="helpBtn" data-i18n-title="tab.help" data-i18n-aria-label="tab.help" title="What is this?" aria-label="What is this?">?</button>
+  <div class="mic-state" id="micState" aria-live="polite"><span class="dot"></span><span id="micLabel" data-i18n="mic.off">mic off</span></div>
 </header>
 
 <main>
@@ -74,7 +75,7 @@
     </div>
     <div class="stage-mastery">
       <div class="ring" id="masteryRing"><span id="masteryPct">0%</span></div>
-      <div class="muted small">fluent</div>
+      <div class="muted small" data-i18n="read.fluent">fluent</div>
     </div>
   </div>
 
@@ -82,7 +83,7 @@
     <div id="staffHost" class="staff-host"></div>
 
     <div class="verdict" id="readVerdict" aria-live="polite">
-      <div class="verdict-main" id="verdictMain">Press start, then play the note you see.</div>
+      <div class="verdict-main" id="verdictMain" data-i18n="read.prompt">Press start, then play the note you see.</div>
       <div class="verdict-sub" id="verdictSub"></div>
     </div>
 
@@ -93,19 +94,19 @@
     </div>
 
     <div class="controls">
-      <button class="btn primary" id="startRead">Start listening</button>
-      <button class="btn" id="skipNote" disabled>Skip</button>
-      <label class="check"><input type="checkbox" id="showHint"> Show me where it is</label>
+      <button class="btn primary" id="startRead" data-i18n="read.start">Start listening</button>
+      <button class="btn" id="skipNote" data-i18n="read.skip" disabled>Skip</button>
+      <label class="check"><input type="checkbox" id="showHint"> <span data-i18n="read.showHint">Show me where it is</span></label>
     </div>
 
     <div id="hintHost" class="hint-host" hidden></div>
   </div>
 
   <div class="card session" id="sessionCard" hidden>
-    <div class="row"><span>Asked</span><strong id="sAsked">0</strong></div>
-    <div class="row"><span>Right first time</span><strong id="sCorrect">0</strong></div>
-    <div class="row"><span>Typical time to find</span><strong id="sSpeed">—</strong></div>
-    <button class="btn small" id="endSession">End session</button>
+    <div class="row"><span data-i18n="read.asked">Asked</span><strong id="sAsked">0</strong></div>
+    <div class="row"><span data-i18n="read.rightFirstTime">Right first time</span><strong id="sCorrect">0</strong></div>
+    <div class="row"><span data-i18n="read.typicalTime">Typical time to find</span><strong id="sSpeed">—</strong></div>
+    <button class="btn small" id="endSession" data-i18n="read.endSession">End session</button>
   </div>
 
   <p class="advice" id="stageAdvice"></p>
@@ -114,20 +115,17 @@
 <!-- ------------------------------------------------------------- RHYTHM -->
 <section class="view" id="view-rhythm">
   <div class="card">
-    <h2>Play the rhythm against the click</h2>
-    <p class="muted">
-      This is the half most free tools skip. Pitch does not matter here — play any note,
-      or tap the body of the guitar. What is measured is <em>when</em>.
-    </p>
+    <h2 data-i18n="rhythm.heading">Play the rhythm against the click</h2>
+    <p class="muted" data-i18n-html="rhythm.intro"></p>
 
     <div class="rhythm-picker">
-      <label>Pattern
+      <label><span data-i18n="rhythm.pattern">Pattern</span>
         <select id="patternSelect"></select>
       </label>
       <label><span>Tempo — <output id="bpmOut">60</output> bpm</span>
         <input type="range" id="bpmRange" min="40" max="120" step="2" value="60">
       </label>
-      <label>Bars
+      <label><span data-i18n="rhythm.bars">Bars</span>
         <select id="barsSelect"><option>1</option><option selected>2</option><option>4</option></select>
       </label>
     </div>
@@ -135,26 +133,20 @@
     <div id="rhythmStrip" class="rhythm-strip"></div>
 
     <div class="verdict" id="rhythmVerdict" aria-live="polite">
-      <div class="verdict-main" id="rVerdictMain">One bar of count-in, then play.</div>
+      <div class="verdict-main" id="rVerdictMain" data-i18n="rhythm.countIn">One bar of count-in, then play.</div>
       <div class="verdict-sub" id="rVerdictSub"></div>
     </div>
 
     <div id="timingPlot" class="timing-plot" hidden></div>
 
     <div class="controls">
-      <button class="btn primary" id="startRhythm">Start</button>
-      <button class="btn" id="stopRhythm" disabled>Stop</button>
+      <button class="btn primary" id="startRhythm" data-i18n="rhythm.start">Start</button>
+      <button class="btn" id="stopRhythm" data-i18n="rhythm.stop" disabled>Stop</button>
     </div>
 
     <details class="note-box">
-      <summary>About timing accuracy</summary>
-      <p>
-        Your computer adds a small, unknown delay between the string moving and the browser
-        hearing it. That means <strong>consistency</strong> — whether your notes are evenly
-        spaced — is always measured correctly, but <strong>rushing or dragging</strong> is
-        only as accurate as the delay estimate below. Headphones are strongly recommended:
-        through speakers the microphone hears the click itself and counts it as a note.
-      </p>
+      <summary data-i18n="rhythm.accuracyHeading">About timing accuracy</summary>
+      <p data-i18n-html="rhythm.accuracyBody"></p>
       <label class="calib">Delay compensation <output id="latOut">0</output> ms
         <input type="range" id="latRange" min="-100" max="200" step="5" value="0">
       </label>
@@ -166,15 +158,10 @@
 <section class="view" id="view-piece">
 
   <div class="card" id="pieceEmpty">
-    <h2>Practise a piece</h2>
-    <p class="muted">
-      Bring in a piece as MusicXML — Guitar Pro and MuseScore both export it
-      (<em>File → Export → MusicXML</em>, uncompressed <code>.musicxml</code> or <code>.xml</code>).
-      Openstring splits it into short chunks, drills each one, then drills the joins
-      between them, raising the tempo only when you play it clean.
-    </p>
+    <h2 data-i18n="piece.heading">Practise a piece</h2>
+    <p class="muted" data-i18n-html="piece.intro"></p>
     <div class="controls">
-      <label class="btn primary file">Choose a MusicXML file<input type="file" id="pieceFile" accept=".xml,.musicxml,text/xml,application/xml" hidden></label>
+      <label class="btn primary file"><span data-i18n="piece.choose">Choose a MusicXML file</span><input type="file" id="pieceFile" accept=".xml,.musicxml,text/xml,application/xml" hidden></label>
     </div>
     <p class="import-error" id="importError" hidden></p>
   </div>
@@ -187,7 +174,7 @@
       </div>
       <div class="stage-mastery">
         <div class="ring" id="pieceRing"><span id="piecePct">0%</span></div>
-        <div class="muted small">solid</div>
+        <div class="muted small" data-i18n="piece.solid">solid</div>
       </div>
     </div>
     <p class="octave-note" id="octaveNote"></p>
@@ -195,7 +182,7 @@
       <label>Target tempo <output id="targetOut">80</output> bpm
         <input type="range" id="targetBpm" min="40" max="160" step="4" value="80">
       </label>
-      <button class="btn small" id="dropPiece">Remove piece</button>
+      <button class="btn small" id="dropPiece" data-i18n="piece.remove">Remove piece</button>
     </div>
   </div>
 
@@ -204,22 +191,22 @@
     <div id="chunkStaff" class="chunk-staff"></div>
 
     <div class="verdict">
-      <div class="verdict-main" id="pVerdictMain">Press start.</div>
+      <div class="verdict-main" id="pVerdictMain" data-i18n="piece.pressStart">Press start.</div>
       <div class="verdict-sub" id="pVerdictSub"></div>
     </div>
 
     <div class="layer-row" id="layerRow"></div>
 
     <div class="controls">
-      <button class="btn primary" id="startPiece">Start</button>
-      <button class="btn" id="stopPiece" disabled>Stop</button>
+      <button class="btn primary" id="startPiece" data-i18n="piece.start">Start</button>
+      <button class="btn" id="stopPiece" data-i18n="piece.stop" disabled>Stop</button>
       <span class="muted small" id="chunkTempo"></span>
     </div>
   </div>
 
   <div class="card" id="chunkListCard" hidden>
-    <h2>Chunks</h2>
-    <p class="muted">Seams are the joins between chunks. They get extra attention because that is where pieces come apart.</p>
+    <h2 data-i18n="piece.chunksHeading">Chunks</h2>
+    <p class="muted" data-i18n="piece.chunksIntro">Seams are the joins between chunks. They get extra attention because that is where pieces come apart.</p>
     <div class="chunk-list" id="chunkList"></div>
   </div>
 
@@ -228,57 +215,57 @@
 <!-- ----------------------------------------------------------- PROGRESS -->
 <section class="view" id="view-progress">
   <div class="card">
-    <h2>What you actually know</h2>
+    <h2 data-i18n="progress.knowHeading">What you actually know</h2>
     <div class="stats-grid" id="statsGrid"></div>
   </div>
 
   <div class="card">
-    <h2>Every position, coloured by fluency</h2>
-    <p class="muted">Green is fast and accurate. Amber is correct but slow — that is not learned yet. Red needs work. Grey has not come up yet. Dashed means it is not part of this stage.</p>
+    <h2 data-i18n="progress.heatHeading">Every position, coloured by fluency</h2>
+    <p class="muted" data-i18n="progress.heatIntro">Green is fast and accurate. Amber is correct but slow — that is not learned yet. Red needs work. Grey has not come up yet. Dashed means it is not part of this stage.</p>
     <div id="heatmapHost" class="heatmap-host"></div>
   </div>
 
   <div class="card">
-    <h2>Holding you back</h2>
-    <ol class="weak-list" id="weakList"><li class="muted">Nothing yet — play a session first.</li></ol>
+    <h2 data-i18n="progress.weakHeading">Holding you back</h2>
+    <ol class="weak-list" id="weakList"><li class="muted" data-i18n="progress.weakEmpty">Nothing yet — play a session first.</li></ol>
   </div>
 
   <div class="card">
-    <h2>Moving on</h2>
+    <h2 data-i18n="progress.movingOnHeading">Moving on</h2>
     <div id="advanceBox"></div>
     <div class="stage-list" id="stageList"></div>
   </div>
 
   <div class="card" id="syncCard">
-    <h2>Sync across your devices</h2>
+    <h2 data-i18n="sync.heading">Sync across your devices</h2>
     <div id="syncOut">
-      <p class="muted">Optional. Sign in with your email and your progress follows you to your phone or another computer. No password — you get a link by email. Nothing you play is ever uploaded, only the numbers.</p>
+      <p class="muted" data-i18n="sync.intro">Optional. Sign in with your email and your progress follows you to your phone or another computer. No password — you get a link by email. Nothing you play is ever uploaded, only the numbers.</p>
       <div class="controls">
-        <input type="email" id="syncEmail" placeholder="you@example.com" autocomplete="email" class="text-input">
-        <button class="btn primary small" id="syncSend">Email me a link</button>
+        <input type="email" id="syncEmail" data-i18n-placeholder="sync.emailPlaceholder" placeholder="you@example.com" autocomplete="email" class="text-input">
+        <button class="btn primary small" id="syncSend" data-i18n="sync.sendLink">Email me a link</button>
       </div>
       <p class="sync-msg" id="syncMsg" hidden></p>
     </div>
     <div id="syncIn" hidden>
       <p class="muted">Signed in as <strong id="syncWho"></strong>. <span id="syncWhen"></span></p>
       <div class="controls">
-        <button class="btn small" id="syncPush">Send this device's progress up</button>
-        <button class="btn small" id="syncPull">Bring progress down</button>
-        <button class="btn small" id="syncOutBtn">Sign out</button>
+        <button class="btn small" id="syncPush" data-i18n="sync.push">Send this device's progress up</button>
+        <button class="btn small" id="syncPull" data-i18n="sync.pull">Bring progress down</button>
+        <button class="btn small" id="syncOutBtn" data-i18n="sync.signOut">Sign out</button>
       </div>
       <p class="sync-msg" id="syncMsg2" hidden></p>
     </div>
   </div>
 
   <div class="card">
-    <h2>Your data</h2>
-    <p class="muted">Everything lives in this browser only. Nothing is uploaded anywhere. Export it if you want a backup or want to move machines.</p>
+    <h2 data-i18n="data.heading">Your data</h2>
+    <p class="muted" data-i18n="data.intro">Everything lives in this browser only. Nothing is uploaded anywhere. Export it if you want a backup or want to move machines.</p>
     <p class="storage-warn" id="storageWarn" hidden></p>
     <p class="backup-nudge" id="backupNudge" hidden></p>
     <div class="controls">
-      <button class="btn small" id="exportBtn">Export</button>
-      <label class="btn small file">Import<input type="file" id="importFile" accept="application/json" hidden></label>
-      <button class="btn small danger" id="resetBtn">Erase everything</button>
+      <button class="btn small" id="exportBtn" data-i18n="data.export">Export</button>
+      <label class="btn small file"><span data-i18n="data.import">Import</span><input type="file" id="importFile" accept="application/json" hidden></label>
+      <button class="btn small danger" id="resetBtn" data-i18n="data.erase">Erase everything</button>
     </div>
   </div>
 </section>
@@ -286,7 +273,10 @@
 </main>
 
 <footer class="foot">
-  <span>Openstring — free and open source, no account, no subscription.</span>
+  <label class="lang-pick"><span data-i18n="lang.label">Language</span>
+    <select id="langSelect"></select>
+  </label><br>
+  <span data-i18n="app.footer">Openstring — free and open source, no account, no subscription.</span>
 </footer>
 
 <script type="module" src="js/app.js"></script>

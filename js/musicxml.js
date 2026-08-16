@@ -157,32 +157,29 @@ function resolveOctaveConvention(notes, declaredShift) {
     }
     // Require agreement from the file itself, not a majority vote on ambiguous data.
     if (asSounding > 0 && asWritten === 0) {
-      return { shift: 0, basis: 'fingering', note: 'Pitches match the string and fret positions exactly, so they are sounding pitch.' };
+      return { shift: 0, basis: 'fingering', noteKey: 'piece.octave.sounding' };
     }
     if (asWritten > 0 && asSounding === 0) {
-      return { shift: -OCTAVE_TRANSPOSITION, basis: 'fingering', note: 'Pitches sit an octave above the string and fret positions, so they are written pitch.' };
+      return { shift: -OCTAVE_TRANSPOSITION, basis: 'fingering', noteKey: 'piece.octave.written' };
     }
     // Mixed or matching neither: the file is internally inconsistent. Do not guess.
     if (asSounding === 0 && asWritten === 0) {
       return {
-        shift: 0, basis: 'unverified',
-        note: 'The fingering in this file does not agree with its own pitches, so the octave could not be confirmed. Assuming the pitches are what the guitar sounds.',
+        shift: 0, basis: 'unverified', noteKey: 'piece.octave.unverified',
       };
     }
     return {
       shift: asSounding >= asWritten ? 0 : -OCTAVE_TRANSPOSITION,
-      basis: 'inconsistent',
-      note: 'This file mixes both octave conventions. Check a few notes before trusting it.',
+      basis: 'inconsistent', noteKey: 'piece.octave.inconsistent',
     };
   }
 
   if (declaredShift !== null && declaredShift !== 0) {
-    return { shift: declaredShift, basis: 'transpose', note: 'Used the transposition declared in the file.' };
+    return { shift: declaredShift, basis: 'transpose', noteKey: 'piece.octave.transpose' };
   }
 
   return {
-    shift: 0, basis: 'assumed',
-    note: 'This file has no fingering and declares no transposition, so the pitches were taken as what the guitar sounds. If every note comes out an octave wrong, flip the octave switch.',
+    shift: 0, basis: 'assumed', noteKey: 'piece.octave.assumed',
   };
 }
 

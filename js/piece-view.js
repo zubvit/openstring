@@ -7,7 +7,7 @@ import {
 } from './practice.js';
 import { renderPhrase } from './staff.js';
 import { Metronome } from './audio.js';
-import { noteName } from './theory.js';
+import { t } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 const STORE_KEY = 'openstring.piece.v1';
@@ -76,11 +76,13 @@ export function initPieceView({ audio, ensureAudio }) {
     if (!has) return;
 
     $('pieceTitle').textContent = st.piece.title;
-    const bits = [st.piece.composer, `${st.piece.noteCount} notes`, `${st.chunks.filter((c) => c.kind === 'chunk').length} bars`];
+    const bits = [st.piece.composer,
+      t('piece.noteCount', { count: st.piece.noteCount }),
+      t('piece.barCount', { count: st.chunks.filter((c) => c.kind === 'chunk').length })];
     $('pieceMeta').textContent = bits.filter(Boolean).join(' · ');
 
     const note = $('octaveNote');
-    note.textContent = st.piece.octaveConvention.note;
+    note.textContent = t(st.piece.octaveConvention.noteKey);
     note.classList.toggle('warn', ['assumed', 'unverified', 'inconsistent'].includes(st.piece.octaveConvention.basis));
 
     const solid = st.chunks.filter((c) => st.states[c.id] && chunkMastered(st.states[c.id], st.targetBpm)).length;
@@ -96,10 +98,12 @@ export function initPieceView({ audio, ensureAudio }) {
       const s = st.states[c.id] || newChunkState();
       const pct = Math.min(100, Math.round((s.bestBpm / st.targetBpm) * 100));
       const label = c.kind === 'seam'
-        ? `join, bars ${c.firstMeasure}–${c.lastMeasure}`
-        : `bar ${c.firstMeasure}${c.lastMeasure !== c.firstMeasure ? `–${c.lastMeasure}` : ''}`;
+        ? t('piece.seamRow', { from: c.firstMeasure, to: c.lastMeasure })
+        : (c.lastMeasure !== c.firstMeasure
+            ? t('piece.chunkRowRange', { from: c.firstMeasure, to: c.lastMeasure })
+            : t('piece.chunkRow', { from: c.firstMeasure }));
       return `<div class="chunk-row ${c.kind === 'seam' ? 'seam' : ''} ${st.current?.id === c.id ? 'current' : ''}">
-        <span>${label}<span class="muted small"> · ${LAYER_LABELS[LAYERS[s.layerIndex]]}</span></span>
+        <span>${label}<span class="muted small"> · ${t(`layer.${LAYERS[s.layerIndex]}`)}</span></span>
         <span class="bpm">${s.attempts ? `${s.bpm} bpm` : '—'}</span>
         <span class="chunk-bar"><span style="width:${pct}%"></span></span>
       </div>`;
@@ -108,8 +112,10 @@ export function initPieceView({ audio, ensureAudio }) {
 
   function renderChunkStaff(chunk) {
     $('chunkLabel').textContent = chunk.kind === 'seam'
-      ? `The join between bars ${chunk.firstMeasure} and ${chunk.lastMeasure}`
-      : `Bar ${chunk.firstMeasure}${chunk.lastMeasure !== chunk.firstMeasure ? ` to ${chunk.lastMeasure}` : ''}`;
+      ? t('piece.joinLabel', { from: chunk.firstMeasure, to: chunk.lastMeasure })
+      : (chunk.lastMeasure !== chunk.firstMeasure
+          ? t('piece.barRange', { from: chunk.firstMeasure, to: chunk.lastMeasure })
+          : t('piece.bar', { n: chunk.firstMeasure }));
     $('chunkStaff').innerHTML = renderPhrase(chunk.notes, { width: 520 });
   }
 
@@ -121,7 +127,8 @@ export function initPieceView({ audio, ensureAudio }) {
       else cls += ' future';
       if (results && results[l] && i <= state.layerIndex) cls += results[l].ok ? ' ok' : ' fail';
       const detail = results?.[l]?.detail ? ` — ${results[l].detail}` : '';
-      return `<span class="${cls}" title="${LAYER_LABELS[l]}${detail}">${LAYER_LABELS[l]}</span>`;
+      const label = t(`layer.${l}`);
+      return `<span class="${cls}" title="${label}${detail}">${label}</span>`;
     }).join('');
   }
 
@@ -137,7 +144,7 @@ export function initPieceView({ audio, ensureAudio }) {
       const text = await file.text();
       const piece = parseMusicXML(text);
       const seq = toSequence(piece);
-      if (!seq.some((n) => !n.isRest)) throw new Error('That score has no playable notes.');
+      if (!seq.some((n) => !n.isRest)) throw new Error(t('piece.noNotes'));
       st.piece = piece;
       st.sequence = seq;
       st.states = {};
@@ -150,12 +157,12 @@ export function initPieceView({ audio, ensureAudio }) {
       err.hidden = false;
       err.textContent = ex.message.includes('.mxl')
         ? ex.message
-        : `${ex.message} (If you exported a compressed .mxl, re-export as uncompressed MusicXML.)`;
+        : `${ex.message} ${t('piece.mxlHint')}`;
     }
   });
 
   $('dropPiece').addEventListener('click', () => {
-    if (!confirm('Remove this piece and its practice history?')) return;
+    if (!confirm(t('piece.removeConfirm'))) return;
     st.piece = null; st.sequence = []; st.chunks = []; st.states = {}; st.current = null;
     save(); renderHead();
   });
@@ -177,8 +184,8 @@ export function initPieceView({ audio, ensureAudio }) {
     renderChunkStaff(c);
     renderLayers(st.states[c.id]);
     const s = st.states[c.id];
-    $('chunkTempo').textContent = `${s.bpm} bpm · aiming for ${st.targetBpm}`;
-    $('pVerdictMain').textContent = 'Press start, then play it after the count-in.';
+    $('chunkTempo').textContent = t('piece.tempoAiming', { bpm: s.bpm, target: st.targetBpm });
+    $('pVerdictMain').textContent = t('piece.playAfterCountIn');
     $('pVerdictMain').className = 'verdict-main';
     $('pVerdictSub').textContent = '';
     renderChunkList();
@@ -252,19 +259,19 @@ export function initPieceView({ audio, ensureAudio }) {
     const main = $('pVerdictMain');
     const sub = $('pVerdictSub');
     if (g.passed) {
-      main.textContent = next.bpm > bpm ? `Clean — up to ${next.bpm} bpm`
-        : next.layerIndex > state.layerIndex ? `Clean — now add ${LAYER_LABELS[LAYERS[next.layerIndex]]}`
-        : 'Clean — once more at this tempo';
+      main.textContent = next.bpm > bpm ? t('piece.cleanFaster', { bpm: next.bpm })
+        : next.layerIndex > state.layerIndex ? t('piece.cleanNewLayer', { layer: t(`layer.${LAYERS[next.layerIndex]}`) })
+        : t('piece.cleanAgain');
       main.className = 'verdict-main good';
     } else {
       const failed = g.checked.filter((l) => !g.results[l].ok);
-      main.textContent = failed.length ? g.results[failed[0]].detail : 'Not quite';
+      main.textContent = failed.length ? g.results[failed[0]].detail : t('piece.notQuite');
       main.className = 'verdict-main bad';
     }
-    sub.textContent = g.checked.map((l) => `${LAYER_LABELS[l]}: ${g.results[l].detail}`).join(' · ');
+    sub.textContent = g.checked.map((l) => `${t(`layer.${l}`)}: ${g.results[l].detail}`).join(' · ');
 
     renderLayers(next, g.results);
-    $('chunkTempo').textContent = `${next.bpm} bpm · aiming for ${st.targetBpm}`;
+    $('chunkTempo').textContent = t('piece.tempoAiming', { bpm: next.bpm, target: st.targetBpm });
 
     rebuildChunks();
     save();
