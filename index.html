@@ -247,6 +247,27 @@
     <div class="stage-list" id="stageList"></div>
   </div>
 
+  <div class="card" id="syncCard">
+    <h2>Sync across your devices</h2>
+    <div id="syncOut">
+      <p class="muted">Optional. Sign in with your email and your progress follows you to your phone or another computer. No password — you get a link by email. Nothing you play is ever uploaded, only the numbers.</p>
+      <div class="controls">
+        <input type="email" id="syncEmail" placeholder="you@example.com" autocomplete="email" class="text-input">
+        <button class="btn primary small" id="syncSend">Email me a link</button>
+      </div>
+      <p class="sync-msg" id="syncMsg" hidden></p>
+    </div>
+    <div id="syncIn" hidden>
+      <p class="muted">Signed in as <strong id="syncWho"></strong>. <span id="syncWhen"></span></p>
+      <div class="controls">
+        <button class="btn small" id="syncPush">Send this device's progress up</button>
+        <button class="btn small" id="syncPull">Bring progress down</button>
+        <button class="btn small" id="syncOutBtn">Sign out</button>
+      </div>
+      <p class="sync-msg" id="syncMsg2" hidden></p>
+    </div>
+  </div>
+
   <div class="card">
     <h2>Your data</h2>
     <p class="muted">Everything lives in this browser only. Nothing is uploaded anywhere. Export it if you want a backup or want to move machines.</p>

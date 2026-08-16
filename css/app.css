@@ -301,3 +301,12 @@ table.heatmap td { padding: 1px; }
 .chunk-row .bpm { font-variant-numeric: tabular-nums; color: var(--ink-soft); }
 .chunk-bar { width: 70px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .chunk-bar span { display: block; height: 100%; background: var(--accent); }
+
+.text-input {
+  font: inherit; padding: .45rem .6rem; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  min-width: 200px; flex: 1 1 200px;
+}
+.sync-msg { font-size: .86rem; margin-top: .5rem; }
+.sync-msg.ok { color: var(--good); }
+.sync-msg.bad { color: var(--bad); }

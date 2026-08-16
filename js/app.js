@@ -11,6 +11,7 @@ import { Progress } from './progress.js';
 import { STAGES, stageById, nextStage, poolFor, readyToAdvance, RHYTHMS, expectedOnsets } from './curriculum.js';
 import { gradeTiming } from './onset.js';
 import { initPieceView } from './piece-view.js';
+import { Sync } from './sync.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -569,6 +570,77 @@ function checkStorage() {
     + 'will vanish when you close the tab. Private browsing usually causes this.';
 }
 
+// ====================================================================== sync
+
+const sync = new Sync(progress);
+
+function renderSync() {
+  const inEl = $('syncIn');
+  const outEl = $('syncOut');
+  inEl.hidden = !sync.signedIn;
+  outEl.hidden = sync.signedIn;
+  if (sync.signedIn) {
+    $('syncWho').textContent = sync.email || 'this device';
+    const t = sync.lastSync();
+    $('syncWhen').textContent = t ? `Last synced ${new Date(t).toLocaleString()}.` : 'Not synced yet.';
+  }
+}
+
+function syncMsg(id, text, ok) {
+  const el = $(id);
+  el.hidden = false;
+  el.textContent = text;
+  el.className = `sync-msg ${ok ? 'ok' : 'bad'}`;
+}
+
+$('syncSend').addEventListener('click', async () => {
+  const email = $('syncEmail').value.trim();
+  if (!email) return;
+  $('syncSend').disabled = true;
+  try {
+    syncMsg('syncMsg', await sync.requestLink(email), true);
+  } catch (e) {
+    syncMsg('syncMsg', e.message, false);
+  } finally {
+    $('syncSend').disabled = false;
+  }
+});
+
+$('syncPush').addEventListener('click', async () => {
+  try { await sync.push(); syncMsg('syncMsg2', 'Sent. This device is now the copy of record.', true); renderSync(); }
+  catch (e) { syncMsg('syncMsg2', e.message, false); renderSync(); }
+});
+
+$('syncPull').addEventListener('click', async () => {
+  if (!confirm('Replace this device\'s progress with what is stored? Anything practised here and not yet sent up will be lost.')) return;
+  try {
+    await sync.pull();
+    syncMsg('syncMsg2', 'Brought down. Reloading.', true);
+    setTimeout(() => location.reload(), 700);
+  } catch (e) { syncMsg('syncMsg2', e.message, false); renderSync(); }
+});
+
+$('syncOutBtn').addEventListener('click', async () => {
+  await sync.signOut();
+  renderSync();
+});
+
+sync.onChange = renderSync;
+
+function adoptSessionFromUrl() {
+  if (!sync.captureFromUrl()) return;
+  // Arrived from a magic link: pull whatever is stored so the device is current.
+  sync.pull()
+    .then(() => syncMsg('syncMsg2', 'Signed in. Progress brought down from the server.', true))
+    .catch((e) => syncMsg('syncMsg2', e.message, false))
+    .finally(() => { renderSync(); renderProgress(); });
+}
+
+adoptSessionFromUrl();
+// A magic link opened in a tab ALREADY showing the app only changes the fragment,
+// which does not reload the page - so the token would never be seen without this.
+window.addEventListener('hashchange', adoptSessionFromUrl);
+
 // ==================================================================== pieces
 
 initPieceView({ audio, ensureAudio });
@@ -577,6 +649,7 @@ initPieceView({ audio, ensureAudio });
 
 if (!progress.data.seenWelcome && progress.data.sessions.length === 0) showWelcome();
 checkStorage();
+renderSync();
 renderStageHeader();
 fillPatterns();
 drawStrip();

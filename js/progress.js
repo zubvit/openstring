@@ -36,6 +36,12 @@ export class Progress {
     }
   }
 
+  /** Re-read from storage - another tab may have practised since we loaded. */
+  reload() {
+    this.data = this.#load();
+    return this.data;
+  }
+
   save() {
     try {
       this.storage?.setItem(KEY, JSON.stringify(this.data));
