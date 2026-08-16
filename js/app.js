@@ -412,6 +412,12 @@ function drawTimingPlot(result) {
 
 function renderProgress() {
   const s = progress.summary();
+  const nudge = $('backupNudge');
+  nudge.hidden = !progress.needsBackup();
+  if (!nudge.hidden) {
+    nudge.textContent = 'You have a few weeks of practice saved here and no backup. '
+      + 'Clearing your browser data would erase it. Export takes one click.';
+  }
   $('statsGrid').innerHTML = [
     ['Sessions', s.sessions],
     ['Notes asked', s.asked],

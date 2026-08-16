@@ -15,6 +15,7 @@ const blank = () => ({
   rhythm: [],       // { date, bpm, patternId, meanAbsErrorMs, verdict }
   stageId: null,    // where the curriculum has got to
   seenWelcome: false,
+  lastExport: 0,
   createdAt: Date.now(),
 });
 
@@ -105,7 +106,24 @@ export class Progress {
     };
   }
 
-  export() { return JSON.stringify(this.data, null, 2); }
+  export() {
+    this.data.lastExport = Date.now();
+    this.save();
+    return JSON.stringify(this.data, null, 2);
+  }
+
+  /**
+   * Should we nudge for a backup? Browser storage is not durable - clearing site
+   * data, a new machine or a wiped profile all lose everything, silently. Rather
+   * than run accounts (which would mean a server, a bill and other people's
+   * passwords), the honest fix is to make the export obvious once there is
+   * something worth losing.
+   */
+  needsBackup(now = Date.now()) {
+    if (this.data.sessions.length < 4) return false;      // nothing much to lose yet
+    const since = now - (this.data.lastExport || 0);
+    return since > 21 * 86400000;
+  }
 
   import(json) {
     const parsed = JSON.parse(json);

@@ -263,3 +263,9 @@ table.heatmap td { padding: 1px; }
 .help-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 .storage-warn { font-size: .86rem; color: var(--bad); }
+
+.backup-nudge {
+  font-size: .86rem; color: var(--ink);
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  border-radius: 8px; padding: .55rem .7rem;
+}
