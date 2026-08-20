@@ -6,7 +6,7 @@ import { ROOTS, QUALITY_ORDER, shapesFor, shapeNotes, chordToneNames, chordName 
 import { targetFor, ChordAttempt, ChordProgress, DRILL_POOL } from './chord-drill.js';
 import { STANDARD_TUNING } from './theory.js';
 import {
-  soundingAt, writtenAt, hzToMidiFloat, centsFromTarget, noteName, pitchClassName,
+  soundingAt, writtenAt, hzToMidiFloat, centsFromTarget, noteName, pitchClassName, compareNote,
   positionId, parsePositionId, positionsFor, midiToHz,
 } from './theory.js';
 import { renderNote, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
@@ -75,7 +75,9 @@ const read = {
   target: null,      // { string, fret, sounding, written }
   shownAt: 0,
   graceUntil: 0,
-  judged: false,
+  judged: false,      // resolved: found it, or skipped
+  attempts: 0,        // wrong tries at THIS note
+  lastHeard: null,    // the pitch already counted, so a ringing string is not counted twice
   asked: 0,
   correct: 0,
   times: [],
@@ -113,6 +115,8 @@ function nextQuestion() {
   // Ignore the tail of the previous note still ringing into the microphone.
   read.graceUntil = read.shownAt + 350;
   read.judged = false;
+  read.attempts = 0;
+  read.lastHeard = null;
   audio.resetTracking();
 
   $('staffHost').innerHTML = renderNote(read.target.written, { label: '' });
@@ -127,7 +131,6 @@ function updateHint() {
   if (!$('showHint').checked || !read.target) { host.hidden = true; host.innerHTML = ''; return; }
   host.hidden = false;
   host.innerHTML = renderFretboard({
-    strings: stage.region.strings,
     minFret: stage.region.minFret,
     maxFret: Math.max(stage.region.minFret + 3, stage.region.maxFret),
     mark: { string: read.target.string, fret: read.target.fret },
@@ -135,59 +138,65 @@ function updateHint() {
 }
 $('showHint').addEventListener('change', updateHint);
 
+/**
+ * Judge one played note against the note on the staff.
+ *
+ * A wrong answer does NOT end the question. It used to: the app named the note,
+ * drew the fretboard with the answer on it, and moved on after a second and a
+ * half - which meant the one moment you were actually about to learn something
+ * was the moment it did the work for you. Finding the note yourself is the
+ * whole exercise, so now the question stays up until you find it.
+ *
+ * The only help offered is which way to go. That turns a wrong answer into a
+ * search, which is the skill; naming the note just ends it. Anything more is
+ * there when you ask for it - the hint tickbox, or skip.
+ */
 function judge(heardMidi, hz) {
   if (!read.target || read.judged) return;
-  read.judged = true;
 
-  const ms = performance.now() - read.shownAt;
   const target = read.target.sounding;
-  const exact = heardMidi === target;
-  // Same letter, wrong octave: right idea, wrong string. Worth saying so.
-  const sameClass = ((heardMidi % 12) + 12) % 12 === ((target % 12) + 12) % 12;
-
-  read.asked += 1;
-  if (exact) read.correct += 1;
-  if (exact) read.times.push(ms);
-
-  progress.recordAnswer(positionId(read.target.string, read.target.fret), { correct: exact, ms });
-
+  const { verdict, direction } = compareNote(target, heardMidi);
   const main = $('verdictMain');
   const sub = $('verdictSub');
-  if (exact) {
-    const cents = centsFromTarget(hz, target);
-    main.textContent = t('read.correct', { note: pitchClassName(target) });
-    main.className = 'verdict-main good';
-    const tuning = Math.abs(cents) > 25 ? ` · ${t(cents > 0 ? 'read.sharp' : 'read.flat')} (${cents > 0 ? '+' : ''}${cents})` : '';
-    sub.textContent = t('read.seconds', { seconds: (ms / 1000).toFixed(1) }) + tuning;
-  } else {
-    main.textContent = t('read.wrong', { heard: noteName(heardMidi), wanted: pitchClassName(target) });
+
+  if (verdict !== 'right') {
+    read.attempts += 1;
+    main.textContent = t(verdict === 'octave' ? 'read.rightNoteWrongString' : 'read.notThatOne',
+      { heard: noteName(heardMidi) });
     main.className = 'verdict-main bad';
-    sub.textContent = sameClass
-      ? t('read.wrongOctave')
-      : t('read.whereItWas', { string: read.target.string, fret: read.target.fret });
+    sub.textContent = t(direction === 'higher' ? 'read.tryHigher' : 'read.tryLower');
+    // Flash the notehead, then put it back: the question is still standing.
+    $('staffHost').innerHTML = renderNote(read.target.written, { state: 'wrong' });
+    setTimeout(() => {
+      if (read.active && !read.judged && read.target) {
+        $('staffHost').innerHTML = renderNote(read.target.written, { label: '' });
+      }
+    }, 450);
+    return;
   }
 
-  $('staffHost').innerHTML = renderNote(read.target.written, { state: exact ? 'correct' : 'wrong' });
+  // Found it. One record per question, however many tries it took - the
+  // scheduler wants to know whether you knew this note, not how many notes you
+  // played while hunting for it.
+  read.judged = true;
+  const ms = performance.now() - read.shownAt;
+  const clean = read.attempts === 0;
 
-  // Always show where it was after a mistake, hint setting or not.
-  if (!exact) {
-    const host = $('hintHost');
-    host.hidden = false;
-    const wrongPos = positionsFor(heardMidi, {
-      strings: stage.region.strings, minFret: stage.region.minFret, maxFret: stage.region.maxFret + 2,
-    })[0] || null;
-    host.innerHTML = renderFretboard({
-      strings: stage.region.strings,
-      minFret: stage.region.minFret,
-      maxFret: Math.max(stage.region.minFret + 3, stage.region.maxFret),
-      mark: { string: read.target.string, fret: read.target.fret },
-      wrongMark: wrongPos,
-    });
-  }
+  read.asked += 1;
+  if (clean) { read.correct += 1; read.times.push(ms); }
+  progress.recordAnswer(positionId(read.target.string, read.target.fret), { correct: clean, ms });
+
+  const cents = centsFromTarget(hz, target);
+  main.textContent = t(clean ? 'read.correct' : 'read.foundIt', { note: pitchClassName(target) });
+  main.className = 'verdict-main good';
+  const tuning = Math.abs(cents) > 25 ? ` · ${t(cents > 0 ? 'read.sharp' : 'read.flat')} (${cents > 0 ? '+' : ''}${cents})` : '';
+  sub.textContent = t('read.seconds', { seconds: (ms / 1000).toFixed(1) }) + tuning;
+
+  $('staffHost').innerHTML = renderNote(read.target.written, { state: 'correct' });
 
   updateSessionCard();
   renderStageHeader();
-  setTimeout(() => { if (read.active) nextQuestion(); }, exact ? 750 : 1900);
+  setTimeout(() => { if (read.active) nextQuestion(); }, clean ? 750 : 1100);
 }
 
 function updateSessionCard() {
@@ -212,7 +221,12 @@ audio.onPitch = (stable, raw) => {
   }
   if (!read.active || read.judged || !stable) return;
   if (performance.now() < read.graceUntil) return;
-  judge(Math.round(hzToMidiFloat(stable.hz)), stable.hz);
+  // A plucked string reports the same pitch every frame for seconds. Only a
+  // change of note is a new attempt, or one wrong note would count as fifty.
+  const heard = Math.round(hzToMidiFloat(stable.hz));
+  if (heard === read.lastHeard) return;
+  read.lastHeard = heard;
+  judge(heard, stable.hz);
 };
 
 audio.onLevel = (r) => {
@@ -829,7 +843,10 @@ function judgeChordNote(midi) {
   if (verdict === 'wrong' || verdict === 'octave') {
     $('cVerdictMain').textContent = t(verdict === 'octave' ? 'chords.octaveOff' : 'chords.wrongNote');
     $('cVerdictMain').className = 'verdict-main bad';
-    $('cVerdictSub').textContent = t('chords.expected', { note: noteName(a.expected) });
+    // The notes are already on the staff. Naming the one it is waiting for
+    // would read them for him, which is the exercise.
+    const { direction } = compareNote(a.expected, midi);
+    $('cVerdictSub').textContent = t(direction === 'higher' ? 'read.tryHigher' : 'read.tryLower');
     drawChordQuestion();
     return;
   }

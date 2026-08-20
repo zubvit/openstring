@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { updateStat, emptyStat, weightFor, pickNext, isFluent, poolMastery } from '../js/srs.js';
 import { Progress, MemoryStorage } from '../js/progress.js';
 import { STAGES, poolFor, readyToAdvance, expectedOnsets, RHYTHMS, nextStage } from '../js/curriculum.js';
-import { yForDiatonic, ledgersFor, renderNote, LINE_GAP } from '../js/staff.js';
+import { yForDiatonic, ledgersFor, renderNote, renderFretboard, stringWeight, LINE_GAP } from '../js/staff.js';
 import { spell, writtenAt } from '../js/theory.js';
 
 let pass = 0;
@@ -114,16 +114,53 @@ t('streak counts consecutive days, not total', () => {
 
 // ------------------------------------------------------------------ curriculum
 
-t('stage one is one octave, eight positions', () => {
+// Stage one is three notes. The point of it is that reading starts by knowing a
+// very few anchors cold, not by spelling upward from the bottom line, and on a
+// guitar the anchors pick themselves: three open strings land ON staff lines.
+t('stage one is the three landmarks, and they are all open strings', () => {
   const pool = poolFor(STAGES[0]);
+  assert.equal(STAGES[0].id, 'landmarks');
+  assert.deepEqual(pool.sort(), ['s1f0', 's2f0', 's3f0'], 'the three open treble strings');
+  for (const id of pool) assert.ok(id.endsWith('f0'), `${id} needs a finger`);
+});
+
+// What makes a landmark a landmark is that it is instantly placeable: inside
+// the staff, no ledger lines to count. Two of the three sit on lines and the
+// third in the top space - the blurb has to say which, and said "top line"
+// until this test disagreed.
+t('every landmark is inside the staff, with no ledger lines to count', () => {
+  const BOTTOM = 100;
+  const place = (string) => {
+    const d = spell(writtenAt(string, 0)).diatonic;
+    const gaps = (BOTTOM - yForDiatonic(d, BOTTOM)) / LINE_GAP;
+    return { onLine: gaps === Math.round(gaps), gaps, ledgers: ledgersFor(d) };
+  };
+  for (const [string, name] of [[3, 'G'], [2, 'B'], [1, 'E']]) {
+    assert.deepEqual(place(string).ledgers, [],
+      `${name} needs a ledger line, so it is not an easy landmark`);
+  }
+  assert.equal(place(3).onLine, true, 'open G is the second line - the one the clef curls around');
+  assert.equal(place(2).onLine, true, 'open B is the middle line');
+  assert.equal(place(1).onLine, false, 'open high E is the TOP SPACE, not the top line');
+  assert.equal(place(1).gaps, 3.5, 'half a gap above the fourth line');
+});
+
+t('the octave stage follows, and it contains the landmarks', () => {
+  const pool = poolFor(STAGES[1]);
+  assert.equal(STAGES[1].id, 'open-top');
   assert.equal(pool.length, 8);
   assert.ok(pool.includes('s1f0'));  // open high E
   assert.ok(pool.includes('s3f0'));  // open G
   assert.ok(!pool.includes('s4f0'), 'bottom strings are a later stage');
+  for (const id of poolFor(STAGES[0])) {
+    assert.ok(pool.includes(id), `${id} was a landmark and must not disappear`);
+  }
 });
 
 t('advancement requires fluency across the whole region, not a lucky run', () => {
-  const stage = STAGES[0];
+  // The eight-position octave stage: its arithmetic needs a region big enough
+  // for one weak spot to be outvoted.
+  const stage = STAGES[1];
   const pool = poolFor(stage);
   const stats = {};
 
@@ -141,6 +178,19 @@ t('advancement requires fluency across the whole region, not a lucky run', () =>
   // Half the region slow - not ready.
   pool.slice(0, 4).forEach((id) => { stats[id].avgMs = 4000; });
   assert.equal(readyToAdvance(stage, stats).ready, false);
+});
+
+// Three notes leaves nowhere to hide: with so small a region, one note you have
+// not got yet is a third of it, and the stage will not let you past.
+t('the landmark stage needs all three, because there are only three', () => {
+  const stage = STAGES[0];
+  const pool = poolFor(stage);
+  const fluent = { attempts: 8, correct: 8, accuracy: 0.95, avgMs: 1100, lastSeen: Date.now(), streak: 8 };
+  const stats = Object.fromEntries(pool.map((id) => [id, { ...fluent }]));
+  assert.equal(readyToAdvance(stage, stats).ready, true);
+
+  stats[pool[0]].avgMs = 4000;
+  assert.equal(readyToAdvance(stage, stats).ready, false, 'one slow landmark out of three is not ready');
 });
 
 t('stages chain and then stop', () => {
@@ -216,6 +266,32 @@ t('renderNote produces valid self-contained svg', () => {
   const open = (svg.match(/</g) || []).length;
   const close = (svg.match(/>/g) || []).length;
   assert.equal(open, close, 'tags balance');
+});
+
+// ------------------------------------------------------------- the fretboard
+
+t('the hint shows the whole neck, not just the stage you are on', () => {
+  // It used to draw only the stage's strings, so early on you saw three lines
+  // floating with no idea which three. You are looking at a guitar; show one.
+  const svg = renderFretboard({ mark: { string: 3, fret: 0 } });
+  assert.equal((svg.match(/class="fb-string"/g) || []).length, 6);
+});
+
+t('lower strings are drawn thicker, in the ratio a real set has', () => {
+  const w = [1, 2, 3, 4, 5, 6].map(stringWeight);
+  for (let i = 1; i < w.length; i++) {
+    assert.ok(w[i] > w[i - 1], `string ${i + 1} is not thicker than string ${i}`);
+  }
+  const ratio = w[5] / w[0];
+  // .011 to .043 inches is about 3.9x. Anything near 1 would be invisible.
+  assert.ok(ratio > 3 && ratio < 5, `sixth string is ${ratio.toFixed(1)}x the first`);
+  assert.ok(w[0] >= 0.5, 'the thinnest string still has to be visible');
+});
+
+t('the drawn thickness follows the string, not the row it happens to be in', () => {
+  const svg = renderFretboard({ strings: [4, 5, 6], mark: null });
+  const widths = [...svg.matchAll(/class="fb-string" stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
+  assert.deepEqual(widths, [stringWeight(4), stringWeight(5), stringWeight(6)]);
 });
 
 console.log(`learning: ${pass} groups passed`);

@@ -144,3 +144,24 @@ export function parsePositionId(id) {
   if (!m) return null;
   return { string: Number(m[1]), fret: Number(m[2]) };
 }
+
+/**
+ * What a played note is, next to the note that was wanted.
+ *
+ * `direction` is the way the PLAYER has to move to reach the target, which is
+ * the opposite of where they are - saying "higher" when they overshot would
+ * send them further away. It is deliberately the only help given for a wrong
+ * answer: it turns the question into a search, which is the thing being
+ * practised, where naming the note simply ends it.
+ *
+ * "octave" is its own answer because on a guitar the same note lives in up to
+ * six places, and the right note on the wrong string is not the same mistake as
+ * the wrong note.
+ */
+export function compareNote(expectedMidi, playedMidi) {
+  if (playedMidi == null || expectedMidi == null) return { verdict: 'wrong', direction: null };
+  if (playedMidi === expectedMidi) return { verdict: 'right', direction: null };
+  const direction = playedMidi > expectedMidi ? 'lower' : 'higher';
+  if ((playedMidi - expectedMidi) % 12 === 0) return { verdict: 'octave', direction };
+  return { verdict: 'wrong', direction };
+}

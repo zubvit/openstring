@@ -112,7 +112,7 @@ t('every key referenced in the code exists in English', () => {
 
 t('the dynamic key families are complete', () => {
   // Built as t(`stage.${id}.title`) etc, so a missing one only shows at runtime.
-  const stageIds = ['open-top', 'open-bottom', 'open-all', 'open-chromatic', 'position-v', 'first-twelve'];
+  const stageIds = ['landmarks', 'open-top', 'open-bottom', 'open-all', 'open-chromatic', 'position-v', 'first-twelve'];
   const layers = ['notes', 'timing', 'evenness', 'dynamics', 'colour', 'legato'];
   const patterns = ['quarters', 'half-quarters', 'eighths', 'with-rests', 'dotted', 'syncopated', 'sixteenths'];
   const missing = [];

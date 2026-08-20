@@ -150,7 +150,8 @@ svg.staff { width: min(100%, 320px); height: auto; }
 
 .hint-host { margin-top: .7rem; display: grid; place-items: center; }
 svg.fretboard { width: min(100%, 300px); height: auto; }
-.fb-string { stroke: var(--ink); opacity: .35; stroke-width: 1; }
+/* stroke-width is per string, set on the element - see stringWeight(). */
+.fb-string { stroke: var(--ink); opacity: .45; }
 .fb-fret { stroke: var(--ink); opacity: .25; stroke-width: 1; }
 .fb-nut { stroke: var(--ink); opacity: .8; stroke-width: 3; }
 .fb-label, .fb-num { fill: var(--ink-soft); font-size: 9px; }
@@ -399,7 +400,7 @@ table.heatmap td { padding: 1px; }
 .chord-notes { font-size: .9rem; }
 
 svg.chordbox { width: 132px; height: auto; }
-.cb-string { stroke: var(--ink); opacity: .45; stroke-width: 1; }
+.cb-string { stroke: var(--ink); opacity: .5; }
 .cb-fret { stroke: var(--ink); opacity: .25; stroke-width: 1; }
 .cb-nut { stroke: var(--ink); opacity: .85; stroke-width: 4; }
 .cb-dot, .cb-barre { fill: var(--accent); }

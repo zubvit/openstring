@@ -15,12 +15,37 @@ import { notesInRegion, positionId } from './theory.js';
 
 export const STAGES = [
   {
+    // Landmarks first.
+    //
+    // The usual way to start is the acronyms - Every Good Boy, FACE - which
+    // make you spell your way up from the bottom line every time you meet a
+    // note. That is not reading, it is decoding, and it stays slow because the
+    // work does not shrink with practice.
+    //
+    // The alternative is to memorise a very few anchors and read everything
+    // else as a distance from the nearest one. On a guitar those anchors pick
+    // themselves: three open strings land exactly on staff lines, so the
+    // beginner's first three notes need no fingers at all and cannot be
+    // fumbled. Second line G is the line the treble clef curls around, which
+    // is why it is called the G clef; B is the middle line and E is the top
+    // space. Two lines and a space, all three of them open strings.
+    //
+    // Three notes is a deliberately tiny first stage. It is meant to be
+    // finished in a sitting.
+    id: 'landmarks',
+    title: 'Three landmarks',
+    blurb: 'Three notes only, and all three are open strings — nothing to finger. G sits on the second line, the one the clef curls around. B is the middle line. E is the top space, just under the highest line. Learn where these three are and every other note can be found by stepping from the nearest one.',
+    region: { strings: [1, 2, 3], minFret: 0, maxFret: 0, naturalsOnly: true },
+    rhythm: ['quarters'],
+    advice: 'Do not spell your way up from the bottom line. Look at where the note sits and ask first whether it is one of these three — that recognition, not counting, is what reading is.',
+  },
+  {
     id: 'open-top',
     title: 'Open position, top three strings',
-    blurb: 'E, B and G strings, first three frets, natural notes only. This is exactly one octave — G up to G — with nothing left over.',
+    blurb: 'E, B and G strings, first three frets, natural notes only. This is exactly one octave — G up to G — with nothing left over. Your three landmarks are in here; the new notes are the ones a step or a skip away from them.',
     region: { strings: [1, 2, 3], minFret: 0, maxFret: 3, naturalsOnly: true },
     rhythm: ['quarters', 'half-quarters'],
-    advice: 'Say each note name out loud as you play it. Out loud matters — it forces the name and the place to arrive together.',
+    advice: 'Say each note name out loud as you play it. Out loud matters — it forces the name and the place to arrive together. When a note is unfamiliar, find the landmark nearest it and step from there.',
   },
   {
     id: 'open-bottom',

@@ -33,6 +33,21 @@ export function ledgersFor(diatonic) {
   return out;
 }
 
+export const ALL_STRINGS = [1, 2, 3, 4, 5, 6];
+
+/**
+ * How thick to draw a string.
+ *
+ * A real set runs from about .011 inches on the first to about .043 on the
+ * sixth - close to four times - and drawn to that ratio the diagram reads as a
+ * guitar instead of as a grid. Drawn to a gentler ratio it reads as a grid with
+ * a rendering bug, so the spread is deliberately wide enough to see at the size
+ * these diagrams actually appear.
+ */
+export function stringWeight(string) {
+  return Number((0.8 + (string - 1) * 0.44).toFixed(2));
+}
+
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** x of the clef's left edge. The staff lines start at 14; this leaves it air. */
@@ -124,7 +139,7 @@ export function renderNote(writtenMidi, {
 
 /** A small fretboard diagram used for feedback after an answer. */
 export function renderFretboard({
-  strings = [1, 2, 3, 4, 5, 6], minFret = 0, maxFret = 4,
+  strings = ALL_STRINGS, minFret = 0, maxFret = 4,
   mark = null,        // { string, fret } to highlight
   wrongMark = null,   // { string, fret } played by mistake
   width = 260,
@@ -137,11 +152,14 @@ export function renderFretboard({
   const parts = [];
 
   // Strings run left to right; string 1 (thin) drawn at the top, as you see it
-  // looking down at the guitar in your lap.
+  // looking down at the guitar in your lap. Drawn to their real thickness, so
+  // the picture tells you WHICH string without counting rows - which is the
+  // thing you are actually looking for when you glance at it mid-piece.
   const ordered = [...strings].sort((a, b) => a - b);
   ordered.forEach((s, i) => {
     const y = padT + i * rowGap;
-    parts.push(`<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" class="fb-string"/>`);
+    parts.push(`<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" `
+      + `class="fb-string" stroke-width="${stringWeight(s)}"/>`);
     parts.push(`<text x="${padL - 10}" y="${y + 4}" class="fb-label" text-anchor="end">${s}</text>`);
   });
 
@@ -312,7 +330,8 @@ export function renderChordBox(shape, { width = 132, showFingers = true } = {}) 
   // Strings, low E on the left, as you face the neck.
   for (let i = 0; i < 6; i++) {
     const x = padL + i * colW;
-    parts.push(`<line x1="${x}" y1="${gridTop}" x2="${x}" y2="${gridBottom}" class="cb-string"/>`);
+    parts.push(`<line x1="${x}" y1="${gridTop}" x2="${x}" y2="${gridBottom}" `
+      + `class="cb-string" stroke-width="${stringWeight(6 - i)}"/>`);
   }
   for (let f = 0; f <= SPAN; f++) {
     const y = gridTop + f * rowH;

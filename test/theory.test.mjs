@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {
   midiToHz, hzToMidiFloat, centsOff, centsFromTarget, spell, noteName, pitchClassName, isNatural,
   soundingAt, writtenAt, positionsFor, notesInRegion, STANDARD_TUNING,
-} from '../js/theory.js';
+ compareNote, } from '../js/theory.js';
 
 let n = 0;
 const t = (name, fn) => { fn(); n++; };
@@ -96,6 +96,41 @@ t('month one region is exactly one octave of naturals', () => {
   const lo = Math.min(...notes.map((x) => x.sounding));
   const hi = Math.max(...notes.map((x) => x.sounding));
   assert.equal(hi - lo, 12); // spans exactly an octave, G3 to G4
+});
+
+// ------------------------------------------------------- judging a played note
+
+t('the right note is the right note', () => {
+  assert.deepEqual(compareNote(60, 60), { verdict: 'right', direction: null });
+});
+
+// The direction is where the PLAYER must go, not where they are. Telling
+// someone who overshot to go higher sends them further away, and this drill
+// gives no other help - so it has to be the right way round.
+t('the direction points at the target, not at the mistake', () => {
+  assert.equal(compareNote(60, 55).direction, 'higher', 'played too low, so go up');
+  assert.equal(compareNote(60, 65).direction, 'lower', 'played too high, so go down');
+});
+
+t('the right note on the wrong string is its own answer', () => {
+  assert.equal(compareNote(60, 72).verdict, 'octave');
+  assert.equal(compareNote(60, 48).verdict, 'octave');
+  assert.equal(compareNote(60, 72).direction, 'lower', 'and still says which way');
+  assert.equal(compareNote(60, 61).verdict, 'wrong');
+  assert.equal(compareNote(60, 59).verdict, 'wrong');
+});
+
+t('silence is wrong, with nothing to say about direction', () => {
+  assert.deepEqual(compareNote(60, null), { verdict: 'wrong', direction: null });
+  assert.deepEqual(compareNote(null, 60), { verdict: 'wrong', direction: null });
+});
+
+t('the verdict never names the note that was wanted', () => {
+  // Whatever comes back must not be enough to answer the question with. The
+  // whole change here is that a wrong answer leaves you still looking.
+  const r = compareNote(64, 60);
+  assert.deepEqual(Object.keys(r).sort(), ['direction', 'verdict']);
+  assert.ok(!Object.values(r).includes(64));
 });
 
 console.log(`theory: ${n} groups passed`);

@@ -13,7 +13,7 @@
 
 import { pickNext, updateStat, emptyStat, isFluent } from './srs.js';
 import { shapesFor, shapeNotes, parseChordName, chordName } from './chords.js';
-import { soundingToWritten } from './theory.js';
+import { soundingToWritten, compareNote } from './theory.js';
 
 /**
  * The chords worth reading first: the open shapes a beginner actually meets,
@@ -49,9 +49,7 @@ export function targetFor(name) {
  * the wrong string is a different error from playing the wrong note.
  */
 export function gradeNote(expectedMidi, playedMidi) {
-  if (playedMidi === expectedMidi) return 'right';
-  if (playedMidi != null && (playedMidi - expectedMidi) % 12 === 0) return 'octave';
-  return 'wrong';
+  return compareNote(expectedMidi, playedMidi).verdict;
 }
 
 /**
