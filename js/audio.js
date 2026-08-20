@@ -201,6 +201,21 @@ export class AudioEngine {
     this._raf = requestAnimationFrame(() => this.#pollPitch());
   }
 
+  /**
+   * Widen or narrow the pitch analysis window.
+   *
+   * The drills want it short: a wide window is slow to notice that the note has
+   * changed. The tuner wants it wide: at 2048 samples a low E fits barely two
+   * periods, which is where a detector starts guessing octaves. Nothing else in
+   * the app should touch this.
+   */
+  setAnalysisWindow(size) {
+    if (!this.analyser) return;
+    this.analyser.fftSize = size;
+    this._analysisBuf = new Float32Array(this.analyser.fftSize);
+    this._tracker.reset();
+  }
+
   resetTracking() {
     this._tracker.reset();
     this._onsets?.reset();
@@ -295,4 +310,22 @@ export class Metronome {
     this.running = false;
     clearTimeout(this._timer);
   }
+}
+
+/**
+ * An AudioContext for output only.
+ *
+ * The metronome must work with no microphone at all - asking for permission to
+ * record just to hear a click would be both rude and a reason not to open the
+ * app. Kept as one lazily-created context because browsers cap how many a page
+ * may have, and creating one per click would exhaust that in a practice session.
+ */
+let _outCtx = null;
+export function outputContext() {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return null;
+  if (!_outCtx || _outCtx.state === 'closed') _outCtx = new Ctx();
+  // Browsers start it suspended until a gesture; every caller here is a click.
+  if (_outCtx.state === 'suspended') _outCtx.resume();
+  return _outCtx;
 }

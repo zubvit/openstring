@@ -58,6 +58,7 @@
     <button class="tab is-active" data-view="read" role="tab" data-i18n="tab.read">Read</button>
     <button class="tab" data-view="rhythm" role="tab" data-i18n="tab.rhythm">Rhythm</button>
     <button class="tab" data-view="piece" role="tab" data-i18n="tab.pieces">Pieces</button>
+    <button class="tab" data-view="tools" role="tab" data-i18n="tab.tools">Tools</button>
     <button class="tab" data-view="progress" role="tab" data-i18n="tab.progress">Progress</button>
   </nav>
   <button class="help-btn" id="helpBtn" data-i18n-title="tab.help" data-i18n-aria-label="tab.help" title="What is this?" aria-label="What is this?">?</button>
@@ -208,6 +209,74 @@
     <h2 data-i18n="piece.chunksHeading">Chunks</h2>
     <p class="muted" data-i18n="piece.chunksIntro">Seams are the joins between chunks. They get extra attention because that is where pieces come apart.</p>
     <div class="chunk-list" id="chunkList"></div>
+  </div>
+
+</section>
+
+<!-- -------------------------------------------------------------- TOOLS -->
+<section class="view" id="view-tools">
+
+  <div class="card">
+    <h2 data-i18n="tools.tunerHeading">Tuner</h2>
+    <p class="muted" data-i18n="tools.tunerIntro">Play one string at a time. It listens for the nearest open string and tells you which way to turn the peg.</p>
+
+    <div class="tune-mode">
+      <label class="check"><input type="radio" name="tuneMode" value="guitar" checked> <span data-i18n="tools.modeGuitar">Guitar strings</span></label>
+      <label class="check"><input type="radio" name="tuneMode" value="chromatic"> <span data-i18n="tools.modeChromatic">Any note</span></label>
+    </div>
+
+    <div class="tune-face" id="tuneFace">
+      <div class="tune-note" id="tuneNote">—</div>
+      <div class="tune-dial">
+        <div class="tune-scale"><span>-50</span><span>0</span><span>+50</span></div>
+        <div class="tune-track">
+          <div class="tune-zone"></div>
+          <div class="tune-centre"></div>
+          <div class="tune-needle" id="tuneNeedle"></div>
+        </div>
+      </div>
+      <div class="tune-cents" id="tuneCents">—</div>
+      <div class="tune-verdict" id="tuneVerdict" aria-live="polite" data-i18n="tools.waiting">Play a string.</div>
+    </div>
+
+    <div class="string-row" id="stringRow"></div>
+
+    <div class="controls">
+      <button class="btn primary" id="startTune" data-i18n="tools.start">Start listening</button>
+      <button class="btn" id="resetTune" data-i18n="tools.resetTicks" disabled>Clear ticks</button>
+    </div>
+    <p class="muted small" data-i18n="tools.stringsHint">A tick means that string held in tune for half a second.</p>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="tools.metroHeading">Metronome</h2>
+    <p class="muted" data-i18n="tools.metroIntro">Works on its own — no microphone needed.</p>
+
+    <div class="metro-face">
+      <button class="btn round" id="bpmDown" aria-label="-1">−</button>
+      <div class="metro-bpm"><output id="metroBpm">80</output><span class="metro-unit" data-i18n="tools.bpm">bpm</span></div>
+      <button class="btn round" id="bpmUp" aria-label="+1">+</button>
+    </div>
+
+    <input type="range" id="metroRange" min="30" max="240" step="1" value="80" class="metro-range" data-i18n-aria-label="tools.tempo" aria-label="Tempo">
+
+    <div class="beat-row" id="beatRow"></div>
+
+    <div class="controls">
+      <button class="btn primary" id="startMetro" data-i18n="tools.metroStart">Start</button>
+      <button class="btn" id="tapBtn" data-i18n="tools.tap">Tap</button>
+      <label class="metro-bars"><span data-i18n="tools.beatsPerBar">Beats in a bar</span>
+        <select id="beatsSelect">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+      </label>
+    </div>
+    <p class="muted small" data-i18n="tools.tapHint">Tap four times in time to set the tempo.</p>
   </div>
 
 </section>

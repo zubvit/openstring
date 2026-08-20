@@ -327,3 +327,56 @@ table.heatmap td { padding: 1px; }
 [dir="rtl"] .rhythm-strip,
 [dir="rtl"] .timing-plot,
 [dir="rtl"] table.heatmap { direction: ltr; }
+
+/* --------------------------------------------------------------- tools */
+/* Tuner. Big enough to read from playing position, which is a metre away and
+   at an angle, so the note name is oversized and the needle is coarse. */
+.tune-mode { display: flex; gap: 1rem; margin: .6rem 0 .2rem; flex-wrap: wrap; }
+.tune-face { display: grid; justify-items: center; gap: .35rem; margin: .6rem 0 .8rem; }
+.tune-note {
+  font-size: clamp(2.6rem, 12vw, 4rem); font-weight: 650; line-height: 1;
+  letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+}
+.tune-dial { width: min(100%, 360px); }
+.tune-scale { display: flex; justify-content: space-between; font-size: .7rem; color: var(--ink-soft); margin-bottom: .2rem; }
+.tune-track { position: relative; height: 14px; background: var(--line); border-radius: 7px; }
+/* The in-tune window, drawn to scale: 5 cents of a 100-cent span. */
+.tune-zone { position: absolute; inset-block: 0; left: 45%; width: 10%; background: var(--accent-soft); border-radius: 7px; }
+.tune-centre { position: absolute; top: -3px; left: 50%; width: 2px; height: 20px; background: var(--ink); opacity: .35; }
+.tune-needle {
+  position: absolute; top: -5px; left: 50%; width: 4px; height: 24px;
+  background: var(--ink-soft); border-radius: 2px; transform: translateX(-50%);
+  transition: left .1s linear, background-color .15s linear;
+}
+.tune-needle.in-tune { background: var(--good); }
+.tune-needle.near { background: var(--warn); }
+.tune-needle.far { background: var(--bad); }
+.tune-cents { font-variant-numeric: tabular-nums; color: var(--ink-soft); font-size: .9rem; }
+.tune-verdict { font-weight: 600; min-height: 1.4em; }
+.tune-verdict.good { color: var(--good); }
+.tune-verdict.warn { color: var(--warn); }
+.tune-verdict.bad { color: var(--bad); }
+
+.string-row { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; margin-bottom: .8rem; }
+.string-pill {
+  min-width: 3.1rem; padding: .35rem .5rem; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--panel); text-align: center; font-size: .85rem; color: var(--ink-soft);
+}
+.string-pill .sp-name { font-weight: 650; color: var(--ink); }
+.string-pill .sp-num { font-size: .7rem; display: block; }
+.string-pill.is-heard { border-color: var(--accent); background: var(--accent-soft); }
+.string-pill.is-done { border-color: var(--good); color: var(--good); }
+.string-pill.is-done .sp-name::after { content: ' ✓'; }
+
+/* Metronome. */
+.metro-face { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: .6rem 0; }
+.metro-bpm { display: flex; align-items: baseline; gap: .3rem; }
+.metro-bpm output { font-size: clamp(2.2rem, 10vw, 3.2rem); font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1; }
+.metro-unit { color: var(--ink-soft); font-size: .9rem; }
+.btn.round { width: 2.4rem; height: 2.4rem; border-radius: 50%; padding: 0; font-size: 1.3rem; line-height: 1; }
+.metro-range { width: 100%; }
+.metro-bars { display: flex; align-items: center; gap: .4rem; font-size: .85rem; color: var(--ink-soft); }
+.beat-row { display: flex; gap: .5rem; justify-content: center; margin: .8rem 0; min-height: 16px; }
+.beat-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--line); transition: background-color .05s linear, transform .05s linear; }
+.beat-dot.is-on { background: var(--accent); transform: scale(1.25); }
+.beat-dot.is-accent.is-on { background: var(--good); }

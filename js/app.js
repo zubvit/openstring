@@ -1,6 +1,8 @@
 // Openstring - wiring the drills to the audio engine and the progress store.
 
-import { AudioEngine, Metronome } from './audio.js';
+import { AudioEngine, Metronome, outputContext } from './audio.js';
+import { Tuner, tapTempo, readingView, STRING_ORDER } from './tuner.js';
+import { STANDARD_TUNING } from './theory.js';
 import {
   soundingAt, writtenAt, hzToMidiFloat, centsFromTarget, noteName, pitchClassName,
   positionId, parsePositionId, positionsFor, midiToHz,
@@ -27,6 +29,10 @@ document.querySelectorAll('.tab').forEach((tab) => {
     document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('is-active', t === tab));
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('is-active', v.id === `view-${tab.dataset.view}`));
     if (tab.dataset.view === 'progress') renderProgress();
+    // Leaving the tools tab shuts them both down. A metronome still ticking
+    // behind a drill would fight the drill's own metronome, and a tuner still
+    // holding the wide analysis window would slow the drills down.
+    if (tab.dataset.view !== 'tools') { stopTuning(); stopMetro(); }
   });
 });
 
@@ -176,6 +182,7 @@ function updateSessionCard() {
 }
 
 audio.onPitch = (stable, raw) => {
+  feedTuner(raw);
   // Tuner + level readout, live regardless of drill state.
   if (raw) {
     const m = Math.round(hzToMidiFloat(raw.hz));
@@ -647,6 +654,175 @@ window.addEventListener('hashchange', adoptSessionFromUrl);
 // ==================================================================== pieces
 // Started only once translations are loaded - see the boot block below.
 
+// ==================================================================== TOOLS
+//
+// A tuner and a metronome. Neither teaches anything, so by the rule this project
+// works to they would not earn their place - except that they are what you reach
+// for before the first note of every session, and both were already sitting in
+// the codebase serving the drills. Not exposing them was the odd choice.
+
+// -------------------------------------------------------------- the tuner
+
+const tune = {
+  active: false,
+  engine: new Tuner(),
+  mode: 'guitar',
+};
+
+// The drills read a 2048-sample window because they must notice a note change
+// quickly. A tuner has no such hurry and a low E needs the room.
+const TUNE_WINDOW = 4096;
+const DRILL_WINDOW = 2048;
+
+function buildStringRow() {
+  const row = $('stringRow');
+  if (!row) return;
+  row.innerHTML = STRING_ORDER.map((n) => {
+    const name = noteName(STANDARD_TUNING[n]).replace(/\d+$/, '');
+    return `<div class="string-pill" data-string="${n}">` +
+           `<span class="sp-name">${name}</span><span class="sp-num">${n}</span></div>`;
+  }).join('');
+}
+
+function paintStringRow(heard) {
+  document.querySelectorAll('.string-pill').forEach((el) => {
+    const n = Number(el.dataset.string);
+    el.classList.toggle('is-heard', tune.active && heard === n);
+    el.classList.toggle('is-done', tune.engine.settled.has(n));
+  });
+  $('resetTune').disabled = tune.engine.settled.size === 0;
+}
+
+function paintTuner(reading) {
+  const view = readingView(reading);
+  const needle = $('tuneNeedle');
+  const verdict = $('tuneVerdict');
+
+  $('tuneNote').textContent = view.note;
+  $('tuneCents').textContent = view.cents;
+  needle.style.left = `${view.needlePct}%`;
+  needle.className = view.needleClass;
+  verdict.textContent = t(view.verdictKey || (tune.active ? 'tools.waiting' : 'tools.pressStart'));
+  verdict.className = view.verdictClass;
+
+  paintStringRow(view.string);
+}
+
+async function startTuning() {
+  if (tune.active) { stopTuning(); return; }
+  if (read.active) endReadSession();
+  if (!(await ensureAudio())) return;
+  audio.setAnalysisWindow(TUNE_WINDOW);
+  tune.engine.clearNote();
+  tune.active = true;
+  $('startTune').textContent = t('tools.stop');
+  paintTuner(null);
+}
+
+function stopTuning() {
+  if (!tune.active) return;
+  tune.active = false;
+  audio.setAnalysisWindow(DRILL_WINDOW);
+  tune.engine.clearNote();
+  const btn = $('startTune');
+  if (btn) btn.textContent = t('tools.start');
+  paintTuner(null);
+}
+
+$('startTune').addEventListener('click', startTuning);
+$('resetTune').addEventListener('click', () => {
+  tune.engine.reset();
+  paintTuner(tune.active ? null : null);
+});
+
+document.querySelectorAll('input[name="tuneMode"]').forEach((r) => {
+  r.addEventListener('change', () => {
+    tune.mode = r.value;
+    tune.engine.mode = r.value;
+    tune.engine.clearNote();
+    paintTuner(null);
+  });
+});
+
+/** Called from the shared pitch callback below. */
+function feedTuner(raw) {
+  if (!tune.active) return;
+  paintTuner(tune.engine.push(raw ? raw.hz : null, performance.now()));
+}
+
+// ---------------------------------------------------------- the metronome
+
+const metro = {
+  node: null,
+  running: false,
+  bpm: 80,
+  beats: 4,
+  taps: [],
+};
+
+function buildBeatRow() {
+  const row = $('beatRow');
+  if (!row) return;
+  row.innerHTML = Array.from({ length: metro.beats }, (_, i) =>
+    `<div class="beat-dot${i === 0 && metro.beats > 1 ? ' is-accent' : ''}" data-beat="${i}"></div>`).join('');
+}
+
+function setBpm(bpm) {
+  metro.bpm = Math.min(240, Math.max(30, Math.round(bpm)));
+  $('metroBpm').textContent = String(metro.bpm);
+  $('metroRange').value = String(metro.bpm);
+  // Changing tempo mid-count restarts the click rather than sliding it, which
+  // would put the beat somewhere neither tempo agrees with.
+  if (metro.running) { stopMetro(); startMetro(); }
+}
+
+function startMetro() {
+  const ctx = outputContext();
+  if (!ctx) return;
+  metro.node = new Metronome(ctx);
+  metro.node.beatsPerBar = metro.beats;
+  metro.node.onBeat = (i) => {
+    const idx = ((i % metro.beats) + metro.beats) % metro.beats;
+    document.querySelectorAll('.beat-dot').forEach((d) => {
+      d.classList.toggle('is-on', Number(d.dataset.beat) === idx);
+    });
+    setTimeout(() => {
+      const d = document.querySelector(`.beat-dot[data-beat="${idx}"]`);
+      if (d) d.classList.remove('is-on');
+    }, Math.min(140, (60000 / metro.bpm) * 0.5));
+  };
+  metro.node.start(metro.bpm, { countInBars: 0 });
+  metro.running = true;
+  $('startMetro').textContent = t('tools.metroStop');
+}
+
+function stopMetro() {
+  if (!metro.running) return;
+  metro.node?.stop();
+  metro.node = null;
+  metro.running = false;
+  const btn = $('startMetro');
+  if (btn) btn.textContent = t('tools.metroStart');
+  document.querySelectorAll('.beat-dot').forEach((d) => d.classList.remove('is-on'));
+}
+
+$('startMetro').addEventListener('click', () => (metro.running ? stopMetro() : startMetro()));
+$('bpmUp').addEventListener('click', () => setBpm(metro.bpm + 1));
+$('bpmDown').addEventListener('click', () => setBpm(metro.bpm - 1));
+$('metroRange').addEventListener('input', () => setBpm(Number($('metroRange').value)));
+$('beatsSelect').addEventListener('change', () => {
+  metro.beats = Number($('beatsSelect').value);
+  buildBeatRow();
+  if (metro.running) { stopMetro(); startMetro(); }
+});
+
+$('tapBtn').addEventListener('click', () => {
+  metro.taps.push(performance.now());
+  if (metro.taps.length > 8) metro.taps.shift();
+  const bpm = tapTempo(metro.taps);
+  if (bpm) setBpm(bpm);
+});
+
 // ================================================================ language
 
 function buildLanguagePicker() {
@@ -666,6 +842,9 @@ window.addEventListener('localechange', () => {
   drawStrip();
   renderSync();
   renderProgress();
+  paintTuner(null);
+  $('startTune').textContent = t(tune.active ? 'tools.stop' : 'tools.start');
+  $('startMetro').textContent = t(metro.running ? 'tools.metroStop' : 'tools.metroStart');
   window.dispatchEvent(new CustomEvent('openstring:redraw'));
 });
 
@@ -685,6 +864,9 @@ initI18n().then(() => {
   fillPatterns();
   drawStrip();
   $('bpmOut').textContent = $('bpmRange').value;
+  buildStringRow();
+  buildBeatRow();
+  paintTuner(null);
 }).catch(() => {
   // Even if catalogues fail entirely, the built-in English markup still works.
   initPieceView({ audio, ensureAudio });
@@ -693,4 +875,7 @@ initI18n().then(() => {
   fillPatterns();
   drawStrip();
   $('bpmOut').textContent = $('bpmRange').value;
+  buildStringRow();
+  buildBeatRow();
+  paintTuner(null);
 });
