@@ -278,5 +278,16 @@
   "read.foundIt": "{note} — found it.",
   "stage.landmarks.title": "Three landmarks",
   "stage.landmarks.blurb": "Three notes only, and all three are open strings — nothing to finger. G sits on the second line, the one the clef curls around. B is the middle line. E is the top space, just under the highest line. Learn where these three are and every other note can be found by stepping from the nearest one.",
-  "stage.landmarks.advice": "Do not spell your way up from the bottom line. Look at where the note sits and ask first whether it is one of these three — that recognition, not counting, is what reading is."
+  "stage.landmarks.advice": "Do not spell your way up from the bottom line. Look at where the note sits and ask first whether it is one of these three — that recognition, not counting, is what reading is.",
+  "read.melodyMode": "Read a short melody",
+  "read.playFromLeft": "Play it from the left.",
+  "read.phraseDone": "That is the phrase.",
+  "interval.2": "second",
+  "interval.3": "third",
+  "interval.4": "fourth",
+  "interval.5": "fifth",
+  "interval.6": "sixth",
+  "interval.8": "octave",
+  "interval.up": "up",
+  "interval.down": "down"
 }

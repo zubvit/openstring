@@ -278,5 +278,16 @@
   "read.foundIt": "{note} — gevonden.",
   "stage.landmarks.title": "Drie herkenningspunten",
   "stage.landmarks.blurb": "Maar drie noten, en alle drie losse snaren — niets te grijpen. De G ligt op de tweede lijn, de lijn waar de sleutel omheen krult. De B is de middelste lijn. De E is de bovenste tussenruimte, net onder de hoogste lijn. Weet waar deze drie liggen en elke andere noot vind je door vanaf de dichtstbijzijnde te stappen.",
-  "stage.landmarks.advice": "Spel niet omhoog vanaf de onderste lijn. Kijk waar de noot staat en vraag eerst of het een van deze drie is — dat herkennen, niet tellen, is lezen."
+  "stage.landmarks.advice": "Spel niet omhoog vanaf de onderste lijn. Kijk waar de noot staat en vraag eerst of het een van deze drie is — dat herkennen, niet tellen, is lezen.",
+  "read.melodyMode": "Een kort melodietje lezen",
+  "read.playFromLeft": "Speel het van links naar rechts.",
+  "read.phraseDone": "Dat is de frase.",
+  "interval.2": "secunde",
+  "interval.3": "terts",
+  "interval.4": "kwart",
+  "interval.5": "kwint",
+  "interval.6": "sext",
+  "interval.8": "octaaf",
+  "interval.up": "omhoog",
+  "interval.down": "omlaag"
 }

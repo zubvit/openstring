@@ -284,5 +284,16 @@
   "read.foundIt": "{note} — máš to.",
   "stage.landmarks.title": "Tři orientační body",
   "stage.landmarks.blurb": "Jen tři tóny, a všechny tři jsou prázdné struny — nic se nemačká. G leží na druhé lince, té, kterou klíč obtáčí. H je prostřední linka. E je horní mezera, hned pod nejvyšší linkou. Nauč se, kde jsou tyhle tři, a každý další tón najdeš krokem od toho nejbližšího.",
-  "stage.landmarks.advice": "Neslabikuj odspodu. Podívej se, kde nota leží, a nejdřív se zeptej, jestli je to jedna z těch tří — tohle rozpoznání, ne počítání, je čtení."
+  "stage.landmarks.advice": "Neslabikuj odspodu. Podívej se, kde nota leží, a nejdřív se zeptej, jestli je to jedna z těch tří — tohle rozpoznání, ne počítání, je čtení.",
+  "read.melodyMode": "Číst krátkou melodii",
+  "read.playFromLeft": "Zahraj ji zleva.",
+  "read.phraseDone": "To je celá fráze.",
+  "interval.2": "sekunda",
+  "interval.3": "tercie",
+  "interval.4": "kvarta",
+  "interval.5": "kvinta",
+  "interval.6": "sexta",
+  "interval.8": "oktáva",
+  "interval.up": "nahoru",
+  "interval.down": "dolů"
 }

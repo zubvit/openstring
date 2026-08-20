@@ -278,5 +278,16 @@
   "read.foundIt": "{note} — trouvée.",
   "stage.landmarks.title": "Trois repères",
   "stage.landmarks.blurb": "Trois notes seulement, et toutes trois à vide — rien à presser. Le sol est sur la deuxième ligne, celle qu'entoure la boucle de la clé. Le si est la ligne du milieu. Le mi est l'interligne du haut, juste sous la ligne la plus haute. Sache où sont ces trois-là et toute autre note se trouve en partant de la plus proche.",
-  "stage.landmarks.advice": "N'épelle pas depuis la ligne du bas. Regarde où la note se pose et demande-toi d'abord si c'est une de ces trois — cette reconnaissance, et non le comptage, c'est cela lire."
+  "stage.landmarks.advice": "N'épelle pas depuis la ligne du bas. Regarde où la note se pose et demande-toi d'abord si c'est une de ces trois — cette reconnaissance, et non le comptage, c'est cela lire.",
+  "read.melodyMode": "Lire une courte mélodie",
+  "read.playFromLeft": "Joue-la de gauche à droite.",
+  "read.phraseDone": "Voilà la phrase.",
+  "interval.2": "seconde",
+  "interval.3": "tierce",
+  "interval.4": "quarte",
+  "interval.5": "quinte",
+  "interval.6": "sixte",
+  "interval.8": "octave",
+  "interval.up": "vers le haut",
+  "interval.down": "vers le bas"
 }

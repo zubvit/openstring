@@ -278,5 +278,16 @@
   "read.foundIt": "{note} — gefunden.",
   "stage.landmarks.title": "Drei Orientierungspunkte",
   "stage.landmarks.blurb": "Nur drei Töne, und alle drei sind Leersaiten — nichts zu greifen. Das G sitzt auf der zweiten Linie, der Linie, um die sich der Schlüssel windet. Das H ist die Mittellinie. Das E ist der oberste Zwischenraum, direkt unter der höchsten Linie. Wenn du diese drei kennst, findest du jeden anderen Ton, indem du vom nächstgelegenen aus weitergehst.",
-  "stage.landmarks.advice": "Buchstabiere dich nicht von der untersten Linie herauf. Sieh hin, wo die Note steht, und frage zuerst, ob es eine dieser drei ist — dieses Erkennen, nicht das Abzählen, ist Lesen."
+  "stage.landmarks.advice": "Buchstabiere dich nicht von der untersten Linie herauf. Sieh hin, wo die Note steht, und frage zuerst, ob es eine dieser drei ist — dieses Erkennen, nicht das Abzählen, ist Lesen.",
+  "read.melodyMode": "Eine kurze Melodie lesen",
+  "read.playFromLeft": "Spiele sie von links.",
+  "read.phraseDone": "Das war die Phrase.",
+  "interval.2": "Sekunde",
+  "interval.3": "Terz",
+  "interval.4": "Quarte",
+  "interval.5": "Quinte",
+  "interval.6": "Sexte",
+  "interval.8": "Oktave",
+  "interval.up": "aufwärts",
+  "interval.down": "abwärts"
 }

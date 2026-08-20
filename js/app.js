@@ -4,12 +4,13 @@ import { AudioEngine, Metronome, outputContext, playChord } from './audio.js';
 import { Tuner, tapTempo, readingView, STRING_ORDER } from './tuner.js';
 import { ROOTS, QUALITY_ORDER, shapesFor, shapeNotes, chordToneNames, chordName } from './chords.js';
 import { targetFor, ChordAttempt, ChordProgress, DRILL_POOL } from './chord-drill.js';
+import { buildMelody, IntervalProgress, intervalKey } from './intervals.js';
 import { STANDARD_TUNING } from './theory.js';
 import {
   soundingAt, writtenAt, hzToMidiFloat, centsFromTarget, noteName, pitchClassName, compareNote,
   positionId, parsePositionId, positionsFor, midiToHz,
 } from './theory.js';
-import { renderNote, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
+import { renderNote, renderPhrase, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
 import { pickNext, isFluent, emptyStat } from './srs.js';
 import { Progress } from './progress.js';
 import { STAGES, stageById, nextStage, poolFor, readyToAdvance, RHYTHMS, expectedOnsets } from './curriculum.js';
@@ -78,6 +79,14 @@ const read = {
   judged: false,      // resolved: found it, or skipped
   attempts: 0,        // wrong tries at THIS note
   lastHeard: null,    // the pitch already counted, so a ringing string is not counted twice
+  // A question is a phrase. In the ordinary drill it is one note long; with
+  // melodies switched on it is a few, read left to right. Everything below
+  // works the same way for both, which is why there is only one of it.
+  phrase: [],         // position ids
+  step: 0,            // which one is being looked for
+  states: {},         // notehead index -> 'correct' | 'wrong'
+  melody: null,       // { notes, intervals } when this phrase is a tune
+  intervalProgress: new IntervalProgress(),
   asked: 0,
   correct: 0,
   times: [],
@@ -107,11 +116,27 @@ function showEmptyStaff() {
 
 function nextQuestion() {
   const pool = poolFor(stage);
-  const id = pickNext(pool, progress.data.stats, { avoid: read.lastId });
-  read.lastId = id;
-  const { string, fret } = parsePositionId(id);
-  read.target = { string, fret, sounding: soundingAt(string, fret), written: writtenAt(string, fret) };
+
+  // With melodies on, the question is a short tune whose distances the
+  // scheduler chose. If the region is too small or too awkward to make one -
+  // three landmarks a fourth apart, for instance - fall back to a single note
+  // rather than forcing a phrase that breaks the melodic rules.
+  read.melody = $('readMelody').checked
+    ? buildMelody(pool, read.intervalProgress.stats)
+    : null;
+
+  if (read.melody) {
+    read.phrase = read.melody.notes;
+  } else {
+    const id = pickNext(pool, progress.data.stats, { avoid: read.lastId });
+    read.phrase = [id];
+  }
+
+  read.lastId = read.phrase[read.phrase.length - 1];
+  read.step = 0;
+  read.states = {};
   read.shownAt = performance.now();
+  read.stepAt = read.shownAt;
   // Ignore the tail of the previous note still ringing into the microphone.
   read.graceUntil = read.shownAt + 350;
   read.judged = false;
@@ -119,11 +144,34 @@ function nextQuestion() {
   read.lastHeard = null;
   audio.resetTracking();
 
-  $('staffHost').innerHTML = renderNote(read.target.written, { label: '' });
-  $('verdictMain').textContent = t('read.playIt');
+  setTargetFromStep();
+  drawQuestion();
+  $('verdictMain').textContent = t(read.melody ? 'read.playFromLeft' : 'read.playIt');
   $('verdictMain').className = 'verdict-main';
   $('verdictSub').textContent = '';
   updateHint();
+}
+
+/** The note currently being looked for, in the form the rest of the app wants. */
+function setTargetFromStep() {
+  const id = read.phrase[read.step];
+  if (!id) { read.target = null; return; }
+  const { string, fret } = parsePositionId(id);
+  read.target = { string, fret, sounding: soundingAt(string, fret), written: writtenAt(string, fret) };
+}
+
+function drawQuestion() {
+  if (!read.phrase.length) { showEmptyStaff(); return; }
+  if (read.phrase.length === 1) {
+    const state = read.states[0] || '';
+    $('staffHost').innerHTML = renderNote(read.target?.written ?? null, { label: '', state });
+    return;
+  }
+  const notes = read.phrase.map((id, i) => {
+    const { string, fret } = parsePositionId(id);
+    return { written: writtenAt(string, fret), beat: i, beats: 1, isRest: false };
+  });
+  $('staffHost').innerHTML = renderPhrase(notes, { width: 460, states: read.states });
 }
 
 function updateHint() {
@@ -139,17 +187,13 @@ function updateHint() {
 $('showHint').addEventListener('change', updateHint);
 
 /**
- * Judge one played note against the note on the staff.
+ * Judge one played note against the note the phrase is waiting for.
  *
- * A wrong answer does NOT end the question. It used to: the app named the note,
- * drew the fretboard with the answer on it, and moved on after a second and a
- * half - which meant the one moment you were actually about to learn something
- * was the moment it did the work for you. Finding the note yourself is the
- * whole exercise, so now the question stays up until you find it.
- *
- * The only help offered is which way to go. That turns a wrong answer into a
- * search, which is the skill; naming the note just ends it. Anything more is
- * there when you ask for it - the hint tickbox, or skip.
+ * A wrong answer does NOT move the question on. It used to: the app named the
+ * note, drew the fretboard with the answer on it, and went to the next one -
+ * so the moment you were about to learn something was the moment it did the
+ * work for you. The only help now is which way to go, which turns a wrong
+ * answer into a search; naming the note just ends it.
  */
 function judge(heardMidi, hz) {
   if (!read.target || read.judged) return;
@@ -161,42 +205,70 @@ function judge(heardMidi, hz) {
 
   if (verdict !== 'right') {
     read.attempts += 1;
+    read.states[read.step] = 'wrong';
     main.textContent = t(verdict === 'octave' ? 'read.rightNoteWrongString' : 'read.notThatOne',
       { heard: noteName(heardMidi) });
     main.className = 'verdict-main bad';
     sub.textContent = t(direction === 'higher' ? 'read.tryHigher' : 'read.tryLower');
-    // Flash the notehead, then put it back: the question is still standing.
-    $('staffHost').innerHTML = renderNote(read.target.written, { state: 'wrong' });
+    drawQuestion();
+    // Put the mark back: the question is still standing.
     setTimeout(() => {
-      if (read.active && !read.judged && read.target) {
-        $('staffHost').innerHTML = renderNote(read.target.written, { label: '' });
+      if (read.active && !read.judged && read.states[read.step] === 'wrong') {
+        delete read.states[read.step];
+        drawQuestion();
       }
     }, 450);
     return;
   }
 
-  // Found it. One record per question, however many tries it took - the
-  // scheduler wants to know whether you knew this note, not how many notes you
-  // played while hunting for it.
-  read.judged = true;
-  const ms = performance.now() - read.shownAt;
+  // Found it. One record per note, however many tries it took - the scheduler
+  // wants to know whether you knew it, not how many notes you played hunting.
+  const ms = performance.now() - read.stepAt;
   const clean = read.attempts === 0;
-
+  read.states[read.step] = 'correct';
   read.asked += 1;
   if (clean) { read.correct += 1; read.times.push(ms); }
   progress.recordAnswer(positionId(read.target.string, read.target.fret), { correct: clean, ms });
 
-  const cents = centsFromTarget(hz, target);
+  // In a melody, the note you just found was reached by a distance, and that
+  // distance is the thing being practised - so it is scored separately, on its
+  // own scheduler. The first note has no distance behind it.
+  const crossed = read.melody && read.step > 0 ? read.melody.intervals[read.step - 1] : null;
+  if (crossed) read.intervalProgress.record(crossed.id, { correct: clean, ms });
+
   main.textContent = t(clean ? 'read.correct' : 'read.foundIt', { note: pitchClassName(target) });
   main.className = 'verdict-main good';
+  const cents = centsFromTarget(hz, target);
   const tuning = Math.abs(cents) > 25 ? ` · ${t(cents > 0 ? 'read.sharp' : 'read.flat')} (${cents > 0 ? '+' : ''}${cents})` : '';
-  sub.textContent = t('read.seconds', { seconds: (ms / 1000).toFixed(1) }) + tuning;
+  sub.textContent = crossed
+    // Naming the distance AFTER the note is found teaches the word without
+    // answering the question with it.
+    ? `${t(intervalKey(crossed.number))} ${t(`interval.${crossed.direction}`)}`
+    : t('read.seconds', { seconds: (ms / 1000).toFixed(1) }) + tuning;
 
-  $('staffHost').innerHTML = renderNote(read.target.written, { state: 'correct' });
+  read.step += 1;
+  read.attempts = 0;
+  read.stepAt = performance.now();
 
+  if (read.step < read.phrase.length) {
+    setTargetFromStep();
+    drawQuestion();
+    updateHint();
+    updateSessionCard();
+    return;
+  }
+
+  // The phrase is finished.
+  read.judged = true;
+  drawQuestion();
+  if (read.melody) {
+    main.textContent = t('read.phraseDone');
+    main.className = 'verdict-main good';
+    sub.textContent = '';
+  }
   updateSessionCard();
   renderStageHeader();
-  setTimeout(() => { if (read.active) nextQuestion(); }, clean ? 750 : 1100);
+  setTimeout(() => { if (read.active) nextQuestion(); }, read.melody ? 1200 : (clean ? 750 : 1100));
 }
 
 function updateSessionCard() {
@@ -256,6 +328,12 @@ $('skipNote').addEventListener('click', () => {
   nextQuestion();
 });
 
+// Switching melodies on or off starts a fresh question rather than half
+// changing the one on screen.
+$('readMelody').addEventListener('change', () => {
+  if (read.active) nextQuestion();
+});
+
 $('endSession').addEventListener('click', endReadSession);
 
 function endReadSession() {
@@ -266,6 +344,9 @@ function endReadSession() {
   }
   read.active = false;
   read.target = null;
+  read.phrase = [];
+  read.melody = null;
+  read.states = {};
   $('startRead').textContent = t('read.start');
   $('skipNote').disabled = true;
   $('verdictMain').textContent = read.asked

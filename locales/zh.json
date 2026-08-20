@@ -275,5 +275,16 @@
   "read.foundIt": "{note} — 找到了。",
   "stage.landmarks.title": "三个坐标音",
   "stage.landmarks.blurb": "只有三个音，而且三个都是空弦，不用按。G 在第二线上，也就是谱号卷曲缠绕的那条线。B 是中间线。E 在最上面的间里，就在最高那条线的下面。记住这三个的位置，其他任何音都可以从最近的一个数过去找到。",
-  "stage.landmarks.advice": "不要从最下面一线一个个往上数。看音符落在哪里，先问它是不是这三个之一——这种一眼认出，而不是数出来，才叫读谱。"
+  "stage.landmarks.advice": "不要从最下面一线一个个往上数。看音符落在哪里，先问它是不是这三个之一——这种一眼认出，而不是数出来，才叫读谱。",
+  "read.melodyMode": "读一小段旋律",
+  "read.playFromLeft": "从左往右弹。",
+  "read.phraseDone": "这一句就是这样。",
+  "interval.2": "二度",
+  "interval.3": "三度",
+  "interval.4": "四度",
+  "interval.5": "五度",
+  "interval.6": "六度",
+  "interval.8": "八度",
+  "interval.up": "向上",
+  "interval.down": "向下"
 }

@@ -278,5 +278,16 @@
   "read.foundIt": "{note} — trovata.",
   "stage.landmarks.title": "Tre punti di riferimento",
   "stage.landmarks.blurb": "Solo tre note, e tutte e tre sono corde a vuoto — niente da premere. Il sol sta sulla seconda linea, quella attorno a cui si avvolge la chiave. Il si è la linea centrale. Il mi è lo spazio in alto, appena sotto la linea più alta. Impara dove stanno queste tre e ogni altra nota si trova partendo dalla più vicina.",
-  "stage.landmarks.advice": "Non compitare partendo dalla linea in basso. Guarda dove sta la nota e chiediti prima se è una di queste tre — questo riconoscimento, non il conteggio, è leggere."
+  "stage.landmarks.advice": "Non compitare partendo dalla linea in basso. Guarda dove sta la nota e chiediti prima se è una di queste tre — questo riconoscimento, non il conteggio, è leggere.",
+  "read.melodyMode": "Leggere una melodia breve",
+  "read.playFromLeft": "Suonala da sinistra.",
+  "read.phraseDone": "Ecco la frase.",
+  "interval.2": "seconda",
+  "interval.3": "terza",
+  "interval.4": "quarta",
+  "interval.5": "quinta",
+  "interval.6": "sesta",
+  "interval.8": "ottava",
+  "interval.up": "in su",
+  "interval.down": "in giù"
 }

@@ -278,5 +278,16 @@
   "read.foundIt": "{note} — buldun.",
   "stage.landmarks.title": "Üç işaret noktası",
   "stage.landmarks.blurb": "Yalnızca üç nota ve üçü de boş tel — basılacak bir şey yok. Sol, anahtarın kıvrımının sardığı ikinci çizgide durur. Si orta çizgidir. Mi en üstteki aralıktır, en yüksek çizginin hemen altında. Bu üçünün yerini öğren, geri kalan her nota en yakınından adımlayarak bulunur.",
-  "stage.landmarks.advice": "Alt çizgiden başlayıp hece hece saymaya kalkma. Notanın nerede durduğuna bak ve önce bu üçünden biri mi diye sor — okumak, saymak değil, bu tanımadır."
+  "stage.landmarks.advice": "Alt çizgiden başlayıp hece hece saymaya kalkma. Notanın nerede durduğuna bak ve önce bu üçünden biri mi diye sor — okumak, saymak değil, bu tanımadır.",
+  "read.melodyMode": "Kısa bir ezgi oku",
+  "read.playFromLeft": "Soldan sağa çal.",
+  "read.phraseDone": "Ezgi bu kadar.",
+  "interval.2": "ikili",
+  "interval.3": "üçlü",
+  "interval.4": "dörtlü",
+  "interval.5": "beşli",
+  "interval.6": "altılı",
+  "interval.8": "oktav",
+  "interval.up": "yukarı",
+  "interval.down": "aşağı"
 }

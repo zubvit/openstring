@@ -284,5 +284,16 @@
   "read.foundIt": "{note} — znalezione.",
   "stage.landmarks.title": "Trzy punkty orientacyjne",
   "stage.landmarks.blurb": "Tylko trzy dźwięki, i wszystkie trzy to puste struny — nic nie trzeba przyciskać. G leży na drugiej linii, tej, którą owija klucz. H to linia środkowa. E to górne pole, tuż pod najwyższą linią. Naucz się, gdzie są te trzy, a każdy inny dźwięk znajdziesz, idąc od najbliższego z nich.",
-  "stage.landmarks.advice": "Nie literuj od dolnej linii. Popatrz, gdzie leży nuta, i najpierw zapytaj, czy to jedna z tych trzech — to rozpoznanie, a nie liczenie, jest czytaniem."
+  "stage.landmarks.advice": "Nie literuj od dolnej linii. Popatrz, gdzie leży nuta, i najpierw zapytaj, czy to jedna z tych trzech — to rozpoznanie, a nie liczenie, jest czytaniem.",
+  "read.melodyMode": "Czytaj krótką melodię",
+  "read.playFromLeft": "Zagraj ją od lewej.",
+  "read.phraseDone": "To cała fraza.",
+  "interval.2": "sekunda",
+  "interval.3": "tercja",
+  "interval.4": "kwarta",
+  "interval.5": "kwinta",
+  "interval.6": "seksta",
+  "interval.8": "oktawa",
+  "interval.up": "w górę",
+  "interval.down": "w dół"
 }

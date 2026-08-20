@@ -275,5 +275,16 @@
   "read.foundIt": "{note} — ketemu.",
   "stage.landmarks.title": "Tiga penanda",
   "stage.landmarks.blurb": "Hanya tiga nada, dan ketiganya senar terbuka — tidak ada yang perlu ditekan. G duduk di garis kedua, garis yang dilingkari kunci. B adalah garis tengah. E adalah spasi paling atas, tepat di bawah garis tertinggi. Hafal di mana ketiganya, dan nada lain bisa ditemukan dengan melangkah dari yang terdekat.",
-  "stage.landmarks.advice": "Jangan mengeja naik dari garis paling bawah. Lihat di mana nada itu duduk dan tanyakan dulu apakah ia salah satu dari ketiganya — pengenalan itulah, bukan menghitung, yang disebut membaca."
+  "stage.landmarks.advice": "Jangan mengeja naik dari garis paling bawah. Lihat di mana nada itu duduk dan tanyakan dulu apakah ia salah satu dari ketiganya — pengenalan itulah, bukan menghitung, yang disebut membaca.",
+  "read.melodyMode": "Baca melodi pendek",
+  "read.playFromLeft": "Mainkan dari kiri.",
+  "read.phraseDone": "Itu frasanya.",
+  "interval.2": "sekon",
+  "interval.3": "terts",
+  "interval.4": "kuart",
+  "interval.5": "kuint",
+  "interval.6": "sekst",
+  "interval.8": "oktaf",
+  "interval.up": "naik",
+  "interval.down": "turun"
 }

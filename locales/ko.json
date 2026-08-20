@@ -275,5 +275,16 @@
   "read.foundIt": "{note} — 찾았습니다.",
   "stage.landmarks.title": "세 개의 기준음",
   "stage.landmarks.blurb": "음은 셋뿐이고, 셋 다 개방현이라 짚을 것이 없습니다. 솔은 둘째 줄, 음자리표의 소용돌이가 감고 있는 그 줄에 앉습니다. 시는 가운데 줄입니다. 미는 맨 위 칸으로, 가장 높은 줄 바로 아래입니다. 이 셋의 자리를 익히면 나머지 음은 가장 가까운 기준음에서 걸어가 찾을 수 있습니다.",
-  "stage.landmarks.advice": "맨 아랫줄부터 하나씩 세어 올라가지 마세요. 음표가 어디에 앉았는지 보고, 먼저 이 셋 중 하나인지 물으세요. 세는 것이 아니라 알아보는 것, 그것이 읽기입니다."
+  "stage.landmarks.advice": "맨 아랫줄부터 하나씩 세어 올라가지 마세요. 음표가 어디에 앉았는지 보고, 먼저 이 셋 중 하나인지 물으세요. 세는 것이 아니라 알아보는 것, 그것이 읽기입니다.",
+  "read.melodyMode": "짧은 선율 읽기",
+  "read.playFromLeft": "왼쪽부터 연주하세요.",
+  "read.phraseDone": "한 악구가 끝났습니다.",
+  "interval.2": "2도",
+  "interval.3": "3도",
+  "interval.4": "4도",
+  "interval.5": "5도",
+  "interval.6": "6도",
+  "interval.8": "옥타브",
+  "interval.up": "위로",
+  "interval.down": "아래로"
 }

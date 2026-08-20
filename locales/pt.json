@@ -278,5 +278,16 @@
   "read.foundIt": "{note} — encontraste.",
   "stage.landmarks.title": "Três referências",
   "stage.landmarks.blurb": "Só três notas, e as três são cordas soltas — nada para pisar. O sol fica na segunda linha, aquela que a clave envolve. O si é a linha do meio. O mi é o espaço de cima, mesmo por baixo da linha mais alta. Sabe onde estão estas três e qualquer outra nota se encontra avançando a partir da mais próxima.",
-  "stage.landmarks.advice": "Não soletres desde a linha de baixo. Olha para onde a nota está e pergunta primeiro se é uma destas três — esse reconhecimento, e não a contagem, é o que significa ler."
+  "stage.landmarks.advice": "Não soletres desde a linha de baixo. Olha para onde a nota está e pergunta primeiro se é uma destas três — esse reconhecimento, e não a contagem, é o que significa ler.",
+  "read.melodyMode": "Ler uma melodia curta",
+  "read.playFromLeft": "Toca-a da esquerda para a direita.",
+  "read.phraseDone": "É esta a frase.",
+  "interval.2": "segunda",
+  "interval.3": "terça",
+  "interval.4": "quarta",
+  "interval.5": "quinta",
+  "interval.6": "sexta",
+  "interval.8": "oitava",
+  "interval.up": "para cima",
+  "interval.down": "para baixo"
 }
