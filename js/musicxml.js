@@ -34,6 +34,75 @@ function pitchToMidi(pitchEl) {
  * Parse MusicXML into a piece we can practise.
  * `xmlText` is the document; `DOMParserImpl` lets tests inject a parser.
  */
+/**
+ * MusicXML <kind> values, mapped to how the chord is written.
+ *
+ * An exact table, not a guess: a kind we do not know falls back to the text the
+ * file itself supplies, and if there is none the harmony is dropped. Inventing
+ * a label for an unrecognised kind would put a chord name over the music that
+ * nobody wrote.
+ */
+export const HARMONY_KINDS = {
+  'major': { symbol: '', quality: '' },
+  'minor': { symbol: 'm', quality: 'm' },
+  'dominant': { symbol: '7', quality: '7' },
+  'major-seventh': { symbol: 'maj7', quality: 'maj7' },
+  'minor-seventh': { symbol: 'm7', quality: 'm7' },
+  'suspended-second': { symbol: 'sus2', quality: 'sus2' },
+  'suspended-fourth': { symbol: 'sus4', quality: 'sus4' },
+  'diminished': { symbol: 'dim', quality: 'dim' },
+  // Known chords we can name but have no shape for; quality stays null so
+  // nothing downstream offers a fingering that would be wrong.
+  'diminished-seventh': { symbol: 'dim7', quality: null },
+  'half-diminished': { symbol: 'm7b5', quality: null },
+  'augmented': { symbol: 'aug', quality: null },
+  'major-sixth': { symbol: '6', quality: null },
+  'minor-sixth': { symbol: 'm6', quality: null },
+  'dominant-ninth': { symbol: '9', quality: null },
+  'power': { symbol: '5', quality: null },
+  'none': null,
+};
+
+const STEP_ALTER = { '-2': 'bb', '-1': 'b', '0': '', '1': '#', '2': '##' };
+
+/** Read one <harmony>, or null if it names nothing we can write down. */
+function readHarmony(el) {
+  const rootEl = el.getElementsByTagName('root')[0];
+  const step = rootEl?.getElementsByTagName('root-step')[0]?.textContent?.trim();
+  if (!step) return null;
+  const alter = rootEl.getElementsByTagName('root-alter')[0]?.textContent?.trim() ?? '0';
+  const root = step + (STEP_ALTER[String(Number(alter))] ?? '');
+
+  const kindEl = el.getElementsByTagName('kind')[0];
+  const kind = kindEl?.textContent?.trim();
+  const known = Object.prototype.hasOwnProperty.call(HARMONY_KINDS, kind)
+    ? HARMONY_KINDS[kind] : undefined;
+  if (known === null) return null;                      // <kind>none</kind>
+
+  let symbol;
+  let quality = null;
+  if (known) {
+    symbol = known.symbol;
+    quality = known.quality;
+  } else {
+    // Unknown kind: use the file's own display text if it gave one, else drop it.
+    const text = kindEl?.getAttribute('text');
+    if (!text) return null;
+    symbol = text.trim();
+  }
+
+  const bassEl = el.getElementsByTagName('bass')[0];
+  const bassStep = bassEl?.getElementsByTagName('bass-step')[0]?.textContent?.trim();
+  const bassAlter = bassEl?.getElementsByTagName('bass-alter')[0]?.textContent?.trim() ?? '0';
+  const bass = bassStep ? bassStep + (STEP_ALTER[String(Number(bassAlter))] ?? '') : null;
+
+  return {
+    root,
+    quality,
+    label: `${root}${symbol}${bass ? `/${bass}` : ''}`,
+  };
+}
+
 export function parseMusicXML(xmlText, DOMParserImpl = globalThis.DOMParser) {
   const doc = new DOMParserImpl().parseFromString(xmlText, 'application/xml');
   if (doc.getElementsByTagName('parsererror').length) throw new Error('That file is not valid XML.');
@@ -83,6 +152,28 @@ export function parseMusicXML(xmlText, DOMParserImpl = globalThis.DOMParser) {
     const notes = [];
     let cursor = 0; // in divisions, from the start of the measure
 
+    // Chord symbols sit between the notes in document order, before the note
+    // they label, so they are read by walking the measure's children rather
+    // than by pulling out the <note> elements alone.
+    const harmonies = [];
+    let hCursor = 0;
+    for (const child of measureEl.children || []) {
+      const tag = child.tagName;
+      if (tag === 'harmony') {
+        const h = readHarmony(child);
+        const offset = num(child, 'offset') ?? 0;
+        if (h) harmonies.push({ ...h, startBeat: (hCursor + offset) / divisions });
+      } else if (tag === 'note') {
+        if (child.getElementsByTagName('grace').length) continue;
+        if (child.getElementsByTagName('chord').length) continue;
+        hCursor += num(child, 'duration') ?? 0;
+      } else if (tag === 'forward') {
+        hCursor += num(child, 'duration') ?? 0;
+      } else if (tag === 'backup') {
+        hCursor -= num(child, 'duration') ?? 0;
+      }
+    }
+
     for (const noteEl of measureEl.getElementsByTagName('note')) {
       // Grace notes carry no duration and would desynchronise the cursor.
       if (noteEl.getElementsByTagName('grace').length) continue;
@@ -116,6 +207,7 @@ export function parseMusicXML(xmlText, DOMParserImpl = globalThis.DOMParser) {
       beatsPerBar,
       beatUnit,
       notes,
+      harmonies,
     });
   }
 
@@ -135,6 +227,7 @@ export function parseMusicXML(xmlText, DOMParserImpl = globalThis.DOMParser) {
     measures,
     octaveConvention: convention,
     noteCount: rawNotes.filter((n) => !n.isRest).length,
+    harmonyCount: measures.reduce((n, m) => n + m.harmonies.length, 0),
   };
 }
 
@@ -207,4 +300,23 @@ export function toSequence(piece, { skipChordNotes = true } = {}) {
     barStart += m.beatsPerBar;
   }
   return seq;
+}
+
+/**
+ * The chord symbols, on the same beat timeline the note sequence uses.
+ *
+ * Separate from toSequence because they are not events you play: they label the
+ * music, and folding them into the note list would put things in it that the
+ * grader would then have to learn to ignore.
+ */
+export function harmonySequence(piece) {
+  const out = [];
+  let barStart = 0;
+  for (const m of piece.measures) {
+    for (const h of m.harmonies || []) {
+      out.push({ ...h, beat: barStart + h.startBeat, measure: m.number });
+    }
+    barStart += m.beatsPerBar;
+  }
+  return out.sort((a, b) => a.beat - b.beat);
 }

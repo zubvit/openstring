@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { parseMusicXML, toSequence } from '../js/musicxml.js';
+import { parseMusicXML, toSequence, harmonySequence } from '../js/musicxml.js';
 import { ShimDOMParser } from './xml-shim.mjs';
 import { noteName, soundingAt } from '../js/theory.js';
 
@@ -120,6 +120,94 @@ t('durations become beats, and rests are kept', () => {
 t('rejects things that are not scores, with a readable reason', () => {
   assert.throws(() => parseMusicXML('<html><body>nope</body></html>', P), /score-partwise/);
   assert.throws(() => parseMusicXML('<score-partwise/>', P), /no parts/);
+});
+
+// --------------------------------------------------------- chord symbols
+
+/** A two-bar score whose measures carry <harmony> elements. */
+function harmonyScore(bars) {
+  const measures = bars.map((bar, i) => {
+    const body = bar.map((item) => item.harmony
+      ? `<harmony><root><root-step>${item.harmony.step}</root-step>`
+        + (item.harmony.alter != null ? `<root-alter>${item.harmony.alter}</root-alter>` : '')
+        + `</root>`
+        + `<kind${item.harmony.text ? ` text="${item.harmony.text}"` : ''}>${item.harmony.kind}</kind>`
+        + (item.harmony.bass ? `<bass><bass-step>${item.harmony.bass}</bass-step></bass>` : '')
+        + `</harmony>`
+      : `<note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration>`
+        + `<notations><technical><string>1</string><fret>0</fret></technical></notations></note>`).join('');
+    return `<measure number="${i + 1}"><attributes><divisions>4</divisions>`
+      + `<time><beats>4</beats><beat-type>4</beat-type></time></attributes>${body}</measure>`;
+  }).join('');
+  return `<?xml version="1.0"?><score-partwise version="3.1"><part id="P1">${measures}</part></score-partwise>`;
+}
+
+const N = {};   // a plain note
+
+t('chord symbols are read, with their sharps, flats and slash basses', () => {
+  const xml = harmonyScore([[
+    { harmony: { step: 'A', kind: 'minor' } }, N,
+    { harmony: { step: 'B', alter: -1, kind: 'major-seventh' } }, N,
+    { harmony: { step: 'G', kind: 'dominant', bass: 'B' } }, N,
+  ]]);
+  const piece = parseMusicXML(xml, P);
+  const hs = harmonySequence(piece);
+  assert.deepEqual(hs.map((h) => h.label), ['Am', 'Bbmaj7', 'G7/B']);
+  assert.equal(piece.harmonyCount, 3);
+});
+
+t('a chord symbol lands on the note it labels, not at the start of the bar', () => {
+  const xml = harmonyScore([[
+    { harmony: { step: 'C', kind: 'major' } }, N, N,
+    { harmony: { step: 'G', kind: 'dominant' } }, N, N,
+  ]]);
+  const hs = harmonySequence(parseMusicXML(xml, P));
+  // Four divisions per quarter note: the second symbol sits before the third note.
+  assert.equal(hs[0].beat, 0);
+  assert.equal(hs[1].beat, 2, `landed on beat ${hs[1].beat}`);
+});
+
+t('symbols keep counting across bar lines', () => {
+  const xml = harmonyScore([
+    [{ harmony: { step: 'C', kind: 'major' } }, N, N, N, N],
+    [{ harmony: { step: 'F', kind: 'major' } }, N, N, N, N],
+  ]);
+  const hs = harmonySequence(parseMusicXML(xml, P));
+  assert.equal(hs[0].beat, 0);
+  assert.equal(hs[1].beat, 4, 'the second bar starts at beat four');
+  assert.equal(hs[1].measure, 2);
+});
+
+t('a chord we can finger says so; one we cannot keeps its name and admits it', () => {
+  const xml = harmonyScore([[
+    { harmony: { step: 'A', kind: 'minor-seventh' } }, N,
+    { harmony: { step: 'B', kind: 'half-diminished' } }, N,
+  ]]);
+  const hs = harmonySequence(parseMusicXML(xml, P));
+  assert.deepEqual(hs.map((h) => [h.label, h.quality]), [['Am7', 'm7'], ['Bm7b5', null]]);
+});
+
+t('a kind we do not know falls back to the file\'s own text, never to a guess', () => {
+  // MusicXML's kind text is the suffix only - the root is written separately -
+  // so it is appended to the root rather than replacing the whole symbol.
+  const known = harmonyScore([[{ harmony: { step: 'C', kind: 'dominant-11th', text: '11' } }, N]]);
+  assert.deepEqual(harmonySequence(parseMusicXML(known, P)).map((h) => h.label), ['C11']);
+
+  const silent = harmonyScore([[{ harmony: { step: 'C', kind: 'dominant-11th' } }, N]]);
+  assert.deepEqual(harmonySequence(parseMusicXML(silent, P)), [],
+    'no text and no known kind means nothing is written above the music');
+});
+
+t('"no chord" is not a chord', () => {
+  const xml = harmonyScore([[{ harmony: { step: 'C', kind: 'none' } }, N]]);
+  assert.deepEqual(harmonySequence(parseMusicXML(xml, P)), []);
+});
+
+t('a score without any harmony is unaffected', () => {
+  const piece = parseMusicXML(harmonyScore([[N, N, N, N]]), P);
+  assert.equal(piece.harmonyCount, 0);
+  assert.deepEqual(harmonySequence(piece), []);
+  assert.equal(toSequence(piece).length, 4, 'and the notes are untouched');
 });
 
 console.log(`musicxml: ${pass} groups passed`);

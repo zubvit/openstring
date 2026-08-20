@@ -412,3 +412,4 @@ svg.chordbox { width: 132px; height: auto; }
 @media (max-width: 560px) {
   .tabs { flex-wrap: wrap; justify-content: center; row-gap: .2rem; }
 }
+.chord-symbol { fill: var(--ink); font-size: 12px; font-weight: 600; }

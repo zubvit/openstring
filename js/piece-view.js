@@ -1,6 +1,6 @@
 // The Pieces tab: import a score, drill it chunk by chunk, join the chunks up.
 
-import { parseMusicXML, toSequence } from './musicxml.js';
+import { parseMusicXML, toSequence, harmonySequence } from './musicxml.js';
 import {
   makeChunks, makeSeam, newChunkState, applyAttempt, chunkMastered,
   pickChunk, gradeChunk, LAYERS, LAYER_LABELS,
@@ -16,6 +16,7 @@ export function initPieceView({ audio, ensureAudio }) {
   const st = {
     piece: null,
     sequence: [],
+    harmonies: [],
     chunks: [],
     states: {},
     current: null,
@@ -45,6 +46,9 @@ export function initPieceView({ audio, ensureAudio }) {
       const d = JSON.parse(raw);
       st.piece = d.piece; st.sequence = d.sequence; st.states = d.states || {};
       st.targetBpm = d.targetBpm || 80;
+      // Recomputed rather than stored: a piece imported before chord symbols
+      // existed simply has none, and gets them if it is imported again.
+      st.harmonies = harmonySequence(st.piece);
       rebuildChunks();
       return true;
     } catch { return false; }
@@ -116,7 +120,13 @@ export function initPieceView({ audio, ensureAudio }) {
       : (chunk.lastMeasure !== chunk.firstMeasure
           ? t('piece.barRange', { from: chunk.firstMeasure, to: chunk.lastMeasure })
           : t('piece.bar', { n: chunk.firstMeasure }));
-    $('chunkStaff').innerHTML = renderPhrase(chunk.notes, { width: 520 });
+    // Only the chord names that fall inside this chunk, or a two-bar excerpt
+    // would carry the whole piece's harmony across the top of it.
+    const beats = chunk.notes.map((n) => n.beat ?? 0);
+    const from = Math.min(...beats);
+    const to = Math.max(...beats.map((b, i) => b + (chunk.notes[i].beats ?? 1)));
+    const chords = (st.harmonies || []).filter((h) => h.beat >= from && h.beat < to);
+    $('chunkStaff').innerHTML = renderPhrase(chunk.notes, { width: 520, chords });
   }
 
   function renderLayers(state, results = null) {
@@ -147,6 +157,7 @@ export function initPieceView({ audio, ensureAudio }) {
       if (!seq.some((n) => !n.isRest)) throw new Error(t('piece.noNotes'));
       st.piece = piece;
       st.sequence = seq;
+      st.harmonies = harmonySequence(piece);
       st.states = {};
       st.targetBpm = piece.tempo ? Math.max(40, Math.min(160, Math.round(piece.tempo / 4) * 4)) : 80;
       rebuildChunks();
@@ -163,7 +174,7 @@ export function initPieceView({ audio, ensureAudio }) {
 
   $('dropPiece').addEventListener('click', () => {
     if (!confirm(t('piece.removeConfirm'))) return;
-    st.piece = null; st.sequence = []; st.chunks = []; st.states = {}; st.current = null;
+    st.piece = null; st.sequence = []; st.harmonies = []; st.chunks = []; st.states = {}; st.current = null;
     save(); renderHead();
   });
 

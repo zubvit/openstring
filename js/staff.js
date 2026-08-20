@@ -270,7 +270,7 @@ export function renderChordBox(shape, { width = 132, showFingers = true } = {}) 
  * @param notes  [{ written, beat, beats, isRest }] - beats position them
  */
 export function renderPhrase(notes, {
-  width = 520, preferFlats = false, showOctaveEight = true, states = {},
+  width = 520, preferFlats = false, showOctaveEight = true, states = {}, chords = [],
 } = {}) {
   const sounded = notes.filter((n) => !n.isRest && n.written != null);
   if (!sounded.length) return renderNote(null, { width });
@@ -280,8 +280,11 @@ export function renderPhrase(notes, {
   const below = Math.max(0, ...ledgers.map((l) => l.filter((d) => d < BOTTOM_LINE_DIATONIC).length));
   const above = Math.max(0, ...ledgers.map((l) => l.filter((d) => d > BOTTOM_LINE_DIATONIC).length));
   const headroom = Math.max(0, above - 1) * LINE_GAP;
-  const height = 150 + below * LINE_GAP + headroom;
-  const bottomY = LINE_GAP * 4 + 28 + headroom;
+  // Chord names live above the staff, where they are written on real music, so
+  // the whole picture drops to make room rather than the names overlapping it.
+  const chordRoom = chords.length ? 18 : 0;
+  const height = 150 + below * LINE_GAP + headroom + chordRoom;
+  const bottomY = LINE_GAP * 4 + 28 + headroom + chordRoom;
 
   const parts = [];
   for (let i = 0; i < 5; i++) {
@@ -299,6 +302,10 @@ export function renderPhrase(notes, {
   const left = 78;
   const right = width - 26;
   const xFor = (beat) => left + ((beat - first) / span) * (right - left);
+
+  for (const c of chords) {
+    parts.push(`<text x="${xFor(c.beat)}" y="12" class="chord-symbol" text-anchor="middle">${esc(c.label)}</text>`);
+  }
 
   const middle = BOTTOM_LINE_DIATONIC + 4;
   spelled.forEach(({ n, sp }, i) => {
