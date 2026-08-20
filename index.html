@@ -57,6 +57,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab is-active" data-view="read" role="tab" data-i18n="tab.read">Read</button>
     <button class="tab" data-view="rhythm" role="tab" data-i18n="tab.rhythm">Rhythm</button>
+    <button class="tab" data-view="chords" role="tab" data-i18n="tab.chords">Chords</button>
     <button class="tab" data-view="piece" role="tab" data-i18n="tab.pieces">Pieces</button>
     <button class="tab" data-view="tools" role="tab" data-i18n="tab.tools">Tools</button>
     <button class="tab" data-view="progress" role="tab" data-i18n="tab.progress">Progress</button>
@@ -155,6 +156,56 @@
   </div>
 </section>
 
+<!-- ------------------------------------------------------------- CHORDS -->
+<section class="view" id="view-chords">
+
+  <div class="card">
+    <h2 data-i18n="chords.readHeading">Read chords</h2>
+    <p class="muted" data-i18n="chords.readIntro">Several notes at once on the staff. Play them one string at a time, from the lowest upward — that is how you check you have really fingered the chord, and it is the only way the microphone can hear whether each note is right.</p>
+
+    <div id="chordStaffHost" class="staff-host"></div>
+
+    <div class="verdict" id="chordVerdict" aria-live="polite">
+      <div class="verdict-main" id="cVerdictMain" data-i18n="chords.prompt">Press start, then play the chord you see.</div>
+      <div class="verdict-sub" id="cVerdictSub"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary" id="startChords" data-i18n="chords.start">Start listening</button>
+      <button class="btn" id="skipChord" data-i18n="chords.skip" disabled>Skip</button>
+      <label class="check"><input type="checkbox" id="showShape"> <span data-i18n="chords.showShape">Show me the shape</span></label>
+    </div>
+
+    <div id="chordHintHost" class="hint-host" hidden></div>
+  </div>
+
+  <div class="card session" id="chordSessionCard" hidden>
+    <div class="row"><span data-i18n="chords.asked">Chords</span><strong id="cAsked">0</strong></div>
+    <div class="row"><span data-i18n="chords.clean">Right first time</span><strong id="cClean">0</strong></div>
+    <div class="row"><span data-i18n="chords.typicalTime">Typical time</span><strong id="cSpeed">—</strong></div>
+    <button class="btn small" id="endChordSession" data-i18n="chords.endSession">End session</button>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="chords.shapesHeading">Chord shapes</h2>
+    <p class="muted" data-i18n="chords.shapesIntro">Pick a chord and see where the fingers go. × means do not play that string, ○ means play it open, and the numbers are which finger.</p>
+
+    <div class="chord-pick">
+      <div class="chord-roots" id="chordRoots" role="group" data-i18n-aria-label="chords.shapesHeading" aria-label="Chords"></div>
+      <div class="chord-qualities" id="chordQualities" role="group"></div>
+    </div>
+
+    <div class="chord-face">
+      <div class="chord-name" id="chordName">Am</div>
+      <div id="chordBoxHost" class="chord-box-host"></div>
+      <div class="chord-shapes" id="chordShapes"></div>
+      <div class="chord-notes"><span class="muted small" data-i18n="chords.notes">Notes</span> <strong id="chordNotes">—</strong></div>
+      <button class="btn small" id="hearChord" data-i18n="chords.hearIt">Hear it</button>
+    </div>
+  </div>
+
+</section>
+
 <!-- -------------------------------------------------------------- PIECES -->
 <section class="view" id="view-piece">
 
@@ -246,24 +297,6 @@
       <button class="btn" id="resetTune" data-i18n="tools.resetTicks" disabled>Clear ticks</button>
     </div>
     <p class="muted small" data-i18n="tools.stringsHint">A tick means that string held in tune for half a second.</p>
-  </div>
-
-  <div class="card">
-    <h2 data-i18n="tools.chordsHeading">Chords</h2>
-    <p class="muted" data-i18n="tools.chordsIntro">Pick a chord and see where the fingers go. × means do not play that string, ○ means play it open, and the numbers are which finger.</p>
-
-    <div class="chord-pick">
-      <div class="chord-roots" id="chordRoots" role="group" data-i18n-aria-label="tools.chordsHeading" aria-label="Chords"></div>
-      <div class="chord-qualities" id="chordQualities" role="group"></div>
-    </div>
-
-    <div class="chord-face">
-      <div class="chord-name" id="chordName">Am</div>
-      <div id="chordBoxHost" class="chord-box-host"></div>
-      <div class="chord-shapes" id="chordShapes"></div>
-      <div class="chord-notes"><span class="muted small" data-i18n="tools.chordNotes">Notes</span> <strong id="chordNotes">—</strong></div>
-      <button class="btn small" id="hearChord" data-i18n="tools.hearIt">Hear it</button>
-    </div>
   </div>
 
   <div class="card">

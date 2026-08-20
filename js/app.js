@@ -3,12 +3,13 @@
 import { AudioEngine, Metronome, outputContext, playChord } from './audio.js';
 import { Tuner, tapTempo, readingView, STRING_ORDER } from './tuner.js';
 import { ROOTS, QUALITY_ORDER, shapesFor, shapeNotes, chordToneNames, chordName } from './chords.js';
+import { targetFor, ChordAttempt, ChordProgress, DRILL_POOL } from './chord-drill.js';
 import { STANDARD_TUNING } from './theory.js';
 import {
   soundingAt, writtenAt, hzToMidiFloat, centsFromTarget, noteName, pitchClassName,
   positionId, parsePositionId, positionsFor, midiToHz,
 } from './theory.js';
-import { renderNote, renderFretboard, renderChordBox } from './staff.js';
+import { renderNote, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
 import { pickNext, isFluent, emptyStat } from './srs.js';
 import { Progress } from './progress.js';
 import { STAGES, stageById, nextStage, poolFor, readyToAdvance, RHYTHMS, expectedOnsets } from './curriculum.js';
@@ -39,6 +40,7 @@ document.querySelectorAll('.tab').forEach((tab) => {
     // behind a drill would fight the drill's own metronome, and a tuner still
     // holding the wide analysis window would slow the drills down.
     if (tab.dataset.view !== 'tools') { stopTuning(); stopMetro(); }
+    if (tab.dataset.view !== 'chords') stopChordDrill();
   });
 });
 
@@ -200,6 +202,7 @@ function updateSessionCard() {
 
 audio.onPitch = (stable, raw) => {
   feedTuner(raw);
+  feedChordDrill(stable);
   // Tuner + level readout, live regardless of drill state.
   if (raw) {
     const m = Math.round(hzToMidiFloat(raw.hz));
@@ -731,6 +734,7 @@ function paintTuner(reading) {
 async function startTuning() {
   if (tune.active) { stopTuning(); return; }
   if (read.active) endReadSession();
+  stopChordDrill();
   if (!(await ensureAudio())) return;
   audio.setAnalysisWindow(TUNE_WINDOW);
   tune.engine.clearNote();
@@ -768,6 +772,154 @@ document.querySelectorAll('input[name="tuneMode"]').forEach((r) => {
 function feedTuner(raw) {
   if (!tune.active) return;
   paintTuner(tune.engine.push(raw ? raw.hz : null, performance.now()));
+}
+
+// ============================================================ READING CHORDS
+//
+// The one thing here that is not a reference: several notes at once on the
+// staff, played one string at a time so the microphone can actually judge
+// them. Nootka reads single notes; nothing he has reads a stack.
+
+const chordDrill = {
+  active: false,
+  progress: new ChordProgress(),
+  target: null,
+  attempt: null,
+  shownAt: 0,
+  lastJudged: null,     // the pitch already counted, so a ringing string is not counted twice
+  lastName: null,
+  asked: 0,
+  clean: 0,
+  times: [],
+};
+
+function drawChordQuestion() {
+  const states = chordDrill.attempt ? chordDrill.attempt.states : {};
+  $('chordStaffHost').innerHTML = chordDrill.target
+    ? renderChordStack(chordDrill.target.written, { states, width: 280 })
+    : renderChordStack([], { width: 280 });
+  updateChordHint();
+}
+
+function updateChordHint() {
+  const host = $('chordHintHost');
+  const wanted = $('showShape').checked && chordDrill.target;
+  host.hidden = !wanted;
+  host.innerHTML = wanted ? renderChordBox(chordDrill.target.shape) : '';
+}
+
+function nextChord() {
+  const name = chordDrill.progress.next({ avoid: chordDrill.lastName });
+  chordDrill.target = targetFor(name);
+  chordDrill.lastName = name;
+  chordDrill.attempt = new ChordAttempt(chordDrill.target);
+  chordDrill.shownAt = performance.now();
+  chordDrill.lastJudged = null;
+  $('cVerdictMain').textContent = t('chords.waiting');
+  $('cVerdictMain').className = 'verdict-main';
+  $('cVerdictSub').textContent = '';
+  drawChordQuestion();
+}
+
+function judgeChordNote(midi) {
+  const a = chordDrill.attempt;
+  if (!a || a.done) return;
+  const { verdict } = a.play(midi);
+
+  if (verdict === 'wrong' || verdict === 'octave') {
+    $('cVerdictMain').textContent = t(verdict === 'octave' ? 'chords.octaveOff' : 'chords.wrongNote');
+    $('cVerdictMain').className = 'verdict-main bad';
+    $('cVerdictSub').textContent = t('chords.expected', { note: noteName(a.expected) });
+    drawChordQuestion();
+    return;
+  }
+
+  if (!a.done) {
+    $('cVerdictMain').textContent = t('chords.keepGoing');
+    $('cVerdictMain').className = 'verdict-main good';
+    $('cVerdictSub').textContent = '';
+    drawChordQuestion();
+    return;
+  }
+
+  // Finished. Only now is the chord named - naming it earlier would answer the
+  // question the staff is asking.
+  const ms = performance.now() - chordDrill.shownAt;
+  chordDrill.asked += 1;
+  if (a.clean) chordDrill.clean += 1;
+  chordDrill.times.push(ms);
+  chordDrill.progress.record(chordDrill.target.name, { correct: a.clean, ms });
+
+  $('cVerdictMain').textContent = t('chords.chordDone', { name: chordDrill.target.name });
+  $('cVerdictMain').className = 'verdict-main good';
+  $('cVerdictSub').textContent = a.clean ? '' : t('chords.hadErrors');
+  drawChordQuestion();
+  updateChordSession();
+
+  setTimeout(() => { if (chordDrill.active) nextChord(); }, a.clean ? 900 : 1800);
+}
+
+function updateChordSession() {
+  $('chordSessionCard').hidden = chordDrill.asked === 0;
+  $('cAsked').textContent = String(chordDrill.asked);
+  $('cClean').textContent = String(chordDrill.clean);
+  const sorted = [...chordDrill.times].sort((a, b) => a - b);
+  const med = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
+  $('cSpeed').textContent = med ? `${(med / 1000).toFixed(1)}s` : '—';
+}
+
+async function startChordDrill() {
+  if (chordDrill.active) { stopChordDrill(); return; }
+  if (read.active) endReadSession();
+  stopTuning();
+  if (!(await ensureAudio())) {
+    $('cVerdictMain').textContent = t('mic.unavailable');
+    $('cVerdictMain').className = 'verdict-main bad';
+    return;
+  }
+  chordDrill.active = true;
+  chordDrill.asked = 0; chordDrill.clean = 0; chordDrill.times = [];
+  $('startChords').textContent = t('chords.stop');
+  $('skipChord').disabled = false;
+  nextChord();
+}
+
+function stopChordDrill() {
+  if (!chordDrill.active) return;
+  chordDrill.active = false;
+  chordDrill.target = null;
+  chordDrill.attempt = null;
+  $('startChords').textContent = t('chords.start');
+  $('skipChord').disabled = true;
+  $('cVerdictMain').textContent = t('chords.prompt');
+  $('cVerdictMain').className = 'verdict-main';
+  $('cVerdictSub').textContent = '';
+  drawChordQuestion();
+}
+
+$('startChords').addEventListener('click', startChordDrill);
+$('skipChord').addEventListener('click', () => {
+  if (!chordDrill.active) return;
+  if (chordDrill.target && chordDrill.attempt && !chordDrill.attempt.done) {
+    chordDrill.asked += 1;
+    chordDrill.progress.record(chordDrill.target.name, { correct: false, ms: 12000 });
+    updateChordSession();
+  }
+  nextChord();
+});
+$('showShape').addEventListener('change', updateChordHint);
+$('endChordSession').addEventListener('click', stopChordDrill);
+
+/** Called from the shared pitch callback. */
+function feedChordDrill(stable) {
+  if (!chordDrill.active || !stable) return;
+  const midi = Math.round(hzToMidiFloat(stable.hz));
+  // A plucked string rings for seconds and reports the same pitch every frame.
+  // Only a CHANGE of note is a new event - the expected notes always rise, so
+  // this never swallows one that was genuinely played.
+  if (midi === chordDrill.lastJudged) return;
+  chordDrill.lastJudged = midi;
+  judgeChordNote(midi);
 }
 
 // ------------------------------------------------------------- chord charts
@@ -830,8 +982,8 @@ function paintChord() {
 
   // Only offer the switcher when there is something to switch to.
   $('chordShapes').innerHTML = shapes.length < 2 ? '' : shapes.map((sh, n) => {
-    const label = sh.open ? t('tools.shapeOpen') : String(sh.barre?.fret ?? '');
-    const title = sh.open ? t('tools.shapeOpen') : t('tools.shapeBarreAt', { fret: sh.barre?.fret });
+    const label = sh.open ? t('chords.shapeOpen') : String(sh.barre?.fret ?? '');
+    const title = sh.open ? t('chords.shapeOpen') : t('chords.shapeBarreAt', { fret: sh.barre?.fret });
     return `<button class="chip small${n === i ? ' is-on' : ''}" data-shape="${n}" title="${esc(title)}">${esc(label)}</button>`;
   }).join('');
   $('chordShapes').querySelectorAll('[data-shape]').forEach((b) =>
@@ -939,6 +1091,8 @@ window.addEventListener('localechange', () => {
   paintTuner(null);
   buildChordPicker();
   paintChord();
+  drawChordQuestion();
+  $('startChords').textContent = t(chordDrill.active ? 'chords.stop' : 'chords.start');
   $('startTune').textContent = t(tune.active ? 'tools.stop' : 'tools.start');
   $('startMetro').textContent = t(metro.running ? 'tools.metroStop' : 'tools.metroStart');
   window.dispatchEvent(new CustomEvent('openstring:redraw'));
@@ -966,6 +1120,7 @@ initI18n().then(() => {
   paintChord();
   paintTuner(null);
   showEmptyStaff();
+  drawChordQuestion();
 }).catch(() => {
   // Even if catalogues fail entirely, the built-in English markup still works.
   initPieceView({ audio, ensureAudio });
@@ -980,4 +1135,5 @@ initI18n().then(() => {
   paintChord();
   paintTuner(null);
   showEmptyStaff();
+  drawChordQuestion();
 });

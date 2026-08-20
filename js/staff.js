@@ -170,6 +170,116 @@ export function renderFretboard({
 }
 
 /**
+ * A chord written as it appears in music: noteheads stacked on one stem.
+ *
+ * The fiddly part is seconds. Two notes on adjacent degrees cannot both sit on
+ * the same side of the stem - they would overlap - so the upper one moves to
+ * the far side, which is what engravers have always done and what the eye
+ * expects. Get that wrong and a chord looks like a smudge.
+ *
+ * @param writtenMidis  WRITTEN pitches, any order
+ * @param states        per-note state by ascending index: '' | 'correct' | 'wrong'
+ */
+export function renderChordStack(writtenMidis, {
+  width = 260, preferFlats = false, showOctaveEight = true, states = {}, label = '',
+} = {}) {
+  const pitches = [...(writtenMidis || [])].sort((a, b) => a - b);
+  if (!pitches.length) return renderNote(null, { width, label });
+
+  const spelled = pitches.map((m) => spell(m, preferFlats));
+  const allLedgers = spelled.flatMap((sp) => ledgersFor(sp.diatonic));
+  const below = new Set(allLedgers.filter((d) => d < BOTTOM_LINE_DIATONIC)).size;
+  const above = new Set(allLedgers.filter((d) => d > BOTTOM_LINE_DIATONIC)).size;
+  const headroom = Math.max(0, above - 1) * LINE_GAP;
+  const height = 152 + below * LINE_GAP + headroom;
+  const bottomY = LINE_GAP * 4 + 28 + headroom;
+
+  const noteX = width * 0.62;
+  const RX = 7.6;
+  const parts = [];
+
+  for (let i = 0; i < 5; i++) {
+    const y = bottomY - i * LINE_GAP;
+    parts.push(`<line x1="14" y1="${y}" x2="${width - 14}" y2="${y}" class="staff-line"/>`);
+  }
+  parts.push(trebleClef(bottomY, showOctaveEight));
+
+  // Stem direction follows the note furthest from the middle line, which is the
+  // rule that keeps a wide guitar chord's stem inside the staff.
+  const middle = BOTTOM_LINE_DIATONIC + 4;
+  const far = spelled.reduce((best, sp) =>
+    Math.abs(sp.diatonic - middle) > Math.abs(best.diatonic - middle) ? sp : best, spelled[0]);
+  const stemUp = far.diatonic < middle;
+
+  // Which heads sit on the far side of the stem: any note a second above one
+  // that is already on the near side.
+  const offset = spelled.map(() => false);
+  for (let i = 1; i < spelled.length; i++) {
+    if (spelled[i].diatonic - spelled[i - 1].diatonic === 1 && !offset[i - 1]) offset[i] = true;
+  }
+
+  // Ledger lines are per degree, not per note, or a chord draws them twice.
+  const drawnLedgers = new Set();
+  const anyOffset = offset.some(Boolean);
+  for (const sp of spelled) {
+    for (const d of ledgersFor(sp.diatonic)) {
+      if (drawnLedgers.has(d)) continue;
+      drawnLedgers.add(d);
+      const ly = yForDiatonic(d, bottomY);
+      // A ledger under an offset head has to reach far enough to sit under it.
+      const pad = anyOffset ? 13 + RX * 2 : 13;
+      const x1 = stemUp ? noteX - 13 : noteX - pad;
+      const x2 = stemUp ? noteX + pad : noteX + 13;
+      parts.push(`<line x1="${x1}" y1="${ly}" x2="${x2}" y2="${ly}" class="staff-line"/>`);
+    }
+  }
+
+  // Accidentals go left of the whole chord, in columns so they never collide.
+  const columns = [];
+  spelled.forEach((sp) => {
+    if (sp.accidental === 0) return;
+    const y = yForDiatonic(sp.diatonic, bottomY);
+    let col = 0;
+    while (columns[col]?.some((prev) => Math.abs(prev - y) < LINE_GAP * 2)) col++;
+    (columns[col] ||= []).push(y);
+    parts.push(`<text x="${noteX - 24 - col * 12}" y="${y + 5}" class="accidental" text-anchor="middle">`
+      + `${sp.accidental === 1 ? '♯' : '♭'}</text>`);
+  });
+
+  const stemX = stemUp ? noteX + RX - 0.4 : noteX - RX + 0.4;
+  spelled.forEach((sp, i) => {
+    const y = yForDiatonic(sp.diatonic, bottomY);
+    const x = offset[i] ? (stemUp ? noteX + RX * 2 : noteX - RX * 2) : noteX;
+    const state = states[i] || '';
+    parts.push(`<ellipse cx="${x}" cy="${y}" rx="${RX}" ry="5.6" class="notehead ${state}" `
+      + `transform="rotate(-20 ${x} ${y})"/>`);
+  });
+
+  // One stem for the whole chord, running the length of the stack.
+  //
+  // A single note gets a stem three and a half spaces long. A chord already
+  // spans that far or more, so the same rule would send the stem off the top of
+  // the picture - which it did. Engraving practice is to keep the overhang
+  // short once a chord is wide, and the drawing is clamped to the canvas as a
+  // last resort so a very wide voicing cannot be clipped.
+  const yTop = yForDiatonic(spelled[spelled.length - 1].diatonic, bottomY);
+  const yBottom = yForDiatonic(spelled[0].diatonic, bottomY);
+  const spread = yBottom - yTop;
+  const overhang = spread > LINE_GAP * 3.5 ? LINE_GAP * 2 : LINE_GAP * 3.5 - spread;
+  const stemY1 = stemUp ? yBottom : yTop;
+  const raw = stemUp ? yTop - overhang : yBottom + overhang;
+  const stemY2 = Math.max(8, Math.min(height - 8, raw));
+  parts.push(`<line x1="${stemX}" y1="${stemY1}" x2="${stemX}" y2="${stemY2}" class="stem"/>`);
+
+  if (label) {
+    parts.push(`<text x="${width / 2}" y="${height - 4}" class="staff-label" text-anchor="middle">${esc(label)}</text>`);
+  }
+
+  return `<svg viewBox="0 0 ${width} ${height}" class="staff chord-stack" role="img" `
+    + `aria-label="${esc(label || 'chord on the staff')}">${parts.join('')}</svg>`;
+}
+
+/**
  * A chord box - the vertical grid every chord book on earth uses.
  *
  * Deliberately NOT the horizontal fretboard above. That one answers "where is
