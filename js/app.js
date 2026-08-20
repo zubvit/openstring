@@ -84,6 +84,17 @@ function renderStageHeader() {
   $('masteryPct').textContent = `${pct}%`;
 }
 
+/**
+ * The staff, with its clef and nothing on it.
+ *
+ * Shown before a session starts. An empty white box reads as a broken app, and
+ * the staff is the one thing this whole program is about - it should be the
+ * first thing you see, not something that appears once you press a button.
+ */
+function showEmptyStaff() {
+  $('staffHost').innerHTML = renderNote(null, { label: '' });
+}
+
 function nextQuestion() {
   const pool = poolFor(stage);
   const id = pickNext(pool, progress.data.stats, { avoid: read.lastId });
@@ -238,6 +249,9 @@ function endReadSession() {
     ? t('read.sessionDone', { correct: read.correct, asked: read.asked })
     : t('read.prompt');
   $('verdictMain').className = 'verdict-main';
+  // Leave the staff empty rather than showing the last answer indefinitely.
+  showEmptyStaff();
+  $('hintHost').hidden = true;
   renderStageHeader();
 }
 
@@ -867,6 +881,7 @@ initI18n().then(() => {
   buildStringRow();
   buildBeatRow();
   paintTuner(null);
+  showEmptyStaff();
 }).catch(() => {
   // Even if catalogues fail entirely, the built-in English markup still works.
   initPieceView({ audio, ensureAudio });
@@ -878,4 +893,5 @@ initI18n().then(() => {
   buildStringRow();
   buildBeatRow();
   paintTuner(null);
+  showEmptyStaff();
 });
