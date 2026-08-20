@@ -241,5 +241,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Movimenti per battuta",
   "tools.tap": "Batti",
-  "tools.tapHint": "Batti quattro volte a tempo per impostare la velocità."
+  "tools.tapHint": "Batti quattro volte a tempo per impostare la velocità.",
+  "tools.chordsHeading": "Accordi",
+  "tools.chordsIntro": "Scegli un accordo e guarda dove vanno le dita. × vuol dire non suonare quella corda, ○ vuol dire suonarla a vuoto, e i numeri dicono quale dito.",
+  "tools.chordNotes": "Note",
+  "tools.hearIt": "Ascolta",
+  "tools.shapeOpen": "Aperto",
+  "tools.shapeBarreAt": "Barré al tasto {fret}",
+  "chord.major": "maggiore",
+  "chord.minor": "minore",
+  "chord.dom7": "settima",
+  "chord.min7": "minore settima",
+  "chord.maj7": "maggiore settima",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "diminuito"
 }

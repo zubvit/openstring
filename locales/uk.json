@@ -247,5 +247,19 @@
   "tools.tempo": "Темп",
   "tools.beatsPerBar": "Долі в такті",
   "tools.tap": "Відбити",
-  "tools.tapHint": "Відбийте чотири рази в темпі, щоб задати швидкість."
+  "tools.tapHint": "Відбийте чотири рази в темпі, щоб задати швидкість.",
+  "tools.chordsHeading": "Акорди",
+  "tools.chordsIntro": "Виберіть акорд і подивіться, куди ставити пальці. × означає не грати цю струну, ○ — грати відкриту, а цифри показують палець.",
+  "tools.chordNotes": "Ноти",
+  "tools.hearIt": "Послухати",
+  "tools.shapeOpen": "Відкритий",
+  "tools.shapeBarreAt": "Барре на ладу {fret}",
+  "chord.major": "мажор",
+  "chord.minor": "мінор",
+  "chord.dom7": "септакорд",
+  "chord.min7": "мінорний септакорд",
+  "chord.maj7": "великий мажорний септакорд",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "зменшений"
 }

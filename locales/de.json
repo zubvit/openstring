@@ -241,5 +241,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Schläge pro Takt",
   "tools.tap": "Tippen",
-  "tools.tapHint": "Viermal im Takt tippen, um das Tempo zu setzen."
+  "tools.tapHint": "Viermal im Takt tippen, um das Tempo zu setzen.",
+  "tools.chordsHeading": "Akkorde",
+  "tools.chordsIntro": "Wähle einen Akkord und sieh, wohin die Finger gehören. × heißt diese Saite nicht spielen, ○ heißt leer spielen, und die Zahlen sagen welcher Finger.",
+  "tools.chordNotes": "Töne",
+  "tools.hearIt": "Anhören",
+  "tools.shapeOpen": "Offen",
+  "tools.shapeBarreAt": "Barré im {fret}. Bund",
+  "chord.major": "Dur",
+  "chord.minor": "Moll",
+  "chord.dom7": "Septakkord",
+  "chord.min7": "Moll-Septakkord",
+  "chord.maj7": "Dur-Septakkord",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "vermindert"
 }

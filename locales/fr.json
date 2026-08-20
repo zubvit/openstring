@@ -241,5 +241,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Temps par mesure",
   "tools.tap": "Taper",
-  "tools.tapHint": "Tape quatre fois en mesure pour régler le tempo."
+  "tools.tapHint": "Tape quatre fois en mesure pour régler le tempo.",
+  "tools.chordsHeading": "Accords",
+  "tools.chordsIntro": "Choisis un accord et vois où vont les doigts. × veut dire ne pas jouer cette corde, ○ veut dire la jouer à vide, et les chiffres indiquent quel doigt.",
+  "tools.chordNotes": "Notes",
+  "tools.hearIt": "Écouter",
+  "tools.shapeOpen": "Ouvert",
+  "tools.shapeBarreAt": "Barré à la case {fret}",
+  "chord.major": "majeur",
+  "chord.minor": "mineur",
+  "chord.dom7": "septième",
+  "chord.min7": "mineur septième",
+  "chord.maj7": "majeur septième",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "diminué"
 }

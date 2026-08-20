@@ -241,5 +241,19 @@
   "tools.tempo": "लय",
   "tools.beatsPerBar": "एक बार में मात्राएँ",
   "tools.tap": "थपकी",
-  "tools.tapHint": "लय तय करने के लिए ताल में चार बार थपकी दें।"
+  "tools.tapHint": "लय तय करने के लिए ताल में चार बार थपकी दें।",
+  "tools.chordsHeading": "कॉर्ड",
+  "tools.chordsIntro": "कोई कॉर्ड चुनिए और देखिए उँगलियाँ कहाँ जाती हैं। × का मतलब वह तार मत बजाइए, ○ का मतलब उसे खुला बजाइए, और अंक बताते हैं कौन-सी उँगली।",
+  "tools.chordNotes": "स्वर",
+  "tools.hearIt": "सुनिए",
+  "tools.shapeOpen": "खुला",
+  "tools.shapeBarreAt": "{fret} फ़्रेट पर बार",
+  "chord.major": "मेजर",
+  "chord.minor": "माइनर",
+  "chord.dom7": "सातवाँ",
+  "chord.min7": "माइनर सातवाँ",
+  "chord.maj7": "मेजर सातवाँ",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "डिमिनिश्ड"
 }

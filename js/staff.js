@@ -170,6 +170,97 @@ export function renderFretboard({
 }
 
 /**
+ * A chord box - the vertical grid every chord book on earth uses.
+ *
+ * Deliberately NOT the horizontal fretboard above. That one answers "where is
+ * this note", looking down at the guitar in your lap. This one answers "what
+ * shape does my hand make", looking at the neck head-on, and every player
+ * already reads it that way. Using the wrong orientation for either would make
+ * both harder to read.
+ *
+ * @param shape  { frets, fingers, barre } with index 0 = sixth string
+ */
+export function renderChordBox(shape, { width = 132, showFingers = true } = {}) {
+  if (!shape || !Array.isArray(shape.frets)) return '';
+
+  const fretted = shape.frets.filter((f) => f != null && f > 0);
+  const lowest = fretted.length ? Math.min(...fretted) : 1;
+  const highest = fretted.length ? Math.max(...fretted) : 1;
+  const SPAN = 4;                                    // frets shown in the grid
+  // Open shapes always show the nut; a barre chord slides the window up to it.
+  const startFret = highest <= SPAN ? 1 : lowest;
+  const showNut = startFret === 1;
+
+  const padL = 18, padR = 18, padT = 22, padB = 16;
+  const colW = (width - padL - padR) / 5;            // 6 strings, 5 gaps
+  const rowH = 20;
+  const height = padT + padB + SPAN * rowH;
+  const gridTop = padT;
+  const gridBottom = padT + SPAN * rowH;
+  const parts = [];
+
+  // Strings, low E on the left, as you face the neck.
+  for (let i = 0; i < 6; i++) {
+    const x = padL + i * colW;
+    parts.push(`<line x1="${x}" y1="${gridTop}" x2="${x}" y2="${gridBottom}" class="cb-string"/>`);
+  }
+  for (let f = 0; f <= SPAN; f++) {
+    const y = gridTop + f * rowH;
+    const nut = showNut && f === 0;
+    parts.push(`<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" class="${nut ? 'cb-nut' : 'cb-fret'}"/>`);
+  }
+  if (!showNut) {
+    parts.push(`<text x="${padL - 6}" y="${gridTop + rowH * 0.7}" class="cb-fretnum" text-anchor="end">${startFret}</text>`);
+  }
+
+  // Above the grid: a circle for an open string, a cross for one you do not play.
+  shape.frets.forEach((f, i) => {
+    const x = padL + i * colW;
+    if (f == null) {
+      parts.push(`<text x="${x}" y="${gridTop - 7}" class="cb-mute" text-anchor="middle">×</text>`);
+    } else if (f === 0) {
+      parts.push(`<circle cx="${x}" cy="${gridTop - 11}" r="4" class="cb-open"/>`);
+    }
+  });
+
+  // A barre is one bar, not six separate dots - that is what the hand does.
+  if (shape.barre) {
+    const held = shape.frets
+      .map((f, i) => (f === shape.barre.fret ? i : -1))
+      .filter((i) => i >= 0);
+    if (held.length > 1) {
+      const y = gridTop + (shape.barre.fret - startFret + 0.5) * rowH;
+      const x1 = padL + held[0] * colW;
+      const x2 = padL + held[held.length - 1] * colW;
+      parts.push(`<rect x="${x1 - 6.5}" y="${y - 6.5}" width="${x2 - x1 + 13}" height="13" rx="6.5" class="cb-barre"/>`);
+    }
+  }
+
+  shape.frets.forEach((f, i) => {
+    if (f == null || f === 0) return;
+    if (shape.barre && f === shape.barre.fret) return;   // already under the bar
+    const x = padL + i * colW;
+    const y = gridTop + (f - startFret + 0.5) * rowH;
+    parts.push(`<circle cx="${x}" cy="${y}" r="6.5" class="cb-dot"/>`);
+    if (showFingers && shape.fingers?.[i]) {
+      parts.push(`<text x="${x}" y="${y + 3.4}" class="cb-finger" text-anchor="middle">${shape.fingers[i]}</text>`);
+    }
+  });
+
+  // The barre's own finger goes on the bar itself, once.
+  if (shape.barre && showFingers) {
+    const i = 6 - shape.barre.rootString;
+    const finger = shape.fingers?.[i];
+    if (finger) {
+      const y = gridTop + (shape.barre.fret - startFret + 0.5) * rowH;
+      parts.push(`<text x="${padL + i * colW}" y="${y + 3.4}" class="cb-finger" text-anchor="middle">${finger}</text>`);
+    }
+  }
+
+  return `<svg viewBox="0 0 ${width} ${height}" class="chordbox" role="img" aria-label="chord diagram">${parts.join('')}</svg>`;
+}
+
+/**
  * A phrase on a single staff.
  *
  * Reading is a horizontal skill: you take in a line, not a series of isolated

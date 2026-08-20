@@ -238,5 +238,19 @@
   "tools.tempo": "テンポ",
   "tools.beatsPerBar": "1小節の拍数",
   "tools.tap": "タップ",
-  "tools.tapHint": "テンポに合わせて4回タップしてください。"
+  "tools.tapHint": "テンポに合わせて4回タップしてください。",
+  "tools.chordsHeading": "コード",
+  "tools.chordsIntro": "コードを選ぶと、指をどこに置くかが出ます。× はその弦を弾かない、○ は開放で弾く、数字は何指かを表します。",
+  "tools.chordNotes": "構成音",
+  "tools.hearIt": "鳴らしてみる",
+  "tools.shapeOpen": "開放",
+  "tools.shapeBarreAt": "{fret}フレットでセーハ",
+  "chord.major": "メジャー",
+  "chord.minor": "マイナー",
+  "chord.dom7": "セブンス",
+  "chord.min7": "マイナーセブンス",
+  "chord.maj7": "メジャーセブンス",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "ディミニッシュ"
 }

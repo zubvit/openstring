@@ -244,5 +244,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Timpi într-o măsură",
   "tools.tap": "Bate",
-  "tools.tapHint": "Bate de patru ori în ritm ca să setezi tempoul."
+  "tools.tapHint": "Bate de patru ori în ritm ca să setezi tempoul.",
+  "tools.chordsHeading": "Acorduri",
+  "tools.chordsIntro": "Alege un acord și vezi unde stau degetele. × înseamnă că nu cânți coarda aceea, ○ înseamnă că o cânți liberă, iar cifrele spun ce deget.",
+  "tools.chordNotes": "Note",
+  "tools.hearIt": "Ascultă",
+  "tools.shapeOpen": "Deschis",
+  "tools.shapeBarreAt": "Bareu la pragul {fret}",
+  "chord.major": "major",
+  "chord.minor": "minor",
+  "chord.dom7": "septimă",
+  "chord.min7": "minor cu septimă",
+  "chord.maj7": "major cu septimă",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "micșorat"
 }

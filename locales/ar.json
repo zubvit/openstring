@@ -253,5 +253,19 @@
   "tools.tempo": "الإيقاع",
   "tools.beatsPerBar": "النبضات في المازورة",
   "tools.tap": "انقر",
-  "tools.tapHint": "انقر أربع مرات مع الإيقاع لضبط السرعة."
+  "tools.tapHint": "انقر أربع مرات مع الإيقاع لضبط السرعة.",
+  "tools.chordsHeading": "الأوتار المركّبة",
+  "tools.chordsIntro": "اختر وترًا مركّبًا وانظر أين تذهب الأصابع. تعني × لا تعزف هذا الوتر، وتعني ○ اعزفه مفتوحًا، والأرقام تدل على الإصبع.",
+  "tools.chordNotes": "النغمات",
+  "tools.hearIt": "استمع",
+  "tools.shapeOpen": "مفتوح",
+  "tools.shapeBarreAt": "حاجز عند الدرجة {fret}",
+  "chord.major": "كبير",
+  "chord.minor": "صغير",
+  "chord.dom7": "سابعة",
+  "chord.min7": "صغير بسابعة",
+  "chord.maj7": "كبير بسابعة",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "ناقص"
 }

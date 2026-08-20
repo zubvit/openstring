@@ -241,5 +241,19 @@
   "tools.tempo": "Andamento",
   "tools.beatsPerBar": "Tempos por compasso",
   "tools.tap": "Marcar",
-  "tools.tapHint": "Marca quatro vezes a tempo para definir o andamento."
+  "tools.tapHint": "Marca quatro vezes a tempo para definir o andamento.",
+  "tools.chordsHeading": "Acordes",
+  "tools.chordsIntro": "Escolhe um acorde e vê onde vão os dedos. × quer dizer não tocar essa corda, ○ quer dizer tocá-la solta, e os números dizem que dedo usar.",
+  "tools.chordNotes": "Notas",
+  "tools.hearIt": "Ouvir",
+  "tools.shapeOpen": "Aberto",
+  "tools.shapeBarreAt": "Pestana na casa {fret}",
+  "chord.major": "maior",
+  "chord.minor": "menor",
+  "chord.dom7": "sétima",
+  "chord.min7": "menor com sétima",
+  "chord.maj7": "maior com sétima",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "diminuto"
 }

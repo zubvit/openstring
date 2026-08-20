@@ -249,6 +249,24 @@
   </div>
 
   <div class="card">
+    <h2 data-i18n="tools.chordsHeading">Chords</h2>
+    <p class="muted" data-i18n="tools.chordsIntro">Pick a chord and see where the fingers go. × means do not play that string, ○ means play it open, and the numbers are which finger.</p>
+
+    <div class="chord-pick">
+      <div class="chord-roots" id="chordRoots" role="group" data-i18n-aria-label="tools.chordsHeading" aria-label="Chords"></div>
+      <div class="chord-qualities" id="chordQualities" role="group"></div>
+    </div>
+
+    <div class="chord-face">
+      <div class="chord-name" id="chordName">Am</div>
+      <div id="chordBoxHost" class="chord-box-host"></div>
+      <div class="chord-shapes" id="chordShapes"></div>
+      <div class="chord-notes"><span class="muted small" data-i18n="tools.chordNotes">Notes</span> <strong id="chordNotes">—</strong></div>
+      <button class="btn small" id="hearChord" data-i18n="tools.hearIt">Hear it</button>
+    </div>
+  </div>
+
+  <div class="card">
     <h2 data-i18n="tools.metroHeading">Metronome</h2>
     <p class="muted" data-i18n="tools.metroIntro">Works on its own — no microphone needed.</p>
 

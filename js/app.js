@@ -1,13 +1,14 @@
 // Openstring - wiring the drills to the audio engine and the progress store.
 
-import { AudioEngine, Metronome, outputContext } from './audio.js';
+import { AudioEngine, Metronome, outputContext, playChord } from './audio.js';
 import { Tuner, tapTempo, readingView, STRING_ORDER } from './tuner.js';
+import { ROOTS, QUALITY_ORDER, shapesFor, shapeNotes, chordToneNames, chordName } from './chords.js';
 import { STANDARD_TUNING } from './theory.js';
 import {
   soundingAt, writtenAt, hzToMidiFloat, centsFromTarget, noteName, pitchClassName,
   positionId, parsePositionId, positionsFor, midiToHz,
 } from './theory.js';
-import { renderNote, renderFretboard } from './staff.js';
+import { renderNote, renderFretboard, renderChordBox } from './staff.js';
 import { pickNext, isFluent, emptyStat } from './srs.js';
 import { Progress } from './progress.js';
 import { STAGES, stageById, nextStage, poolFor, readyToAdvance, RHYTHMS, expectedOnsets } from './curriculum.js';
@@ -17,6 +18,11 @@ import { Sync } from './sync.js';
 import { initI18n, setLocale, getLocale, availableLocales, applyToDom, t } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
+
+// Translations are data from a file; nothing here builds markup out of them
+// without going through this first.
+const esc = (v) => String(v)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const progress = new Progress();
 const audio = new AudioEngine();
@@ -764,6 +770,80 @@ function feedTuner(raw) {
   paintTuner(tune.engine.push(raw ? raw.hz : null, performance.now()));
 }
 
+// ------------------------------------------------------------- chord charts
+//
+// A reference, not a drill. It teaches nothing on its own - but the chord you
+// cannot remember is the one that stops the practice, and stopping to look it
+// up somewhere else is how a session ends.
+
+// The names to show on the quality buttons. Kept here rather than in chords.js
+// because that module is arithmetic and knows nothing about language.
+const QUALITY_KEYS = {
+  '': 'chord.major', m: 'chord.minor', 7: 'chord.dom7', m7: 'chord.min7',
+  maj7: 'chord.maj7', sus2: 'chord.sus2', sus4: 'chord.sus4', dim: 'chord.dim',
+};
+
+const chords = { root: 'A', quality: 'm', shapeIndex: 0 };
+
+function buildChordPicker() {
+  const roots = $('chordRoots');
+  const quals = $('chordQualities');
+  if (!roots || !quals) return;
+  roots.innerHTML = ROOTS.map((r) =>
+    `<button class="chip" data-root="${r}">${r}</button>`).join('');
+  quals.innerHTML = QUALITY_ORDER.map((q) =>
+    `<button class="chip" data-quality="${q}">${esc(t(QUALITY_KEYS[q]))}</button>`).join('');
+
+  roots.querySelectorAll('[data-root]').forEach((b) => b.addEventListener('click', () => {
+    chords.root = b.dataset.root; chords.shapeIndex = 0; paintChord();
+  }));
+  quals.querySelectorAll('[data-quality]').forEach((b) => b.addEventListener('click', () => {
+    chords.quality = b.dataset.quality; chords.shapeIndex = 0; paintChord();
+  }));
+}
+
+function paintChord() {
+  const shapes = shapesFor(chords.root, chords.quality);
+  const name = chordName(chords.root, chords.quality);
+
+  document.querySelectorAll('#chordRoots [data-root]').forEach((b) =>
+    b.classList.toggle('is-on', b.dataset.root === chords.root));
+  document.querySelectorAll('#chordQualities [data-quality]').forEach((b) =>
+    b.classList.toggle('is-on', b.dataset.quality === chords.quality));
+
+  $('chordName').textContent = name;
+  $('chordNotes').textContent = chordToneNames(chords.root, chords.quality).join(' · ') || '—';
+
+  if (!shapes.length) {
+    // Cannot happen with the current table, but a missing shape must read as
+    // "we do not have this one", never as an empty box that looks broken.
+    $('chordBoxHost').innerHTML = '';
+    $('chordShapes').innerHTML = '';
+    $('hearChord').disabled = true;
+    return;
+  }
+
+  const i = Math.min(chords.shapeIndex, shapes.length - 1);
+  chords.shapeIndex = i;
+  $('chordBoxHost').innerHTML = renderChordBox(shapes[i]);
+  $('hearChord').disabled = false;
+
+  // Only offer the switcher when there is something to switch to.
+  $('chordShapes').innerHTML = shapes.length < 2 ? '' : shapes.map((sh, n) => {
+    const label = sh.open ? t('tools.shapeOpen') : String(sh.barre?.fret ?? '');
+    const title = sh.open ? t('tools.shapeOpen') : t('tools.shapeBarreAt', { fret: sh.barre?.fret });
+    return `<button class="chip small${n === i ? ' is-on' : ''}" data-shape="${n}" title="${esc(title)}">${esc(label)}</button>`;
+  }).join('');
+  $('chordShapes').querySelectorAll('[data-shape]').forEach((b) =>
+    b.addEventListener('click', () => { chords.shapeIndex = Number(b.dataset.shape); paintChord(); }));
+}
+
+$('hearChord').addEventListener('click', () => {
+  const shapes = shapesFor(chords.root, chords.quality);
+  const shape = shapes[chords.shapeIndex];
+  if (shape) playChord(shapeNotes(shape));
+});
+
 // ---------------------------------------------------------- the metronome
 
 const metro = {
@@ -857,6 +937,8 @@ window.addEventListener('localechange', () => {
   renderSync();
   renderProgress();
   paintTuner(null);
+  buildChordPicker();
+  paintChord();
   $('startTune').textContent = t(tune.active ? 'tools.stop' : 'tools.start');
   $('startMetro').textContent = t(metro.running ? 'tools.metroStop' : 'tools.metroStart');
   window.dispatchEvent(new CustomEvent('openstring:redraw'));
@@ -880,6 +962,8 @@ initI18n().then(() => {
   $('bpmOut').textContent = $('bpmRange').value;
   buildStringRow();
   buildBeatRow();
+  buildChordPicker();
+  paintChord();
   paintTuner(null);
   showEmptyStaff();
 }).catch(() => {
@@ -892,6 +976,8 @@ initI18n().then(() => {
   $('bpmOut').textContent = $('bpmRange').value;
   buildStringRow();
   buildBeatRow();
+  buildChordPicker();
+  paintChord();
   paintTuner(null);
   showEmptyStaff();
 });

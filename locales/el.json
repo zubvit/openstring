@@ -241,5 +241,19 @@
   "tools.tempo": "Τέμπο",
   "tools.beatsPerBar": "Χτύποι ανά μέτρο",
   "tools.tap": "Χτύπα",
-  "tools.tapHint": "Χτύπα τέσσερις φορές στον ρυθμό για να ορίσεις το τέμπο."
+  "tools.tapHint": "Χτύπα τέσσερις φορές στον ρυθμό για να ορίσεις το τέμπο.",
+  "tools.chordsHeading": "Συγχορδίες",
+  "tools.chordsIntro": "Διάλεξε συγχορδία και δες πού πάνε τα δάχτυλα. Το × σημαίνει μην παίξεις αυτή τη χορδή, το ○ σημαίνει παίξ' την ανοιχτή, και οι αριθμοί λένε ποιο δάχτυλο.",
+  "tools.chordNotes": "Νότες",
+  "tools.hearIt": "Άκουσέ την",
+  "tools.shapeOpen": "Ανοιχτή",
+  "tools.shapeBarreAt": "Μπαρέ στο τάστο {fret}",
+  "chord.major": "ματζόρε",
+  "chord.minor": "μινόρε",
+  "chord.dom7": "έβδομη",
+  "chord.min7": "ελάσσων έβδομη",
+  "chord.maj7": "μείζων έβδομη",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "ελαττωμένη"
 }

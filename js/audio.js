@@ -329,3 +329,42 @@ export function outputContext() {
   if (_outCtx.state === 'suspended') _outCtx.resume();
   return _outCtx;
 }
+
+/**
+ * Play a chord, one string after another, the way you would check it by hand.
+ *
+ * Strummed all at once it is much harder to hear whether one note is wrong -
+ * which is the whole reason to press the button. Roughly plucked rather than
+ * synthesised properly: three decaying partials is enough to tell an A minor
+ * from an A major, and this is a reference, not an instrument.
+ *
+ * @param midis  SOUNDING midi numbers, low to high
+ */
+export function playChord(midis, { ctx = null, spreadS = 0.09, holdS = 1.6, volume = 0.16 } = {}) {
+  const c = ctx || outputContext();
+  if (!c || !midis?.length) return 0;
+  const start = c.currentTime + 0.05;
+
+  midis.forEach((midi, i) => {
+    const hz = 440 * Math.pow(2, (midi - 69) / 12);
+    const at = start + i * spreadS;
+    // A little more energy in the upper partials of the thin strings, less in
+    // the thick ones - otherwise the bass notes boom and the top disappears.
+    [1, 2, 3].forEach((partial, k) => {
+      const f = hz * partial;
+      if (f > c.sampleRate / 2) return;
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      osc.frequency.value = f;
+      const peak = volume * [1, 0.34, 0.14][k];
+      gain.gain.setValueAtTime(0, at);
+      gain.gain.linearRampToValueAtTime(peak, at + 0.006);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + holdS * (1 - k * 0.22));
+      osc.connect(gain).connect(c.destination);
+      osc.start(at);
+      osc.stop(at + holdS + 0.05);
+    });
+  });
+
+  return midis.length * spreadS + holdS;
+}

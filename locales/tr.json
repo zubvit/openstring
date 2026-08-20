@@ -241,5 +241,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Ölçüdeki vuruş",
   "tools.tap": "Vur",
-  "tools.tapHint": "Tempoyu ayarlamak için ritme uygun dört kez vur."
+  "tools.tapHint": "Tempoyu ayarlamak için ritme uygun dört kez vur.",
+  "tools.chordsHeading": "Akorlar",
+  "tools.chordsIntro": "Bir akor seç ve parmakların nereye geldiğini gör. × o teli çalma demek, ○ boş çal demek, sayılar da hangi parmak olduğunu söyler.",
+  "tools.chordNotes": "Notalar",
+  "tools.hearIt": "Dinle",
+  "tools.shapeOpen": "Açık",
+  "tools.shapeBarreAt": "{fret}. perdede barre",
+  "chord.major": "majör",
+  "chord.minor": "minör",
+  "chord.dom7": "yedili",
+  "chord.min7": "minör yedili",
+  "chord.maj7": "majör yedili",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "eksilmiş"
 }

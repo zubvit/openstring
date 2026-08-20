@@ -247,5 +247,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Miary w takcie",
   "tools.tap": "Wystukaj",
-  "tools.tapHint": "Wystukaj cztery razy w tempie, żeby ustawić szybkość."
+  "tools.tapHint": "Wystukaj cztery razy w tempie, żeby ustawić szybkość.",
+  "tools.chordsHeading": "Akordy",
+  "tools.chordsIntro": "Wybierz akord i zobacz, gdzie idą palce. × znaczy nie grać tej struny, ○ znaczy zagrać pustą, a cyfry mówią którym palcem.",
+  "tools.chordNotes": "Dźwięki",
+  "tools.hearIt": "Posłuchaj",
+  "tools.shapeOpen": "Otwarty",
+  "tools.shapeBarreAt": "Barré na progu {fret}",
+  "chord.major": "durowy",
+  "chord.minor": "molowy",
+  "chord.dom7": "septymowy",
+  "chord.min7": "molowy septymowy",
+  "chord.maj7": "wielki septymowy",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "zmniejszony"
 }

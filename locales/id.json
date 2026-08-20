@@ -238,5 +238,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Ketukan per birama",
   "tools.tap": "Ketuk",
-  "tools.tapHint": "Ketuk empat kali sesuai irama untuk mengatur tempo."
+  "tools.tapHint": "Ketuk empat kali sesuai irama untuk mengatur tempo.",
+  "tools.chordsHeading": "Akor",
+  "tools.chordsIntro": "Pilih akor dan lihat di mana jari-jari diletakkan. × berarti jangan mainkan senar itu, ○ berarti mainkan terbuka, dan angkanya menunjukkan jari mana.",
+  "tools.chordNotes": "Nada",
+  "tools.hearIt": "Dengarkan",
+  "tools.shapeOpen": "Terbuka",
+  "tools.shapeBarreAt": "Barre di fret {fret}",
+  "chord.major": "mayor",
+  "chord.minor": "minor",
+  "chord.dom7": "tujuh",
+  "chord.min7": "minor tujuh",
+  "chord.maj7": "mayor tujuh",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "diminis"
 }

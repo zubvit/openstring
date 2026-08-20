@@ -238,5 +238,19 @@
   "tools.tempo": "速度",
   "tools.beatsPerBar": "每小节拍数",
   "tools.tap": "打拍",
-  "tools.tapHint": "跟着节奏打四下即可设定速度。"
+  "tools.tapHint": "跟着节奏打四下即可设定速度。",
+  "tools.chordsHeading": "和弦",
+  "tools.chordsIntro": "选一个和弦，看手指该按哪里。× 表示这根弦不弹，○ 表示弹空弦，数字是用哪根手指。",
+  "tools.chordNotes": "音",
+  "tools.hearIt": "听一听",
+  "tools.shapeOpen": "空弦把位",
+  "tools.shapeBarreAt": "在第 {fret} 品横按",
+  "chord.major": "大三和弦",
+  "chord.minor": "小三和弦",
+  "chord.dom7": "属七",
+  "chord.min7": "小七",
+  "chord.maj7": "大七",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "减三和弦"
 }

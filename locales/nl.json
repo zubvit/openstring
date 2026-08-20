@@ -241,5 +241,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Tellen per maat",
   "tools.tap": "Tikken",
-  "tools.tapHint": "Tik vier keer in de maat om het tempo te zetten."
+  "tools.tapHint": "Tik vier keer in de maat om het tempo te zetten.",
+  "tools.chordsHeading": "Akkoorden",
+  "tools.chordsIntro": "Kies een akkoord en zie waar de vingers komen. × betekent die snaar niet spelen, ○ betekent los spelen, en de cijfers zeggen welke vinger.",
+  "tools.chordNotes": "Noten",
+  "tools.hearIt": "Beluisteren",
+  "tools.shapeOpen": "Open",
+  "tools.shapeBarreAt": "Barré op fret {fret}",
+  "chord.major": "majeur",
+  "chord.minor": "mineur",
+  "chord.dom7": "septiem",
+  "chord.min7": "mineur septiem",
+  "chord.maj7": "majeur septiem",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "verminderd"
 }

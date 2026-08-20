@@ -247,5 +247,19 @@
   "tools.tempo": "Темп",
   "tools.beatsPerBar": "Долей в такте",
   "tools.tap": "Отбить",
-  "tools.tapHint": "Отбейте четыре раза в темпе, чтобы задать скорость."
+  "tools.tapHint": "Отбейте четыре раза в темпе, чтобы задать скорость.",
+  "tools.chordsHeading": "Аккорды",
+  "tools.chordsIntro": "Выберите аккорд и посмотрите, куда ставить пальцы. × значит не играть эту струну, ○ — играть открытую, а цифры показывают палец.",
+  "tools.chordNotes": "Ноты",
+  "tools.hearIt": "Послушать",
+  "tools.shapeOpen": "Открытый",
+  "tools.shapeBarreAt": "Барре на ладу {fret}",
+  "chord.major": "мажор",
+  "chord.minor": "минор",
+  "chord.dom7": "септаккорд",
+  "chord.min7": "минорный септаккорд",
+  "chord.maj7": "большой мажорный септаккорд",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "уменьшённый"
 }

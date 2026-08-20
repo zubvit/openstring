@@ -247,5 +247,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Doby v taktu",
   "tools.tap": "Ťukat",
-  "tools.tapHint": "Ťukni čtyřikrát do rytmu a nastavíš tempo."
+  "tools.tapHint": "Ťukni čtyřikrát do rytmu a nastavíš tempo.",
+  "tools.chordsHeading": "Akordy",
+  "tools.chordsIntro": "Vyber akord a podívej se, kam patří prsty. × znamená tuhle strunu nehrát, ○ znamená hrát ji prázdnou a čísla říkají který prst.",
+  "tools.chordNotes": "Tóny",
+  "tools.hearIt": "Poslechnout",
+  "tools.shapeOpen": "Otevřený",
+  "tools.shapeBarreAt": "Barré na pražci {fret}",
+  "chord.major": "durový",
+  "chord.minor": "mollový",
+  "chord.dom7": "septakord",
+  "chord.min7": "mollový septakord",
+  "chord.maj7": "velký septakord",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "zmenšený"
 }

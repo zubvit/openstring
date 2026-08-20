@@ -241,5 +241,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Pulsos por compás",
   "tools.tap": "Marcar",
-  "tools.tapHint": "Marca cuatro veces a tiempo para fijar el tempo."
+  "tools.tapHint": "Marca cuatro veces a tiempo para fijar el tempo.",
+  "tools.chordsHeading": "Acordes",
+  "tools.chordsIntro": "Elige un acorde y mira dónde van los dedos. × significa no tocar esa cuerda, ○ significa tocarla al aire, y los números son qué dedo usar.",
+  "tools.chordNotes": "Notas",
+  "tools.hearIt": "Escuchar",
+  "tools.shapeOpen": "Abierto",
+  "tools.shapeBarreAt": "Cejilla en el traste {fret}",
+  "chord.major": "mayor",
+  "chord.minor": "menor",
+  "chord.dom7": "séptima",
+  "chord.min7": "menor séptima",
+  "chord.maj7": "mayor séptima",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "disminuido"
 }

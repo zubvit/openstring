@@ -241,5 +241,19 @@
   "tools.tempo": "Tempo",
   "tools.beatsPerBar": "Beats in a bar",
   "tools.tap": "Tap",
-  "tools.tapHint": "Tap four times in time to set the tempo."
+  "tools.tapHint": "Tap four times in time to set the tempo.",
+  "tools.chordsHeading": "Chords",
+  "tools.chordsIntro": "Pick a chord and see where the fingers go. × means do not play that string, ○ means play it open, and the numbers are which finger.",
+  "tools.chordNotes": "Notes",
+  "tools.hearIt": "Hear it",
+  "tools.shapeOpen": "Open",
+  "tools.shapeBarreAt": "Barre at fret {fret}",
+  "chord.major": "major",
+  "chord.minor": "minor",
+  "chord.dom7": "7th",
+  "chord.min7": "minor 7th",
+  "chord.maj7": "major 7th",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "diminished"
 }

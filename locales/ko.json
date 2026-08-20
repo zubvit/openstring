@@ -238,5 +238,19 @@
   "tools.tempo": "템포",
   "tools.beatsPerBar": "한 마디의 박",
   "tools.tap": "두드리기",
-  "tools.tapHint": "박자에 맞춰 네 번 두드리면 템포가 설정됩니다."
+  "tools.tapHint": "박자에 맞춰 네 번 두드리면 템포가 설정됩니다.",
+  "tools.chordsHeading": "코드",
+  "tools.chordsIntro": "코드를 고르면 손가락 위치가 나옵니다. × 는 그 줄을 치지 말라는 뜻, ○ 는 개방현으로 치라는 뜻이고, 숫자는 몇 번 손가락인지입니다.",
+  "tools.chordNotes": "구성음",
+  "tools.hearIt": "들어 보기",
+  "tools.shapeOpen": "개방",
+  "tools.shapeBarreAt": "{fret}프렛 바레",
+  "chord.major": "메이저",
+  "chord.minor": "마이너",
+  "chord.dom7": "세븐스",
+  "chord.min7": "마이너 세븐스",
+  "chord.maj7": "메이저 세븐스",
+  "chord.sus2": "sus2",
+  "chord.sus4": "sus4",
+  "chord.dim": "디미니시드"
 }
