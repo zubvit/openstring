@@ -123,6 +123,70 @@ function releaseAudioIfIdle() {
 
 setInterval(releaseAudioIfIdle, 20000);
 
+// ------------------------------------------------- playing on a phone
+//
+// Two things happen on a phone that never happen on a laptop, and neither was
+// handled at all.
+//
+// The screen locks. Your hands are on the guitar, so you do not touch it for a
+// minute, and the phone puts itself to sleep mid-drill. A wake lock while a
+// drill is running is the whole fix.
+//
+// And leaving the app - a notification, a glance at the time - suspends the
+// audio context and stops the animation frames the pitch detector runs on. iOS
+// frequently does not resume the context by itself. The app went on saying
+// "listening" with a frozen level meter, no note ever registered again, and
+// three minutes later the idle timer closed the session without explaining
+// itself. Better to resume it, and to say so honestly when that fails.
+
+let wakeLock = null;
+
+function anyDrillRunning() {
+  return read.active || chordDrill.active || tune.active
+    || rhythm.running || !!pieceView?.isRunning();
+}
+
+async function holdScreenAwake() {
+  if (wakeLock || !anyDrillRunning()) return;
+  try {
+    wakeLock = await navigator.wakeLock?.request('screen');
+    // The browser drops it whenever the page is hidden; the visibility handler
+    // below asks again on the way back rather than assuming it survived.
+    wakeLock?.addEventListener?.('release', () => { wakeLock = null; });
+  } catch { wakeLock = null; }   // unsupported, or refused on battery saver
+}
+
+function letScreenSleep() {
+  try { wakeLock?.release(); } catch { /* already gone */ }
+  wakeLock = null;
+}
+
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) {
+    letScreenSleep();
+    // The two drills that run against a metronome cannot survive being paused:
+    // the clicks stop, the clock does not, and everything you did not play
+    // while away is graded as missed. Stop them honestly instead.
+    if (rhythm.running) finishRhythm(true);
+    pieceView?.stop();
+    return;
+  }
+
+  if (audio.running && audio.ctx && audio.ctx.state !== 'running') {
+    try {
+      await audio.ctx.resume();
+      setMic('live', t(audio.captureMode === 'worklet' ? 'mic.listening' : 'mic.fallback'));
+    } catch {
+      setMic('error', t('mic.unavailable'));
+    }
+  }
+  holdScreenAwake();
+});
+
+// Cheap to re-check; a drill can start at any moment and the lock is idempotent.
+setInterval(() => { anyDrillRunning() ? holdScreenAwake() : letScreenSleep(); }, 5000);
+
+
 // =================================================================== READING
 
 // How many recent notes the card reports on. Long enough to be steady, short
@@ -437,6 +501,7 @@ $('startRead').addEventListener('click', async () => {
   }
   if (!(await ensureAudio({ onError: verdictError('verdictMain') }))) return;
   read.active = true;
+  holdScreenAwake();
   read.asked = 0; read.correct = 0; read.times = []; read.recent = [];
   read.octavesThisNote = 0;
   // Nothing is ringing from a session that ended minutes ago; carrying the note
@@ -586,6 +651,7 @@ $('startRhythm').addEventListener('click', async () => {
   const beat = 60 / bpm;
 
   rhythm.running = true;
+  holdScreenAwake();
   rhythm.played = [];
   $('startRhythm').disabled = true;
   $('stopRhythm').disabled = false;
@@ -1014,6 +1080,7 @@ async function startTuning() {
   audio.setAnalysisWindow(TUNE_WINDOW);
   tune.engine.clearNote();
   tune.active = true;
+  holdScreenAwake();
   $('startTune').textContent = t('tools.stop');
   paintTuner(null);
 }
@@ -1156,6 +1223,7 @@ async function startChordDrill() {
   stopTuning();
   if (!(await ensureAudio({ onError: verdictError('cVerdictMain') }))) return;
   chordDrill.active = true;
+  holdScreenAwake();
   chordDrill.lastAnswered = null;
   chordDrill.gate.reset(null);
   chordDrill.asked = 0; chordDrill.clean = 0; chordDrill.times = [];
