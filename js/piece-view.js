@@ -220,7 +220,12 @@ export function initPieceView({ audio, ensureAudio }) {
     $('stopPiece').disabled = false;
 
     const metro = new Metronome(audio.ctx);
-    metro.beatsPerBar = st.piece.beatsPerBar || 4;
+    // The metronome ticks quarter notes, so the accent has to fall every
+    // QUARTER-beat bar length - not every `beatsPerBar`, which counts eighths in
+    // 6/8 and halves in cut time. It also used the piece's last meter for every
+    // chunk, so a piece that changes time signature counted the wrong bar in.
+    const here = st.piece.measures.find((m) => m.number === chunk.firstMeasure);
+    metro.beatsPerBar = Math.max(1, Math.round(here?.lengthBeats ?? st.piece.beatsPerBar ?? 4));
     st.metro = metro;
     metro.start(bpm, { countInBars: 1 });
 

@@ -210,4 +210,203 @@ t('a score without any harmony is unaffected', () => {
   assert.equal(toSequence(piece).length, 4, 'and the notes are untouched');
 });
 
+// ===================================================== real-world scores
+//
+// Everything below is a shape that comes out of MuseScore, Sibelius or Guitar
+// Pro and used to be parsed wrongly. The fixtures are raw XML rather than the
+// tidy builder above, because the point is what real writers actually emit.
+
+const raw = (parts) => `<?xml version="1.0"?><score-partwise version="3.1">${parts}</score-partwise>`;
+const note = (step, oct, dur, extra = '') =>
+  `<note><pitch><step>${step}</step><octave>${oct}</octave></pitch><duration>${dur}</duration>${extra}</note>`;
+const fingered = (step, oct, dur, str, fret) =>
+  note(step, oct, dur, `<notations><technical><string>${str}</string><fret>${fret}</fret></technical></notations>`);
+
+// Melody and bass in one bar, joined by <backup>. This is THE notation for
+// classical guitar, and the bass used to land after the end of the bar.
+t('two voices joined by backup are read as one bar, in order', () => {
+  const xml = raw(`<part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    ${fingered('E', 5, 8, 1, 0)}${fingered('D', 5, 8, 2, 3)}
+    <backup><duration>16</duration></backup>
+    ${fingered('E', 3, 16, 6, 0)}
+  </measure></part>`);
+  const seq = toSequence(parseMusicXML(xml, P));
+  assert.deepEqual(seq.map((n) => n.beat), [0, 0, 2], 'the bass starts with the bar, not after it');
+  const bass = seq.find((n) => n.string === 6);
+  assert.equal(bass.beat, 0, `the bass landed on beat ${bass.beat}`);
+  assert.equal(bass.beats, 4, 'and lasts the whole bar');
+});
+
+t('forward moves the cursor too', () => {
+  const xml = raw(`<part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    <forward><duration>8</duration></forward>${fingered('G', 4, 8, 3, 0)}
+  </measure></part>`);
+  const seq = toSequence(parseMusicXML(xml, P));
+  assert.equal(seq[0].beat, 2, 'it was skipped over, so the note is on beat two');
+});
+
+// Holding a tie is what the notation asks for; it used to be graded as a miss
+// because the grader expected a fresh attack on the far side.
+t('a tie is one held note, not two', () => {
+  const xml = raw(`<part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    ${fingered('G', 4, 8, 3, 0).replace('</note>', '<tie type="start"/></note>')}
+    ${fingered('G', 4, 8, 3, 0).replace('</note>', '<tie type="stop"/></note>')}
+  </measure></part>`);
+  const seq = toSequence(parseMusicXML(xml, P));
+  assert.equal(seq.length, 1, `${seq.length} attacks, expected one`);
+  assert.equal(seq[0].beats, 4, 'lasting both halves');
+});
+
+t('a tie across a barline is still one note', () => {
+  const bar = (n, extra) => `<measure number="${n}">${n === 1
+    ? '<attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>' : ''}
+    ${fingered('G', 4, 16, 3, 0).replace('</note>', `${extra}</note>`)}</measure>`;
+  const seq = toSequence(parseMusicXML(raw(`<part id="P1">${bar(1, '<tie type="start"/>')}${bar(2, '<tie type="stop"/>')}</part>`), P));
+  assert.equal(seq.length, 1);
+  assert.equal(seq[0].beats, 8, 'two whole bars of one note');
+});
+
+t('notated ties count when the sounding tie is missing', () => {
+  const xml = raw(`<part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    ${fingered('G', 4, 8, 3, 0).replace('</note>', '<notations><tied type="start"/></notations></note>')}
+    ${fingered('G', 4, 8, 3, 0).replace('</note>', '<notations><tied type="stop"/></notations></note>')}
+  </measure></part>`);
+  assert.equal(toSequence(parseMusicXML(xml, P)).length, 1);
+});
+
+t('a tie between DIFFERENT pitches is not a tie and is not swallowed', () => {
+  const xml = raw(`<part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    ${fingered('G', 4, 8, 3, 0)}
+    ${fingered('A', 4, 8, 3, 2).replace('</note>', '<tie type="stop"/></note>')}
+  </measure></part>`);
+  assert.equal(toSequence(parseMusicXML(xml, P)).length, 2, 'a mislabelled tie must not eat a note');
+});
+
+// Adding beatsPerBar to a timeline measured in quarter notes: in 6/8 it opened
+// a hole at every barline, in cut time the bars overlapped.
+t('bars follow one another correctly in six-eight', () => {
+  const bar = (n) => `<measure number="${n}">${n === 1
+    ? '<attributes><divisions>4</divisions><time><beats>6</beats><beat-type>8</beat-type></time></attributes>' : ''}
+    ${fingered('G', 4, 4, 3, 0)}${fingered('A', 4, 4, 3, 2)}${fingered('B', 4, 4, 2, 0)}</measure>`;
+  const seq = toSequence(parseMusicXML(raw(`<part id="P1">${bar(1)}${bar(2)}</part>`), P));
+  assert.deepEqual(seq.map((n) => n.beat), [0, 1, 2, 3, 4, 5], 'no gap at the barline');
+});
+
+t('bars do not overlap in cut time', () => {
+  const bar = (n) => `<measure number="${n}">${n === 1
+    ? '<attributes><divisions>4</divisions><time><beats>2</beats><beat-type>2</beat-type></time></attributes>' : ''}
+    ${fingered('G', 4, 8, 3, 0)}${fingered('A', 4, 8, 3, 2)}</measure>`;
+  const seq = toSequence(parseMusicXML(raw(`<part id="P1">${bar(1)}${bar(2)}</part>`), P));
+  assert.deepEqual(seq.map((n) => n.beat), [0, 2, 4, 6], 'the second bar starts where the first ends');
+});
+
+// NaN spread through every beat and the drill never reached its end time.
+t('an additive meter is a number, not NaN', () => {
+  const xml = raw(`<part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><time><beats>3+2</beats><beat-type>8</beat-type></time></attributes>
+    ${fingered('G', 4, 4, 3, 0)}</measure>`);
+  const piece = parseMusicXML(xml, P);
+  assert.equal(piece.beatsPerBar, 5, '3+2 is five');
+  for (const n of toSequence(piece)) assert.ok(Number.isFinite(n.beat), `beat is ${n.beat}`);
+  assert.ok(Number.isFinite(piece.measures[0].lengthBeats));
+});
+
+// A pickup is numbered 0, and `|| fallback` treated that as missing.
+t('a pickup bar keeps its own number and its own length', () => {
+  const xml = raw(`<part id="P1">
+    <measure number="0" implicit="yes">
+      <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      ${fingered('G', 4, 4, 3, 0)}</measure>
+    <measure number="1">${fingered('A', 4, 16, 3, 2)}</measure></part>`);
+  const piece = parseMusicXML(xml, P);
+  assert.deepEqual(piece.measures.map((m) => m.number), [0, 1], 'the pickup does not collide with bar one');
+  const seq = toSequence(piece);
+  assert.equal(seq[1].beat, 1, 'the downbeat follows the single pickup note, not three beats of silence');
+});
+
+t('the guitar is chosen from a score that has other instruments', () => {
+  const xml = raw(`
+    <part-list>
+      <score-part id="P1"><part-name>Voice</part-name></score-part>
+      <score-part id="P2"><part-name>Guitar</part-name></score-part>
+    </part-list>
+    <part id="P1"><measure number="1">
+      <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      ${note('C', 5, 16)}</measure></part>
+    <part id="P2"><measure number="1">
+      <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      ${fingered('G', 4, 16, 3, 0)}</measure></part>`);
+  const seq = toSequence(parseMusicXML(xml, P));
+  assert.equal(seq[0].string, 3, 'the fingered part won, not the first one');
+});
+
+t('a chord note whose duration differs still shares the onset', () => {
+  const xml = raw(`<part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    ${fingered('G', 4, 4, 3, 0)}
+    ${fingered('B', 4, 4, 2, 0)}
+    ${fingered('E', 5, 16, 1, 0).replace('<pitch>', '<chord/><pitch>')}
+  </measure></part>`);
+  const piece = parseMusicXML(xml, P);
+  const chordNote = piece.measures[0].notes.find((n) => n.isChord);
+  assert.equal(chordNote.startBeat, 1, 'stacked on the note before it, whatever it lasts');
+});
+
+t('percussion notes are silence, not permanent mistakes', () => {
+  const xml = raw(`<part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    <note><unpitched><display-step>C</display-step><display-octave>5</display-octave></unpitched><duration>8</duration></note>
+    ${fingered('G', 4, 8, 3, 0)}</measure></part>`);
+  const seq = toSequence(parseMusicXML(xml, P));
+  assert.equal(seq[0].isRest, true, 'nothing to play, so nothing to get wrong');
+});
+
+// Notes divided by the wrong number turned into bars minutes long - a hang
+// with no error rather than a refusal.
+t('a score that never says how long its notes are is refused, not guessed at', () => {
+  const xml = raw(`<part id="P1"><measure number="1">
+    <attributes><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    ${note('G', 4, 480)}</measure></part>`);
+  assert.throws(() => parseMusicXML(xml, P), /how long its notes are/);
+});
+
+t('a second attributes block in the same bar is not dropped', () => {
+  const xml = raw(`<part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    ${fingered('G', 4, 16, 3, 0)}
+    <attributes><time><beats>3</beats><beat-type>4</beat-type></time></attributes>
+  </measure>
+  <measure number="2">${fingered('A', 4, 12, 3, 2)}</measure></part>`);
+  const piece = parseMusicXML(xml, P);
+  assert.equal(piece.measures[1].beatsPerBar, 3, 'the change was seen');
+});
+
+// Caught in a browser, not by the tests above: once two voices are read
+// properly the entries interleave, so a tie's two halves are no longer
+// adjacent and pairing with "the previous note" quietly refused to join them.
+t('a tie joins across the other voice sitting between its halves', () => {
+  const f = (st, o, d, str, fr, extra = '') =>
+    `<note><pitch><step>${st}</step><octave>${o}</octave></pitch><duration>${d}</duration>` +
+    `<notations><technical><string>${str}</string><fret>${fr}</fret></technical></notations>${extra}</note>`;
+  const xml = raw(`<part id="P1">
+    <measure number="1">
+      <attributes><divisions>4</divisions><time><beats>6</beats><beat-type>8</beat-type></time></attributes>
+      ${f('G',4,2,3,0)}${f('A',4,2,3,2)}${f('B',4,2,2,0)}
+      <backup><duration>6</duration></backup>
+      ${f('E',3,6,6,0,'<tie type="start"/>')}
+    </measure>
+    <measure number="2">${f('E',3,6,6,0,'<tie type="stop"/>')}</measure></part>`);
+  const seq = toSequence(parseMusicXML(xml, P));
+  const bass = seq.filter((n) => n.string === 6);
+  assert.equal(bass.length, 1, `the bass was struck ${bass.length} times, expected once`);
+  assert.equal(bass[0].beat, 0);
+  assert.equal(bass[0].beats, 3, 'held across both bars');
+  assert.equal(seq.filter((n) => n.string !== 6).length, 3, 'and the melody is untouched');
+});
+
 console.log(`musicxml: ${pass} groups passed`);
