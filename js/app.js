@@ -415,6 +415,20 @@ function updateHint() {
 }
 $('showHint').addEventListener('change', updateHint);
 
+// Hearing the note is how a musician finds one, and it gives nothing away: the
+// same pitch sits in several places on a guitar, so the search is still his.
+// Without it the only help was "higher" and "lower", which is no help at all
+// when you are certain you are playing the right thing and the app disagrees.
+$('hearNote').addEventListener('click', () => {
+  if (!read.target) return;
+  // It sounds into the same microphone the drill is listening on, so the app
+  // would otherwise answer its own question. Deaf for as long as it rings, and
+  // NOT by muting that pitch: muting it would swallow his own answer too, and
+  // the note he needs to play is exactly the note he just asked to hear.
+  const seconds = playChord([read.target.sounding], { holdS: 1.1 });
+  read.graceUntil = performance.now() + seconds * 1000 + 150;
+});
+
 // Tapping the out-of-tune notice goes where the fix is, with the string already
 // chosen - the point of saying it at all is that he can act on it now.
 $('tuneNudge').addEventListener('click', () => {
@@ -442,10 +456,15 @@ function judge(heardMidi, hz) {
   const target = read.target.sounding;
   const { verdict, direction } = compareNote(target, heardMidi);
 
-  // Every attempt, right or wrong, is a measurement of this string against the
-  // note that was asked for. Kept so the app can tell "you are reading it wrong"
-  // apart from "this string is not where it should be".
-  read.tuning.push({ string: read.target.string, cents: centsFromTarget(hz, target) });
+  // Only notes the app agreed were RIGHT are measurements of the string. A wrong
+  // note says nothing about tuning - and reading them was what made this accuse
+  // his guitar wrongly, because someone hunting plays the same wrong note
+  // several times running, which looked exactly like a mistuned string.
+  read.tuning.push({
+    string: read.target.string,
+    cents: centsFromTarget(hz, target),
+    correct: verdict === 'right',
+  });
   if (read.tuning.length > TUNING_SAMPLES) read.tuning = read.tuning.slice(-TUNING_SAMPLES);
   showTuningNudge();
   const main = $('verdictMain');
@@ -559,9 +578,15 @@ function showTuningNudge() {
   el.textContent = t('read.outOfTune', { name: stringLabel(drift.string) });
 }
 
-/** "G" - the letter a player calls the string by, without the octave digit. */
+/**
+ * "G (3)" - the letter a player calls the string by, and its number.
+ *
+ * The letter alone is ambiguous on a guitar: strings 1 and 6 are both E, and
+ * "the E string sounds out of tune" sends him to check either or both. The pair
+ * is how the tuner already labels them, and needs no translating.
+ */
 function stringLabel(string) {
-  return noteName(STANDARD_TUNING[string]).replace(/\d+$/, '');
+  return `${noteName(STANDARD_TUNING[string]).replace(/\d+$/, '')} (${string})`;
 }
 
 /** m:ss, for the one goal measured in time. */
@@ -678,6 +703,7 @@ $('startRead').addEventListener('click', async () => {
   startIdleWatch();
   $('startRead').textContent = t('read.pause');
   $('skipNote').disabled = false;
+  $('hearNote').disabled = false;
   nextQuestion();
 });
 
@@ -719,6 +745,7 @@ function endReadSession({ idle = false, reason = idle ? 'idle' : 'stopped' } = {
   read.states = {};
   $('startRead').textContent = t('read.start');
   $('skipNote').disabled = true;
+  $('hearNote').disabled = true;
   const nxt = nextStage(stage.id);
   if (reason === 'stage') {
     $('verdictMain').textContent = nxt

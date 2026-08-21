@@ -10,7 +10,7 @@
 // which one you mean. So every y comes from `diatonic` (octave * 7 + letterIndex),
 // never from the midi number.
 
-import { spell } from './theory.js';
+import { spell, noteName, STANDARD_TUNING } from './theory.js';
 import { G_CLEF, G_CLEF_8VB, UNITS_PER_SPACE } from './clef-glyphs.js';
 
 export const LINE_GAP = 12;              // pixels between staff lines
@@ -162,7 +162,12 @@ export function renderFretboard({
     const y = padT + i * rowGap;
     parts.push(`<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" `
       + `class="fb-string" stroke-width="${stringWeight(s)}"/>`);
-    parts.push(`<text x="${padL - 26}" y="${y + 4}" class="fb-label" text-anchor="end">${s}</text>`);
+    // Letter AND number. A row number alone has to be counted, and counting is
+    // the one thing that goes wrong here - count from the wrong end and you
+    // play a different string with complete confidence. The letter is
+    // self-checking: it is the note the string gives you open.
+    const open = noteName(STANDARD_TUNING[s]).replace(/\d+$/, '');
+    parts.push(`<text x="${padL - 26}" y="${y + 4}" class="fb-label" text-anchor="end">${open}<tspan class="fb-num-inline"> ${s}</tspan></text>`);
   });
 
   for (let f = 0; f <= nFrets; f++) {

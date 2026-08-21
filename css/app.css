@@ -183,6 +183,9 @@ svg.fretboard { width: min(100%, 300px); height: auto; }
 .fb-fret { stroke: var(--ink); opacity: .25; stroke-width: 1; }
 .fb-nut { stroke: var(--ink); opacity: .8; stroke-width: 3; }
 .fb-label, .fb-num { fill: var(--ink-soft); font-size: 9px; }
+/* The letter is what you check the string by; the number is a reminder. */
+.fb-label { font-weight: 650; fill: var(--ink); }
+.fb-num-inline { font-weight: 400; fill: var(--ink-soft); }
 .fb-dot { fill: var(--accent); }
 .fb-dot.wrong { fill: var(--bad); opacity: .65; }
 

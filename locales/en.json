@@ -38,6 +38,7 @@
   "read.start": "Start listening",
   "read.pause": "Pause",
   "read.skip": "Can't find it",
+  "read.hearIt": "Play it for me",
   "read.showHint": "Show me where it is",
   "read.rightFirstTime": "Right first time",
   "read.typicalTime": "Typical time to find",

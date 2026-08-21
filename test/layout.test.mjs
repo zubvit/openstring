@@ -126,4 +126,34 @@ t('the goal is chosen by the player and remembered', () => {
   assert.match(js, /progress\.data\.goalId \|\| DEFAULT_GOAL_ID/, 'the saved choice is not read back');
 });
 
+t('a wrong note can never be read as evidence about tuning', () => {
+  // He hunted, the app accused his guitar, he checked, it was fine. The guard
+  // is that the sample carries whether the app agreed the note was right.
+  assert.match(js, /correct: verdict === 'right'/,
+    'the tuning sample must record whether the note was actually right');
+});
+
+t('the note can be heard, and hearing it does not answer the question', () => {
+  // Only help was "higher" and "lower", which is no help when you are sure you
+  // are playing the right thing. The same pitch sits in several places on a
+  // guitar, so playing it gives away nothing about where.
+  assert.match(html, /id="hearNote"/, 'no way to hear the note being asked for');
+  const handler = /hearNote'\)\.addEventListener\('click'[\s\S]*?\n\}\);/.exec(js);
+  assert.ok(handler, 'the hear-it handler has moved');
+  assert.match(handler[0], /playChord\(\[read\.target\.sounding\]/, 'it must play the note asked for');
+  assert.match(handler[0], /read\.graceUntil = /,
+    'the note it plays goes into the microphone and would be judged as an answer');
+  assert.ok(!/gate\.mute/.test(handler[0]),
+    'muting the pitch would swallow his own answer - it is the note he must play');
+});
+
+t('the hint names the strings rather than asking him to count rows', () => {
+  // Count from the wrong end and you play a different string with complete
+  // confidence. The open-string letter is self-checking.
+  const staff = read('js/staff.js');
+  const label = /class="fb-label"[^`]*`\)/.exec(staff);
+  assert.ok(label, 'the string label has moved');
+  assert.match(label[0], /\$\{open\}/, 'the fretboard rows show only numbers');
+});
+
 console.log(`layout: ${pass} groups passed`);

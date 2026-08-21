@@ -446,57 +446,68 @@ t('a board with nothing to mark still draws', () => {
 // "try higher", sending a beginner up the neck for a note already under his
 // finger. Every note on that string is then wrong however well he reads.
 
-const sample = (string, cents) => ({ string, cents });
+const sample = (string, cents) => ({ string, cents, correct: true });
+const wrong = (string, cents) => ({ string, cents, correct: false });
+const many = (n, make) => Array.from({ length: n }, make);
 
-t('a string consistently off is reported as the instrument', () => {
-  const d = tuningDrift([sample(3, -98), sample(3, -104), sample(3, -95), sample(3, -101)]);
-  assert.ok(d, 'a whole semitone flat on every attempt went unreported');
+t('a string consistently off on notes he got RIGHT is reported', () => {
+  const d = tuningDrift(many(5, () => sample(3, -34)));
+  assert.ok(d, 'a third of a semitone flat on every right note went unreported');
   assert.equal(d.string, 3);
   assert.equal(d.direction, 'flat');
-  assert.ok(Math.abs(d.cents + 98) < 10, `expected about -98 cents, got ${d.cents}`);
+  assert.ok(Math.abs(d.cents + 34) < 8, `expected about -34 cents, got ${d.cents}`);
 });
 
-t('wrong fingers are not reported as a tuning problem', () => {
-  // Large errors, but all over the place - that is a player hunting, and telling
-  // him his guitar is out would send him to fix the wrong thing.
-  assert.equal(tuningDrift([sample(3, -200), sample(3, 100), sample(3, -95), sample(3, 300)]), null);
+t('hunting for a note never accuses the guitar', () => {
+  // The bug he hit. He played the same wrong note over and over - which is what
+  // hunting looks like - and those samples are large and in perfect agreement,
+  // exactly the shape this was treating as proof. He checked his guitar. It was
+  // fine. A wrong note is not a measurement of the string it was meant to be.
+  assert.equal(tuningDrift(many(6, () => wrong(3, -700))), null, 'accused the guitar over a wrong note');
+  assert.equal(tuningDrift(many(6, () => wrong(3, -100))), null, 'a wrong fret, played consistently');
+  assert.equal(tuningDrift(many(6, () => wrong(3, -34))), null, 'wrong notes count even when small');
 });
 
 t('an in-tune guitar says nothing at all', () => {
+  assert.equal(tuningDrift(many(6, () => sample(3, -4))), null);
   assert.equal(tuningDrift([sample(3, -8), sample(3, 4), sample(3, -11), sample(3, 2), sample(3, 6)]), null);
 });
 
-t('one or two attempts are never enough to accuse the instrument', () => {
-  const off = Array.from({ length: DRIFT_MIN_SAMPLES - 1 }, () => sample(3, -100));
+t('a string too far out to tell from a wrong note stays unmentioned', () => {
+  // Deliberate silence, not a gap: beyond half a semitone every note on the
+  // string reads as a DIFFERENT note, and from outside that is indistinguishable
+  // from playing the wrong one. Better quiet than guessing at his instrument.
+  assert.equal(tuningDrift(many(6, () => sample(3, -80))), null);
+});
+
+t('a handful of notes is never enough to accuse the instrument', () => {
+  const off = many(DRIFT_MIN_SAMPLES - 1, () => sample(3, -34));
   assert.equal(tuningDrift(off), null);
-  assert.ok(tuningDrift([...off, sample(3, -100)]), 'never reports however many agree');
+  assert.ok(tuningDrift([...off, sample(3, -34)]), 'never reports however many agree');
 });
 
 t('each string is judged on its own', () => {
-  // Five strings fine, one badly out: the one that is out must be named.
-  const fine = [1, 2, 4, 5, 6].flatMap((n) => [sample(n, 3), sample(n, -5), sample(n, 1)]);
-  const d = tuningDrift([...fine, sample(3, -95), sample(3, -100), sample(3, -92)]);
+  const fine = [1, 2, 4, 5, 6].flatMap((n) => many(6, () => sample(n, 3)));
+  const d = tuningDrift([...fine, ...many(6, () => sample(3, -34))]);
   assert.equal(d?.string, 3);
 });
 
 t('the worst string is the one named', () => {
-  const d = tuningDrift([
-    sample(2, 40), sample(2, 44), sample(2, 38),
-    sample(3, -150), sample(3, -145), sample(3, -152),
-  ]);
-  assert.equal(d.string, 3, 'named the mildly-off string over the badly-off one');
+  const d = tuningDrift([...many(6, () => sample(2, 24)), ...many(6, () => sample(3, -44))]);
+  assert.equal(d.string, 3, 'named the mildly-off string over the worse one');
 });
 
 t('sharp is reported as sharp', () => {
-  const d = tuningDrift([sample(5, 70), sample(5, 66), sample(5, 74)]);
-  assert.equal(d.direction, 'sharp');
+  assert.equal(tuningDrift(many(6, () => sample(5, 40))).direction, 'sharp');
 });
 
 t('junk samples cannot make it accuse anything', () => {
   assert.equal(tuningDrift([]), null);
-  assert.equal(tuningDrift([sample(3, NaN), sample(3, NaN), sample(3, NaN)]), null);
-  assert.equal(tuningDrift([{ string: null, cents: -100 }, { string: null, cents: -100 }]), null);
+  assert.equal(tuningDrift(many(6, () => sample(3, NaN))), null);
+  assert.equal(tuningDrift(many(6, () => ({ string: null, cents: -34, correct: true }))), null);
   assert.equal(tuningDrift([null, undefined]), null);
+  // A sample that forgets to say whether it was right must not be trusted.
+  assert.equal(tuningDrift(many(6, () => ({ string: 3, cents: -34 }))), null);
 });
 
 

@@ -40,6 +40,7 @@
   "read.start": "聴き取りを開始",
   "read.pause": "一時停止",
   "read.skip": "見つかりません",
+  "read.hearIt": "音を鳴らして",
   "read.showHint": "場所を教えて",
   "read.rightFirstTime": "一発で正解",
   "read.typicalTime": "見つけるまでの平均",

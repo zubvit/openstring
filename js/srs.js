@@ -149,34 +149,43 @@ export function recentForm(entries, { window: size = 20 } = {}) {
 /**
  * Is the guitar out of tune, rather than the player wrong?
  *
- * A beginner cannot tell these apart, and the app was not helping. Play the
- * correct fret on a string that is a semitone flat and the microphone hears a
- * different note - correctly - so the drill says "not that one, try higher" and
- * sends him hunting up the neck for a note that is already under his finger.
- * Every note on that string is then wrong, however well he reads, and the score
- * says he cannot read. The app has the pitch in its hand and can say so.
+ * The first version of this accused his guitar wrongly, and he checked and it
+ * was fine. That is worse than saying nothing: it sends him off to fix an
+ * instrument that is not broken, and it teaches him to ignore the app.
  *
- * The signal is CONSISTENCY, not size. A wrong fret is a large error that
- * varies from try to try. A mistuned string is the same error every single
- * time, because it is the string, not the finger. So: several attempts on one
- * string, all agreeing closely, all well off - that is the instrument.
+ * The mistake was reading EVERY attempt, including wrong notes. Someone hunting
+ * for a note plays the same wrong note several times running - that is what
+ * hunting looks like - and those samples are large and in perfect agreement,
+ * which is exactly the shape I was treating as proof of a mistuned string.
  *
- * Deliberately no similarity scoring anywhere here. Every sample is an exact
- * measured distance in cents, and a string is reported only when the readings
- * agree inside a stated window.
+ * So the samples are now only notes the app judged RIGHT. That removes the
+ * whole failure by construction: a wrong note cannot be evidence about tuning,
+ * because a wrong note is not a measurement of the string it was meant to be.
+ *
+ * What is left is the one thing this can honestly detect: the right note, over
+ * and over, sitting consistently off centre. That means between a fifth and
+ * half of a semitone out. Below that, nothing worth saying. ABOVE it the app
+ * says nothing either, and that is deliberate rather than a gap - a string more
+ * than half a semitone out makes every note on it read as a different note, and
+ * from the outside that is indistinguishable from playing the wrong note. It is
+ * better to be silent there than to guess at his instrument again.
  */
-export const DRIFT_MIN_SAMPLES = 3;
-export const DRIFT_MAX_SPREAD_CENTS = 40;  // wider than this is not one cause
-export const DRIFT_MIN_CENTS = 35;         // below this, tuning is not the story
+export const DRIFT_MIN_SAMPLES = 5;
+export const DRIFT_MAX_SPREAD_CENTS = 30;  // wider than this is not one cause
+export const DRIFT_MIN_CENTS = 20;         // below this, tuning is not the story
+export const DRIFT_MAX_CENTS = 50;         // beyond this it cannot be told from a wrong note
 
 export function tuningDrift(samples, {
   minSamples = DRIFT_MIN_SAMPLES,
   maxSpread = DRIFT_MAX_SPREAD_CENTS,
   minCents = DRIFT_MIN_CENTS,
+  maxCents = DRIFT_MAX_CENTS,
 } = {}) {
   const byString = new Map();
   for (const s of samples) {
-    if (!s || !Number.isFinite(s.cents) || !s.string) continue;
+    // `correct` is the guard that matters. Anything else is not a measurement.
+    if (!s || !s.correct || !Number.isFinite(s.cents) || !s.string) continue;
+    if (Math.abs(s.cents) > maxCents) continue;
     if (!byString.has(s.string)) byString.set(s.string, []);
     byString.get(s.string).push(s.cents);
   }
@@ -185,10 +194,9 @@ export function tuningDrift(samples, {
   for (const [string, list] of byString) {
     if (list.length < minSamples) continue;
     const sorted = [...list].sort((a, b) => a - b);
-    const spread = sorted[sorted.length - 1] - sorted[0];
-    if (spread > maxSpread) continue;              // not one consistent cause
+    if (sorted[sorted.length - 1] - sorted[0] > maxSpread) continue;   // not one cause
     const median = sorted[Math.floor(sorted.length / 2)];
-    if (Math.abs(median) < minCents) continue;     // in tune enough to read by
+    if (Math.abs(median) < minCents) continue;                          // near enough
     if (!worst || Math.abs(median) > Math.abs(worst.cents)) {
       worst = { string, cents: median, direction: median < 0 ? 'flat' : 'sharp', samples: list.length };
     }
