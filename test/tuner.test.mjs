@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   centsBetween, nearestString, nearestChromatic, verdictFor, Tuner, tapTempo,
-  STRING_ORDER, IN_TUNE_CENTS, readingView,
+  STRING_ORDER, IN_TUNE_CENTS, readingView, stringTarget, foldOctaves,
 } from '../js/tuner.js';
 import { STANDARD_TUNING, midiToHz } from '../js/theory.js';
 import { detectPitch } from '../js/pitch.js';
@@ -279,6 +279,149 @@ t('colour follows how far out it is', () => {
 t('the held tick has its own message', () => {
   assert.equal(readingView({ cents: 1, verdict: 'in-tune', done: false, note: 'E2', string: 6 }).verdictKey, 'tools.inTune');
   assert.equal(readingView({ cents: 1, verdict: 'in-tune', done: true, note: 'E2', string: 6 }).verdictKey, 'tools.inTuneHeld');
+});
+
+
+// ---------------------------------------------------------------------------
+// Staying on one string.
+//
+// Reported from the guitar: "the third string makes the tuner go flat, then
+// stabilises in the centre then immediately go hard sharp... I can't play."
+// It was not the detector. Picking the nearest open string afresh every frame
+// means the needle is measuring against a different target from one frame to
+// the next, and it slams end to end when the target changes. String 3 is the
+// worst because G to B is four semitones where every other gap is five, so it
+// has the narrowest capture range of the six.
+
+/** Feed a steady pitch for a while, as a peg being turned slowly would. */
+function hold(tu, hz, { fromMs = 0, frames = 25, stepMs = 20 } = {}) {
+  let r = null;
+  for (let i = 0; i < frames; i++) r = tu.push(hz, fromMs + i * stepMs);
+  return { reading: r, endMs: fromMs + frames * stepMs };
+}
+
+const G3 = midiToHz(STANDARD_TUNING[3]);
+const offset = (cents) => G3 * Math.pow(2, cents / 1200);
+
+t('tuning one string up does not make the needle jump end to end', () => {
+  // The old behaviour, measured: hard sharp (as D), hard flat (as G), centre,
+  // hard sharp, hard flat (as B) - four slams while turning one peg one way.
+  const tu = new Tuner();
+  let ms = 0;
+  const shown = [];
+  for (const c of [-300, -250, -225, -200, -150, -100, -50, -25, 0, 25, 50, 100, 150, 200, 225, 250]) {
+    const out = hold(tu, offset(c), { fromMs: ms });
+    ms = out.endMs;
+    shown.push({ c, note: out.reading.note, cents: out.reading.cents });
+  }
+  const names = [...new Set(shown.map((x) => x.note))];
+  assert.ok(names.length <= 2, `needle changed target ${names.length} times: ${names.join(' -> ')}`);
+
+  // Once it settles on G it must never hand back to a neighbour: from the first
+  // G reading onward the displayed cents only ever increase.
+  const fromG = shown.slice(shown.findIndex((x) => x.note === 'G3'));
+  for (let i = 1; i < fromG.length; i++) {
+    assert.ok(fromG[i].cents >= fromG[i - 1].cents - 1,
+      `needle went backwards at ${fromG[i].c}c: ${fromG[i - 1].cents} -> ${fromG[i].cents}`);
+  }
+});
+
+t('a string pinned by the player is never second-guessed', () => {
+  // The answer for a new nylon string sitting semitones flat, where guessing
+  // the nearest names a different string with complete confidence.
+  const tu = new Tuner();
+  tu.pin(3);
+  let ms = 0;
+  let previous = -Infinity;
+  for (const c of [-300, -250, -200, -150, -100, -50, 0, 50, 100, 200, 250]) {
+    const out = hold(tu, offset(c), { fromMs: ms });
+    ms = out.endMs;
+    assert.equal(out.reading.note, 'G3', `pinned to string 3 but reported ${out.reading.note} at ${c}c`);
+    assert.equal(out.reading.string, 3);
+    assert.ok(out.reading.cents > previous, `needle not monotonic at ${c}c`);
+    previous = out.reading.cents;
+  }
+});
+
+t('pinning survives the string being three semitones flat', () => {
+  // Unpinned, this pitch is nearest to D and would be announced as a sharp D -
+  // sending the peg the wrong way, which is how strings get broken.
+  const flat = offset(-300);
+  assert.equal(nearestString(flat).string, 4, 'precondition: nearest really is the D string');
+
+  const tu = new Tuner();
+  tu.pin(3);
+  const { reading } = hold(tu, flat);
+  assert.equal(reading.string, 3);
+  assert.equal(reading.verdict, 'flat');
+  assert.ok(reading.cents < -250, `should read very flat, read ${reading.cents}`);
+});
+
+t('unpinning hands the choice back', () => {
+  const tu = new Tuner();
+  tu.pin(2);
+  assert.equal(hold(tu, G3).reading.string, 2);
+  tu.pin(null);
+  assert.equal(hold(tu, G3).reading.string, 3);
+});
+
+t('an octave slip while the string is known is folded, not announced', () => {
+  // The second harmonic is often louder than the fundamental. Hearing it does
+  // not mean the player moved to another string.
+  const tu = new Tuner();
+  hold(tu, G3);                                   // establish string 3
+  const { reading } = hold(tu, G3 * 2, { fromMs: 600 });
+  assert.equal(reading.string, 3, 'the octave was treated as a different string');
+  assert.ok(Math.abs(reading.cents) <= 5, `octave should fold to in tune, read ${reading.cents}`);
+});
+
+t('folding only accepts near-exact octaves', () => {
+  assert.equal(foldOctaves(0), 0);
+  assert.equal(foldOctaves(1195), -5);           // an octave, five cents flat
+  assert.equal(foldOctaves(-1200), 0);
+  assert.equal(foldOctaves(900), 900);           // a sixth is not an octave
+  assert.equal(foldOctaves(700), 700);           // nor is a fifth
+});
+
+t('really changing strings still works, and takes about a fifth of a second', () => {
+  const tu = new Tuner();
+  hold(tu, G3);
+  assert.equal(tu.last.string, 3);
+  const B3 = midiToHz(STANDARD_TUNING[2]);
+  const { reading } = hold(tu, B3, { fromMs: 600 });
+  assert.equal(reading.string, 2, 'never moved to the string actually being played');
+  assert.ok(Math.abs(reading.cents) <= 5);
+});
+
+t('one stray frame does not change which string is being tuned', () => {
+  const tu = new Tuner();
+  hold(tu, G3);
+  const before = tu.last.string;
+  tu.push(midiToHz(STANDARD_TUNING[2]), 600);     // a single frame from nowhere
+  hold(tu, G3, { fromMs: 620 });
+  assert.equal(tu.last.string, before, 'a single frame moved the target');
+});
+
+t('chromatic mode reports what it hears, octave and all', () => {
+  // No string context, so nothing may be folded away - a capo or a piano needs
+  // the actual note, not the nearest guitar string an octave down.
+  const tu = new Tuner({ mode: 'chromatic' });
+  const { reading } = hold(tu, G3 * 2);
+  assert.equal(reading.note, 'G4');
+});
+
+t('stringTarget measures against the string asked for, not the nearest', () => {
+  const m = stringTarget(3, midiToHz(STANDARD_TUNING[4]));
+  assert.equal(m.string, 3);
+  assert.ok(m.cents < -450, 'the D string is about five semitones below the G string');
+});
+
+t('silence releases the string so the next one is judged fresh', () => {
+  const tu = new Tuner();
+  hold(tu, G3);
+  assert.equal(tu.locked, 3);
+  for (let i = 0; i < 30; i++) tu.push(null, 600 + i * 20);
+  assert.equal(tu.locked, null, 'still holding the previous string after silence');
 });
 
 console.log(`tuner: ${pass} groups passed`);

@@ -1075,18 +1075,31 @@ const DRILL_WINDOW = 2048;
 function buildStringRow() {
   const row = $('stringRow');
   if (!row) return;
+  // Buttons, not decoration: tapping one says "this is the string I am tuning",
+  // which is the only reliable answer when a new string sits so far out that
+  // guessing the nearest names a different one.
   row.innerHTML = STRING_ORDER.map((n) => {
     const name = noteName(STANDARD_TUNING[n]).replace(/\d+$/, '');
-    return `<div class="string-pill" data-string="${n}">` +
-           `<span class="sp-name">${name}</span><span class="sp-num">${n}</span></div>`;
+    return `<button type="button" class="string-pill" data-string="${n}" aria-pressed="false">` +
+           `<span class="sp-name">${name}</span><span class="sp-num">${n}</span></button>`;
   }).join('');
+  row.addEventListener('click', (e) => {
+    const pill = e.target.closest('.string-pill');
+    if (!pill) return;
+    const n = Number(pill.dataset.string);
+    tune.engine.pin(tune.engine.pinned === n ? null : n);
+    paintTuner(null);
+  });
 }
 
 function paintStringRow(heard) {
+  const pinned = tune.engine.pinned;
   document.querySelectorAll('.string-pill').forEach((el) => {
     const n = Number(el.dataset.string);
     el.classList.toggle('is-heard', tune.active && heard === n);
     el.classList.toggle('is-done', tune.engine.settled.has(n));
+    el.classList.toggle('is-pinned', pinned === n);
+    el.setAttribute('aria-pressed', String(pinned === n));
   });
   $('resetTune').disabled = tune.engine.settled.size === 0;
 }
@@ -1103,7 +1116,13 @@ function paintTuner(reading) {
   verdict.textContent = t(view.verdictKey || (tune.active ? 'tools.waiting' : 'tools.pressStart'));
   verdict.className = view.verdictClass;
 
-  paintStringRow(view.string);
+  paintStringRow(tune.engine.pinned ?? view.string);
+  const hint = $('stringsHint');
+  if (hint) {
+    hint.textContent = tune.engine.pinned
+      ? t('tools.pinnedHint', { string: tune.engine.pinned })
+      : t('tools.stringsHint');
+  }
 }
 
 async function startTuning() {

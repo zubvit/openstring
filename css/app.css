@@ -366,12 +366,17 @@ table.heatmap td { padding: 1px; }
 .string-pill {
   min-width: 3.1rem; padding: .35rem .5rem; border: 1px solid var(--line); border-radius: 999px;
   background: var(--panel); text-align: center; font-size: .85rem; color: var(--ink-soft);
+  font: inherit; font-size: .85rem; cursor: pointer;
 }
 .string-pill .sp-name { font-weight: 650; color: var(--ink); }
 .string-pill .sp-num { font-size: .7rem; display: block; }
 .string-pill.is-heard { border-color: var(--accent); background: var(--accent-soft); }
 .string-pill.is-done { border-color: var(--good); color: var(--good); }
 .string-pill.is-done .sp-name::after { content: ' ✓'; }
+/* Pinned: this string and no other, however far out it is. */
+.string-pill.is-pinned { border-color: var(--accent); border-width: 2px; background: var(--accent-soft); color: var(--ink); }
+.string-pill.is-pinned .sp-num::after { content: ' ◉'; }
+@media (pointer: coarse) { .string-pill { min-height: 44px; min-width: 3.4rem; } }
 
 /* Metronome. */
 .metro-face { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: .6rem 0; }
