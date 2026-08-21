@@ -188,15 +188,34 @@ export class PitchTracker {
  * stop it by fretting the next note.
  */
 export class AnswerGate {
-  constructor() {
+  constructor({ requireOnset = false } = {}) {
     this.muted = null;      // the note we are still hearing the tail of
     this.counted = null;    // the note already taken as an answer
+    // An answer is a string being STRUCK. Letting a note ring on is not an
+    // answer to anything, and neither is the room. When this is on, a reading
+    // is only considered after an attack has been heard.
+    this.requireOnset = requireOnset;
+    this.armed = false;
+  }
+
+  /**
+   * A string was plucked: the next steady reading is a real answer.
+   *
+   * This also forgets what was last counted. The `counted` guard exists to stop
+   * one HELD note answering sixty times a second - but a fresh attack is a new
+   * event even when it is the same pitch, and without this, playing the same
+   * note twice on purpose had its second try silently ignored.
+   */
+  arm() {
+    this.armed = true;
+    this.counted = null;
   }
 
   /** Start a fresh question. `ringing` is the note just played, if any. */
   reset(ringing = null) {
     this.muted = ringing;
     this.counted = null;
+    this.armed = false;
   }
 
   /** After an answer, its own note becomes the one to ignore. */
@@ -219,6 +238,11 @@ export class AnswerGate {
     }
     if (midi === this.muted) return null;   // the tail of the last answer
     if (midi === this.counted) return null; // still the same note, already counted
+    // Nothing was struck, so whatever this is - a string still ringing, a chair,
+    // the neighbour - it is not an answer. Missing an attack costs nothing: the
+    // question simply stays up and the next pluck is heard.
+    if (this.requireOnset && !this.armed) return null;
+    this.armed = false;
     this.counted = midi;
     // A different note means the old one is over, whether or not we heard a gap.
     this.muted = null;

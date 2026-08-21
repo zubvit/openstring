@@ -205,7 +205,7 @@ const read = {
   graceUntil: 0,
   judged: false,      // resolved: found it, or skipped
   attempts: 0,        // wrong tries at THIS note
-  gate: new AnswerGate(),   // tells an answer apart from the last note still ringing
+  gate: new AnswerGate({ requireOnset: true }),   // an answer is a string being struck
   lastHeard: null,          // the last pitch judged, right or wrong - it is still sounding
   // A question is a phrase. In the ordinary drill it is one note long; with
   // melodies switched on it is a few, read left to right. Everything below
@@ -700,7 +700,16 @@ $('startRhythm').addEventListener('click', async () => {
 
 $('stopRhythm').addEventListener('click', () => finishRhythm(true));
 
+// Every attack, to whoever is listening for one.
+//
+// Onsets used to feed the rhythm drill alone, while the reading and chord
+// drills judged the continuous pitch stream - so a note left ringing, or a
+// noise in the room, could be read as an answer to a question it had nothing to
+// do with. Nobody should have to damp a string to avoid being marked wrong;
+// duration is a separate exercise and belongs in the rhythm drill.
 audio.onOnset = (tSeconds) => {
+  read.gate.arm();
+  chordDrill.gate.arm();
   if (!rhythm.running) return;
   // Already audio-clock seconds - the engine anchors the capture stream to the
   // audio clock on every reset, so this lines up with metronome beat times.
@@ -1134,7 +1143,7 @@ const chordDrill = {
   target: null,
   attempt: null,
   shownAt: 0,
-  gate: new AnswerGate(),   // same job as the reading drill's: ignore the ringing tail
+  gate: new AnswerGate({ requireOnset: true }),   // same job as the reading drill's
   lastName: null,
   asked: 0,
   clean: 0,

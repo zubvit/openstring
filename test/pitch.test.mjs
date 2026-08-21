@@ -191,4 +191,61 @@ t('a wrong note is still ringing too, and must also be ignored', () => {
   assert.equal(g.accept(64), 64, 'the note actually played is');
 });
 
+// ------------------------------------------- an answer is a string being struck
+//
+// He plays a note, forgets to damp it, and the next question appears while it
+// is still sounding. Nobody should have to mute a string to avoid being marked
+// wrong: how long a note rings is a separate skill, practised in the rhythm
+// drill, and the reading drill has no business testing it by accident.
+
+t('a note left ringing is not an answer, however long it rings', () => {
+  const g = new AnswerGate({ requireOnset: true });
+  for (let i = 0; i < 200; i++) assert.equal(g.accept(67), null, 'nothing was plucked');
+});
+
+t('the same note IS an answer once the string is struck', () => {
+  const g = new AnswerGate({ requireOnset: true });
+  assert.equal(g.accept(67), null);
+  g.arm();
+  assert.equal(g.accept(67), 67);
+});
+
+t('one pluck is one answer, not one per frame', () => {
+  const g = new AnswerGate({ requireOnset: true });
+  g.arm();
+  assert.equal(g.accept(64), 64);
+  for (let i = 0; i < 50; i++) assert.equal(g.accept(64), null, 'still the same pluck');
+  g.arm();
+  assert.equal(g.accept(64), 64, 'plucked again, so answered again');
+});
+
+// The benign failure. If an attack is somehow missed the question simply stays
+// up - it costs nothing, where a false answer costs a mark.
+t('a missed attack costs nothing rather than scoring a mistake', () => {
+  const g = new AnswerGate({ requireOnset: true });
+  assert.equal(g.accept(60), null);
+  assert.equal(g.accept(62), null);
+  assert.equal(g.accept(64), null, 'silence is the worst that happens');
+});
+
+t('a new question forgets any attack heard before it', () => {
+  const g = new AnswerGate({ requireOnset: true });
+  g.arm();
+  g.reset(null);
+  assert.equal(g.accept(60), null, 'the pluck belonged to the previous question');
+});
+
+t('the tail of the last answer is still ignored even after a fresh pluck', () => {
+  const g = new AnswerGate({ requireOnset: true });
+  g.reset(67);          // 67 is still ringing from before
+  g.arm();              // and now a different string is struck
+  assert.equal(g.accept(67), null, 'the detector caught the old one first');
+  assert.equal(g.accept(71), 71, 'then the new one');
+});
+
+t('without the onset rule the gate behaves as it always did', () => {
+  const g = new AnswerGate();
+  assert.equal(g.accept(60), 60, 'the tuner and anything else are unaffected');
+});
+
 console.log(`pitch: ${pass} groups passed`);
