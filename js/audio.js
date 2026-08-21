@@ -70,6 +70,13 @@ export class AudioEngine {
       throw new Error(`Could not open the microphone: ${err?.message || err}`);
     }
 
+    // Say what this page is actually doing, so the platform routes it sensibly.
+    // Recording and playing at once is its own thing - the drills need the
+    // microphone AND have to be heard counting you in.
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'play-and-record';
+    } catch { /* older WebKit decides for itself */ }
+
     const Ctx = window.AudioContext || window.webkitAudioContext;
     this.ctx = new Ctx();
     if (this.ctx.state === 'suspended') await this.ctx.resume();
@@ -324,9 +331,71 @@ export class Metronome {
  * may have, and creating one per click would exhaust that in a practice session.
  */
 let _outCtx = null;
+let _silentLoop = null;
+
+/**
+ * A WAV of pure silence, as a data URI. Built rather than pasted so it is
+ * readable: 44 bytes of header and then zeros.
+ */
+export function silentWav(ms = 200, rate = 8000) {
+  const samples = Math.max(1, Math.round((rate * ms) / 1000));
+  const bytes = 44 + samples * 2;
+  const view = new DataView(new ArrayBuffer(bytes));
+  const put = (at, text) => { for (let i = 0; i < text.length; i++) view.setUint8(at + i, text.charCodeAt(i)); };
+  put(0, 'RIFF');  view.setUint32(4, bytes - 8, true);   put(8, 'WAVE');
+  put(12, 'fmt '); view.setUint32(16, 16, true);          // PCM header length
+  view.setUint16(20, 1, true);                            // uncompressed
+  view.setUint16(22, 1, true);                            // mono
+  view.setUint32(24, rate, true);
+  view.setUint32(28, rate * 2, true);                     // bytes per second
+  view.setUint16(32, 2, true);                            // bytes per frame
+  view.setUint16(34, 16, true);                           // bits per sample
+  put(36, 'data'); view.setUint32(40, samples * 2, true); // and then all zeros
+  return new Uint8Array(view.buffer);
+}
+
+/**
+ * Ask iOS to treat this page as something the listener asked to hear.
+ *
+ * By default it treats bare Web Audio as a notification noise, so on a silenced
+ * phone the metronome plays NOTHING - no sound, no error, no indication that
+ * anything is wrong. A metronome you pressed the start button on is not a
+ * notification, and the platform has a way to say so.
+ *
+ * Two levers, because the tidy one is recent. `navigator.audioSession` is the
+ * supported switch. Where it is missing, the only lever older iOS offers is an
+ * actual media element playing - so a loop of silence, which promotes the whole
+ * page and is inaudible by construction. It is only reached when the proper
+ * switch is absent, because a stray media element can pause the listener's music
+ * and put a now-playing control on their lock screen.
+ */
+export function playThroughTheSpeaker() {
+  try {
+    if (navigator.audioSession) {
+      navigator.audioSession.type = 'playback';
+      return 'audioSession';
+    }
+  } catch { /* older WebKit: fall through to the media element */ }
+
+  if (_silentLoop) return 'silent-loop';
+  try {
+    const blob = new Blob([silentWav()], { type: 'audio/wav' });
+    _silentLoop = new Audio(URL.createObjectURL(blob));
+    _silentLoop.loop = true;
+    _silentLoop.play().catch(() => { _silentLoop = null; });
+    return 'silent-loop';
+  } catch {
+    _silentLoop = null;
+    return 'none';
+  }
+}
+
 export function outputContext() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) return null;
+  // Every caller here is a button press, which is the only moment iOS will let
+  // us claim the speaker.
+  playThroughTheSpeaker();
   if (!_outCtx || _outCtx.state === 'closed') _outCtx = new Ctx();
   // Browsers start it suspended until a gesture; every caller here is a click.
   if (_outCtx.state === 'suspended') _outCtx.resume();

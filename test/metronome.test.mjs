@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { Metronome } from '../js/audio.js';
+import { Metronome, silentWav } from '../js/audio.js';
 import { expectedOnsets } from '../js/curriculum.js';
 import { gradeTiming } from '../js/onset.js';
 
@@ -74,6 +74,38 @@ t('a bar-early mistake would be caught, not silently accepted', () => {
   assert.notDeepEqual(correct, wrong);
   const g = gradeTiming(correct, wrong); // playing correctly, graded against the bad grid
   assert.equal(g.hitCount, 0, 'a whole bar out must not be scored as playing');
+});
+
+// ------------------------------------------- being heard on a silenced phone
+//
+// iOS treats bare Web Audio as a notification noise, so on a silenced phone the
+// metronome played NOTHING - no sound, no error, no sign anything was wrong.
+// Where the supported switch is missing, the only lever older iOS offers is a
+// media element actually playing, so the fallback is a loop of silence. It has
+// to be real, well-formed silence: anything audible would be worse than the bug.
+t('the fallback loop is a valid WAV and is completely silent', () => {
+  const w = silentWav(200);
+  const text = (at, n) => String.fromCharCode(...w.slice(at, at + n));
+  const u32 = (at) => new DataView(w.buffer).getUint32(at, true);
+  const u16 = (at) => new DataView(w.buffer).getUint16(at, true);
+
+  assert.equal(text(0, 4), 'RIFF');
+  assert.equal(text(8, 4), 'WAVE');
+  assert.equal(text(12, 4), 'fmt ');
+  assert.equal(text(36, 4), 'data');
+  assert.equal(u32(4) + 8, w.length, 'the declared size matches the file');
+  assert.equal(u32(40), w.length - 44, 'and so does the declared data length');
+  assert.equal(u16(20), 1, 'uncompressed');
+  assert.equal(u16(22), 1, 'mono');
+  assert.equal(u16(34), 16, 'sixteen bits');
+  assert.equal(u32(28), u32(24) * 2, 'bytes per second agrees with the rate');
+  assert.ok(w.slice(44).every((b) => b === 0), 'every sample is silence');
+});
+
+t('a shorter loop is still a whole file', () => {
+  const w = silentWav(10);
+  assert.equal(new DataView(w.buffer).getUint32(4, true) + 8, w.length);
+  assert.ok(w.length > 44, 'and has some samples in it');
 });
 
 console.log(`metronome: ${pass} groups passed`);
