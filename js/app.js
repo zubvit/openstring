@@ -1,6 +1,8 @@
 // Openstring - wiring the drills to the audio engine and the progress store.
 
 import { AudioEngine, Metronome, outputContext, playChord } from './audio.js';
+import { ALL_KEYS, removeStore } from './stores.js';
+import { blobWeight } from './sync.js';
 import { AnswerGate } from './pitch.js';
 import { Tuner, tapTempo, readingView, STRING_ORDER } from './tuner.js';
 import { ROOTS, QUALITY_ORDER, shapesFor, shapeNotes, chordToneNames, chordName } from './chords.js';
@@ -809,9 +811,10 @@ $('importFile').addEventListener('change', async (e) => {
 $('resetBtn').addEventListener('click', () => {
   if (!confirm(t('data.eraseConfirm'))) return;
   progress.reset();
-  stage = STAGES[0];
-  renderStageHeader();
-  renderProgress();
+  // "Everything" used to mean the reading drill only, leaving pieces, chords,
+  // intervals and the saved email behind after promising to remove them.
+  for (const key of ALL_KEYS) removeStore(key);
+  location.reload();
 });
 
 // ================================================================ first run
@@ -889,9 +892,14 @@ $('syncSend').addEventListener('click', async () => {
   }
 });
 
-$('syncPush').addEventListener('click', async () => {
-  try { await sync.push(); syncMsg('syncMsg2', t('sync.pushed'), true); renderSync(); }
-  catch (e) { syncMsg('syncMsg2', e.message, false); renderSync(); }
+$('syncPush').addEventListener('click', () => {
+  // Push replaces the account with this device, and a browser whose storage was
+  // cleared would push an empty one over everything.
+  if (!confirm(t('sync.pushConfirm'))) return;
+  sync.push()
+    .then(() => syncMsg('syncMsg2', t('sync.pushed'), true))
+    .catch((e) => syncMsg('syncMsg2', e.message, false))
+    .finally(renderSync);
 });
 
 $('syncPull').addEventListener('click', async () => {
@@ -912,11 +920,24 @@ sync.onChange = renderSync;
 
 function adoptSessionFromUrl() {
   if (!sync.captureFromUrl()) return;
-  // Arrived from a magic link: pull whatever is stored so the device is current.
-  sync.pull()
-    .then(() => syncMsg('syncMsg2', t('sync.signedIn'), true))
-    .catch((e) => syncMsg('syncMsg2', e.message, false))
-    .finally(() => { renderSync(); renderProgress(); });
+
+  // Arriving from a magic link used to pull immediately, and pulling REPLACES
+  // what is here. So the first sign-in on a device that had been practising
+  // offline - exactly the moment its local history is largest and the account's
+  // copy is stalest - wiped that history without asking. Nobody would choose
+  // that, so it is no longer chosen for them: an empty device syncs itself, and
+  // a device with practice on it is asked which way the data should go.
+  const localWeight = blobWeight(progress.data);
+  if (localWeight === 0) {
+    sync.pull()
+      .then(() => syncMsg('syncMsg2', t('sync.signedIn'), true))
+      .catch((e) => syncMsg('syncMsg2', e.message, false))
+      .finally(() => { renderSync(); renderProgress(); });
+    return;
+  }
+  syncMsg('syncMsg2', t('sync.chooseDirection'), true);
+  renderSync();
+  renderProgress();
 }
 
 adoptSessionFromUrl();

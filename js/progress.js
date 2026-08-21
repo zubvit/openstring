@@ -5,6 +5,7 @@
 // bill attached and eventually someone has to pay it.
 
 import { emptyStat, updateStat, isFluent, poolMastery, weakest } from './srs.js';
+import { storage as safeStorage, collectExtras, restoreExtras } from './stores.js';
 
 const KEY = 'openstring.v1';
 
@@ -20,7 +21,10 @@ const blank = () => ({
 });
 
 export class Progress {
-  constructor(storage = globalThis.localStorage) {
+  // Reaching for globalThis.localStorage in the default-argument position was
+  // enough to kill the whole app: with site data blocked the property access
+  // itself throws, outside every try/catch, and this runs at module load.
+  constructor(storage = safeStorage) {
     this.storage = storage;
     this.data = this.#load();
   }
@@ -112,10 +116,11 @@ export class Progress {
     };
   }
 
+  /** The whole of it - including the stores that are not this one. */
   export() {
     this.data.lastExport = Date.now();
     this.save();
-    return JSON.stringify(this.data, null, 2);
+    return JSON.stringify({ ...this.data, extras: collectExtras() }, null, 2);
   }
 
   /**
@@ -131,11 +136,34 @@ export class Progress {
     return since > 21 * 86400000;
   }
 
+  /**
+   * Restore a backup.
+   *
+   * The shape is checked BEFORE anything is written. It used to save first and
+   * find out afterwards: a file that was valid JSON but the wrong shape - say
+   * `sessions` as an object rather than a list - passed the one truthiness
+   * check, overwrote the real history, and only then threw while redrawing. The
+   * user saw "import failed" with their practice already gone, and every later
+   * attempt to record a session threw too, so nothing was ever saved again.
+   * Silently, until they thought to press Erase.
+   */
   import(json) {
     const parsed = JSON.parse(json);
-    if (!parsed || typeof parsed !== 'object' || !parsed.stats) throw new Error('not an Openstring backup');
-    this.data = { ...blank(), ...parsed };
+    const bad = (why) => { throw new Error(`not an Openstring backup: ${why}`); };
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) bad('not an object');
+    if (!parsed.stats || typeof parsed.stats !== 'object' || Array.isArray(parsed.stats)) bad('no statistics');
+    if ('sessions' in parsed && !Array.isArray(parsed.sessions)) bad('sessions is not a list');
+    if ('rhythm' in parsed && !Array.isArray(parsed.rhythm)) bad('rhythm is not a list');
+    for (const [id, stat] of Object.entries(parsed.stats)) {
+      if (!stat || typeof stat !== 'object' || Array.isArray(stat)) bad(`the entry for ${id} is not a record`);
+    }
+
+    const { extras, ...core } = parsed;
+    this.data = { ...blank(), ...core };
     this.save();
+    // Pieces, chords and intervals live in their own stores and used to be left
+    // out of the file entirely.
+    restoreExtras(extras);
   }
 
   reset() {

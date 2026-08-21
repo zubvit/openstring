@@ -298,5 +298,7 @@
   "read.endedIdle": "Sesiune încheiată — câteva minute nu s-a cântat nimic.",
   "read.stageOf": "Etapa {n} din {total}",
   "read.thePlan": "Planul",
-  "progress.locked": "blocată"
+  "progress.locked": "blocată",
+  "sync.pushConfirm": "Înlocuiești ce e salvat în cont cu progresul de pe acest dispozitiv? Se pierde tot ce ai exersat pe alt dispozitiv și n-ai adus încă aici.",
+  "sync.chooseDirection": "Autentificat. Nu s-a schimbat nimic — pe acest dispozitiv există deja exercițiu, așa că alege dacă îl trimiți sus sau aduci progresul salvat."
 }

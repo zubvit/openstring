@@ -295,5 +295,7 @@
   "read.endedIdle": "Sesión terminada — no has tocado nada durante unos minutos.",
   "read.stageOf": "Etapa {n} de {total}",
   "read.thePlan": "El plan",
-  "progress.locked": "bloqueada"
+  "progress.locked": "bloqueada",
+  "sync.pushConfirm": "¿Sustituir lo guardado en tu cuenta por el progreso de este dispositivo? Se perderá lo practicado en otro dispositivo y aún no descargado.",
+  "sync.chooseDirection": "Sesión iniciada. No se ha cambiado nada: este dispositivo ya tiene práctica, así que elige si enviarla o traer el progreso guardado."
 }

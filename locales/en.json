@@ -295,5 +295,7 @@
   "read.endedIdle": "Session ended — nothing played for a few minutes.",
   "read.stageOf": "Stage {n} of {total}",
   "read.thePlan": "The plan",
-  "progress.locked": "locked"
+  "progress.locked": "locked",
+  "sync.pushConfirm": "Replace what is stored for your account with this device's progress? Anything practised on another device and not yet brought down will be lost.",
+  "sync.chooseDirection": "Signed in. Nothing has been changed — this device already has practice on it, so choose whether to send it up or bring the stored progress down."
 }

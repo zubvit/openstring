@@ -1,6 +1,7 @@
 // The Pieces tab: import a score, drill it chunk by chunk, join the chunks up.
 
 import { parseMusicXML, toSequence, harmonySequence } from './musicxml.js';
+import { readStore, writeStore, removeStore } from './stores.js';
 import {
   makeChunks, makeSeam, newChunkState, applyAttempt, chunkMastered,
   pickChunk, gradeChunk, LAYERS, LAYER_LABELS,
@@ -31,9 +32,9 @@ export function initPieceView({ audio, ensureAudio }) {
   // ---------------------------------------------------------------- storage
 
   function save() {
-    if (!st.piece) { localStorage.removeItem(STORE_KEY); return; }
+    if (!st.piece) { removeStore(STORE_KEY); return; }
     try {
-      localStorage.setItem(STORE_KEY, JSON.stringify({
+      writeStore(STORE_KEY, ({
         piece: st.piece, sequence: st.sequence, states: st.states, targetBpm: st.targetBpm,
       }));
     } catch { /* practice still works without persistence */ }
@@ -41,9 +42,8 @@ export function initPieceView({ audio, ensureAudio }) {
 
   function load() {
     try {
-      const raw = localStorage.getItem(STORE_KEY);
-      if (!raw) return false;
-      const d = JSON.parse(raw);
+      const d = readStore(STORE_KEY);
+      if (!d) return false;
       st.piece = d.piece; st.sequence = d.sequence; st.states = d.states || {};
       st.targetBpm = d.targetBpm || 80;
       // Recomputed rather than stored: a piece imported before chord symbols

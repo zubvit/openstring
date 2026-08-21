@@ -295,5 +295,7 @@
   "read.endedIdle": "Sitzung beendet — ein paar Minuten lang wurde nichts gespielt.",
   "read.stageOf": "Stufe {n} von {total}",
   "read.thePlan": "Der Plan",
-  "progress.locked": "gesperrt"
+  "progress.locked": "gesperrt",
+  "sync.pushConfirm": "Das im Konto Gespeicherte durch den Fortschritt dieses Geräts ersetzen? Was auf einem anderen Gerät geübt und noch nicht heruntergeladen wurde, geht verloren.",
+  "sync.chooseDirection": "Angemeldet. Es wurde nichts verändert — auf diesem Gerät liegt bereits Übung, also entscheide, ob sie hochgeladen oder der gespeicherte Fortschritt geholt wird."
 }

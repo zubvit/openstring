@@ -12,6 +12,7 @@
 // it is major, and that is exactly the point of reading this way.
 
 import { spell, writtenAt, positionId, parsePositionId } from './theory.js';
+import { storage as safeStorage } from './stores.js';
 import { pickNext, updateStat, emptyStat, isFluent } from './srs.js';
 
 /**
@@ -258,7 +259,7 @@ const STORE_KEY = 'openstring.intervals.v1';
  * other's numbers would make both readings meaningless.
  */
 export class IntervalProgress {
-  constructor(storage = globalThis.localStorage) {
+  constructor(storage = safeStorage) {
     this.storage = storage;
     this.stats = {};
     try {

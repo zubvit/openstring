@@ -426,3 +426,16 @@ select.stage-title {
 select.stage-title:hover { border-color: var(--line); background: var(--panel); }
 select.stage-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 select.stage-title option:disabled { color: var(--ink-soft); }
+
+/* --- phone --------------------------------------------------------------
+   The stage picker sizes itself to its longest option ("Open position, bottom
+   three strings — locked"), which is far wider than a phone. max-width:100%
+   could not hold it because a flex item defaults to min-width:auto, so the
+   column grew to fit and took the whole page with it: at 360px the Read tab -
+   the one you land on - scrolled sideways and the fluency ring sat off-screen. */
+.stage-bar > div { min-width: 0; }
+select.stage-title { width: 100%; }
+
+/* iOS Safari zooms the whole page in when you focus a control smaller than
+   16px, and does not zoom back out. These four inherit .85rem from their labels. */
+#langSelect, #beatsSelect, #patternSelect, #barsSelect { font-size: 1rem; }

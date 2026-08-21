@@ -292,5 +292,7 @@
   "read.endedIdle": "연습을 마쳤습니다 — 몇 분 동안 아무 소리도 없었습니다.",
   "read.stageOf": "{total}단계 중 {n}단계",
   "read.thePlan": "학습 계획",
-  "progress.locked": "잠김"
+  "progress.locked": "잠김",
+  "sync.pushConfirm": "계정에 저장된 내용을 이 기기의 기록으로 바꿀까요? 다른 기기에서 연습했고 아직 내려받지 않은 것은 사라집니다.",
+  "sync.chooseDirection": "로그인했습니다. 아직 아무것도 바꾸지 않았습니다 — 이 기기에 이미 연습 기록이 있으니, 올릴지 저장된 기록을 내려받을지 고르세요."
 }

@@ -301,5 +301,7 @@
   "read.endedIdle": "Sesja zakończona — przez kilka minut nic nie zabrzmiało.",
   "read.stageOf": "Etap {n} z {total}",
   "read.thePlan": "Plan",
-  "progress.locked": "zablokowany"
+  "progress.locked": "zablokowany",
+  "sync.pushConfirm": "Zastąpić to, co zapisano na koncie, postępami z tego urządzenia? Przepadnie wszystko, co ćwiczono na innym urządzeniu i jeszcze nie pobrano.",
+  "sync.chooseDirection": "Zalogowano. Nic nie zostało zmienione — na tym urządzeniu są już ćwiczenia, więc wybierz, czy je wysłać, czy pobrać zapisane postępy."
 }

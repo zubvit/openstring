@@ -295,5 +295,7 @@
   "read.endedIdle": "Oturum bitti — birkaç dakikadır hiçbir şey çalınmadı.",
   "read.stageOf": "Aşama {n} / {total}",
   "read.thePlan": "Plan",
-  "progress.locked": "kilitli"
+  "progress.locked": "kilitli",
+  "sync.pushConfirm": "Hesabında saklananın yerine bu cihazdaki ilerleme geçsin mi? Başka bir cihazda çalışılmış ve henüz indirilmemiş olan her şey kaybolur.",
+  "sync.chooseDirection": "Giriş yapıldı. Hiçbir şey değiştirilmedi — bu cihazda zaten çalışma var, o yüzden yukarı mı göndereceğini yoksa saklanan ilerlemeyi mi indireceğini seç."
 }

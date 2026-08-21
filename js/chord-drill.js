@@ -12,6 +12,7 @@
 // once off the staff. Everything in this file is pure so it can be tested.
 
 import { pickNext, updateStat, emptyStat, isFluent } from './srs.js';
+import { storage as safeStorage } from './stores.js';
 import { shapesFor, shapeNotes, parseChordName, chordName } from './chords.js';
 import { soundingToWritten, compareNote } from './theory.js';
 
@@ -101,7 +102,7 @@ const STORE_KEY = 'openstring.chords.v1';
  * skills and mixing their numbers would make both readings meaningless.
  */
 export class ChordProgress {
-  constructor(storage = globalThis.localStorage) {
+  constructor(storage = safeStorage) {
     this.storage = storage;
     this.stats = {};
     try {

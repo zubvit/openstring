@@ -1,3 +1,5 @@
+import { storage as safeStorage } from './stores.js';
+
 // Translation.
 //
 // Two things make this more than a lookup table.
@@ -48,7 +50,7 @@ export function availableLocales() {
 
 /** Best match between the browser's languages and what we actually have. */
 export function detectLocale() {
-  const saved = localStorage.getItem(STORE_KEY);
+  const saved = (() => { try { return safeStorage?.getItem(STORE_KEY); } catch { return null; } })();
   if (saved && LOCALES[saved]) return saved;
   for (const tag of navigator.languages || [navigator.language || 'en']) {
     const primary = String(tag).toLowerCase().split('-')[0];
@@ -85,7 +87,7 @@ export async function setLocale(code, { silent = false } = {}) {
     }
   }
   current = code;
-  localStorage.setItem(STORE_KEY, code);
+  try { safeStorage?.setItem(STORE_KEY, code); } catch { /* the choice just will not persist */ }
   document.documentElement.lang = code;
   document.documentElement.dir = LOCALES[code]?.dir || 'ltr';
   applyToDom();

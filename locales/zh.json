@@ -292,5 +292,7 @@
   "read.endedIdle": "练习已结束——有几分钟没有弹奏。",
   "read.stageOf": "第 {n} 阶段，共 {total} 个",
   "read.thePlan": "学习计划",
-  "progress.locked": "未解锁"
+  "progress.locked": "未解锁",
+  "sync.pushConfirm": "用本机的进度替换账户中已保存的内容吗？在其他设备上练习且尚未取回的内容都会丢失。",
+  "sync.chooseDirection": "已登录。目前什么都没有改动——本机上已经有练习记录，请选择是把它上传，还是把已保存的进度取下来。"
 }

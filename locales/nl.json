@@ -295,5 +295,7 @@
   "read.endedIdle": "Sessie beëindigd — er is een paar minuten niets gespeeld.",
   "read.stageOf": "Fase {n} van {total}",
   "read.thePlan": "Het plan",
-  "progress.locked": "op slot"
+  "progress.locked": "op slot",
+  "sync.pushConfirm": "Wat in je account staat vervangen door de voortgang van dit apparaat? Wat op een ander apparaat is geoefend en nog niet is opgehaald, gaat verloren.",
+  "sync.chooseDirection": "Ingelogd. Er is niets veranderd — op dit apparaat staat al oefening, dus kies of je die omhoog stuurt of de opgeslagen voortgang ophaalt."
 }

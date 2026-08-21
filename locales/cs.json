@@ -301,5 +301,7 @@
   "read.endedIdle": "Relace ukončena — několik minut se nic nehrálo.",
   "read.stageOf": "Fáze {n} ze {total}",
   "read.thePlan": "Plán",
-  "progress.locked": "zamčeno"
+  "progress.locked": "zamčeno",
+  "sync.pushConfirm": "Nahradit to, co je uloženo v účtu, postupem z tohoto zařízení? Přijdeš o vše, co bylo hráno na jiném zařízení a ještě nestaženo.",
+  "sync.chooseDirection": "Přihlášeno. Nic se nezměnilo — na tomto zařízení už nějaké cvičení je, takže vyber, jestli ho poslat nahoru, nebo stáhnout uložený postup."
 }

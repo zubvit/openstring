@@ -1,3 +1,4 @@
+import { storage as safeStorage, collectExtras, restoreExtras } from './stores.js';
 // Optional sync: sign in by email link, keep progress across devices.
 //
 // Local-first is not negotiable. Everything here is additive - if the server is
@@ -11,11 +12,24 @@ const API = LOCAL ? 'http://127.0.0.1:8791' : 'https://sync.openstring.app';
 const TOKEN_KEY = 'openstring.session';
 const LAST_SYNC_KEY = 'openstring.lastSync';
 
+const safeGet = (k) => { try { return safeStorage?.getItem(k) || null; } catch { return null; } };
+const safeSet = (k, v) => { try { safeStorage?.setItem(k, v); } catch { /* practice still works */ } };
+
+/** How much practice a blob represents - used to warn before overwriting more with less. */
+export function blobWeight(data) {
+  if (!data || typeof data !== 'object') return 0;
+  const sessions = Array.isArray(data.sessions) ? data.sessions.length : 0;
+  const positions = data.stats && typeof data.stats === 'object' ? Object.keys(data.stats).length : 0;
+  return sessions + positions;
+}
+
 export class Sync {
   constructor(progress) {
     this.progress = progress;
-    this.token = localStorage.getItem(TOKEN_KEY) || null;
-    this.email = localStorage.getItem('openstring.email') || null;
+    // These ran at module load and could throw outright, taking the app with
+    // them, on a browser with site data blocked.
+    this.token = safeGet(TOKEN_KEY);
+    this.email = safeGet('openstring.email');
     this.busy = false;
     this.onChange = null;
   }
@@ -31,7 +45,7 @@ export class Sync {
     const m = /[#&]sync=([A-Za-z0-9_-]+)/.exec(location.hash || '');
     if (!m) return false;
     this.token = m[1];
-    localStorage.setItem(TOKEN_KEY, this.token);
+    safeSet(TOKEN_KEY, this.token);
     // Strip it immediately so a copied URL is not a working credential.
     history.replaceState(null, '', location.pathname + location.search);
     return true;
@@ -45,7 +59,7 @@ export class Sync {
     });
     const body = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(body.error || 'Could not send the sign-in email.');
-    localStorage.setItem('openstring.email', email);
+    safeSet('openstring.email', email);
     this.email = email;
     return body.message || 'Check your email for a sign-in link.';
   }
@@ -79,9 +93,9 @@ export class Sync {
       const res = await this.#call('/api/data', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: this.progress.data }),
+        body: JSON.stringify({ data: { ...this.progress.data, extras: collectExtras({ syncOnly: true }) } }),
       });
-      localStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
+      safeSet(LAST_SYNC_KEY, String(Date.now()));
       return res;
     } finally { this.busy = false; this.onChange?.(); }
   }
@@ -93,10 +107,12 @@ export class Sync {
     try {
       const res = await this.#call('/api/data');
       if (res.data) {
-        this.progress.data = { ...this.progress.data, ...res.data };
+        const { extras, ...core } = res.data;
+        this.progress.data = { ...this.progress.data, ...core };
         this.progress.save();
+        restoreExtras(extras);
       }
-      localStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
+      safeSet(LAST_SYNC_KEY, String(Date.now()));
       return res;
     } finally { this.busy = false; this.onChange?.(); }
   }
@@ -111,12 +127,12 @@ export class Sync {
 
   signOutLocal() {
     this.token = null;
-    localStorage.removeItem(TOKEN_KEY);
+    try { safeStorage?.removeItem(TOKEN_KEY); } catch { /* nothing to do */ }
     this.onChange?.();
   }
 
   lastSync() {
-    const t = Number(localStorage.getItem(LAST_SYNC_KEY) || 0);
+    const t = Number(safeGet(LAST_SYNC_KEY) || 0);
     return t || null;
   }
 }
