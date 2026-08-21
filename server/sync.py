@@ -214,8 +214,13 @@ class Handler(BaseHTTPRequestHandler):
     # -- helpers
 
     def client_ip(self):
+        # The LAST element, not the first. A proxy APPENDS the address it saw, so
+        # everything before that is whatever the client chose to send - taking
+        # the first let one sender present a fresh "IP" on every request and walk
+        # straight through the per-address limits that exist to stop mail-bombing.
         fwd = self.headers.get("X-Forwarded-For", "")
-        return (fwd.split(",")[0].strip() if fwd else self.client_address[0])[:64]
+        parts = [p.strip() for p in fwd.split(",") if p.strip()]
+        return (parts[-1] if parts else self.client_address[0])[:64]
 
     def cors(self):
         self.send_header("Access-Control-Allow-Origin", APP_ORIGIN)
@@ -238,7 +243,12 @@ class Handler(BaseHTTPRequestHandler):
     HARD_LIMIT = 8 * 1024 * 1024
 
     def body_json(self, limit=MAX_BLOB_BYTES + 4096):
-        n = int(self.headers.get("Content-Length") or 0)
+        # A header that is not a number used to raise before anything could
+        # answer, so the client saw a reset connection rather than a reason.
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except (TypeError, ValueError):
+            return None
         if n <= 0:
             return None
         if n > limit:
@@ -256,9 +266,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.close_connection = True
             return "TOO_BIG"
         try:
-            return json.loads(self.rfile.read(n).decode())
+            parsed = json.loads(self.rfile.read(n).decode())
         except Exception:
             return None
+        # Every caller wants an object. `[1]` and `"data"` are both valid JSON
+        # and both used to get through - the first died on .get, the second on a
+        # substring match that made `"data" in payload` true for a bare string.
+        return parsed if isinstance(parsed, dict) else None
 
     def session_user(self, conn):
         auth = self.headers.get("Authorization", "")
@@ -286,12 +300,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.request_link()
         if path == "/api/signout":
             return self.signout()
+        # Spending a sign-in link is a POST precisely because link scanners GET.
+        if path == "/api/consume":
+            return self.consume()
         self.reply(404, {"error": "not found"})
 
     def do_GET(self):
         path = urlparse(self.path).path
         if path == "/api/verify":
-            return self.verify()
+            return self.verify_page()
         if path == "/api/data":
             return self.get_data()
         if path == "/api/health":
@@ -336,10 +353,55 @@ class Handler(BaseHTTPRequestHandler):
         # otherwise this endpoint becomes a way to test who has an account.
         self.reply(200, {"ok": True, "message": "Check your email for a sign-in link."})
 
-    def verify(self):
+    # A GET must not spend the link.
+    #
+    # Mail systems open links before you do. Corporate scanners, and plenty of
+    # consumer ones, fetch every URL in a message to check it is safe - so the
+    # single-use token was burned by a machine, the real person clicked and was
+    # told the link had already been used, and the scanner's infrastructure was
+    # handed a working session token in the redirect. Sign-in was simply broken
+    # for anyone behind a scanned mailbox.
+    #
+    # Scanners do not POST. So the link now shows a page, and the button on it
+    # spends the token.
+    def verify_page(self):
         token = (parse_qs(urlparse(self.path).query).get("t") or [""])[0]
+        if not token or not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", token):
+            return self.reply(400, self.page("That sign-in link is not complete. Ask the app for a new one."),
+                              ctype="text/html; charset=utf-8")
+        # Deliberately says nothing about whether the token is good: checking
+        # here would let a scanner learn that much, and would tempt us to burn it.
+        safe = token.replace("&", "&amp;").replace("<", "&lt;").replace('"', "&quot;")
+        body = (
+            "<!doctype html><meta charset=utf-8>"
+            "<meta name=viewport content='width=device-width,initial-scale=1'>"
+            "<title>Sign in to Openstring</title>"
+            "<style>body{font-family:system-ui,sans-serif;max-width:32rem;margin:18vh auto;padding:0 1.5rem;"
+            "color:#1d1c1a;background:#f7f6f3;line-height:1.5}"
+            "button{font:inherit;font-weight:600;padding:.7rem 1.4rem;border-radius:10px;border:0;"
+            "background:#2f6f4f;color:#fff;cursor:pointer}</style>"
+            "<h1>Openstring</h1><p>Press the button to finish signing in on this device.</p>"
+            f"<form method='POST' action='/api/consume'><input type=hidden name=t value=\"{safe}\">"
+            "<button type=submit>Sign me in</button></form>"
+            "<p style='color:#5d5a54;font-size:.9rem'>Nothing has been used up yet, so this link still works "
+            "if you opened it by accident.</p>"
+        )
+        self.reply(200, body, ctype="text/html; charset=utf-8")
+
+    def consume(self):
+        # The token arrives as a form post from the page above.
+        token = ""
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except (TypeError, ValueError):
+            n = 0
+        if 0 < n <= 4096:
+            raw = self.rfile.read(n).decode("utf-8", "replace")
+            token = (parse_qs(raw).get("t") or [""])[0]
         if not token:
-            return self.reply(400, {"error": "missing token"})
+            return self.reply(400, self.page("That sign-in link is missing its token."),
+                              ctype="text/html; charset=utf-8")
+
         now = int(time.time())
         with db() as conn:
             purge(conn)
@@ -347,12 +409,9 @@ class Handler(BaseHTTPRequestHandler):
                 "SELECT email, expires, used FROM links WHERE token_hash=?", (sha(token),)
             ).fetchone()
             if not row or row[2] or row[1] < now:
-                return self.reply(
-                    400,
-                    "<p style='font-family:system-ui'>That sign-in link has expired or was already used. "
-                    "Ask for a new one from the app.</p>",
-                    ctype="text/html; charset=utf-8",
-                )
+                return self.reply(400, self.page(
+                    "That sign-in link has expired or was already used. Ask for a new one from the app."),
+                    ctype="text/html; charset=utf-8")
             email = row[0]
             conn.execute("UPDATE links SET used=1 WHERE token_hash=?", (sha(token),))
             conn.execute(
@@ -367,10 +426,21 @@ class Handler(BaseHTTPRequestHandler):
 
         # Hand the session back through the URL fragment: fragments are not sent to
         # servers and do not land in proxy or referrer logs.
-        self.send_response(302)
+        self.send_response(303)
         self.send_header("Location", f"{APP_ORIGIN}/#sync={session}")
         self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Content-Length", "0")
         self.end_headers()
+
+    @staticmethod
+    def page(message):
+        safe = message.replace("&", "&amp;").replace("<", "&lt;")
+        return ("<!doctype html><meta charset=utf-8>"
+                "<meta name=viewport content='width=device-width,initial-scale=1'>"
+                "<title>Openstring</title>"
+                "<style>body{font-family:system-ui,sans-serif;max-width:32rem;margin:18vh auto;"
+                "padding:0 1.5rem;color:#1d1c1a;background:#f7f6f3;line-height:1.5}</style>"
+                f"<p>{safe}</p>")
 
     def get_data(self):
         with db() as conn:

@@ -130,5 +130,35 @@ class Blobs(Base):
                         "a heavy user must fit inside the sync limit")
 
 
+
+class ClientAddress(unittest.TestCase):
+    """
+    A proxy APPENDS the address it saw to X-Forwarded-For, so everything before
+    the last element is whatever the client chose to send. Reading the FIRST one
+    let a single sender present a fresh address on every request and walk
+    straight through the per-address limits that exist to stop mail-bombing.
+    """
+
+    def handler(self, fwd=None, peer="9.9.9.9"):
+        h = object.__new__(sync.Handler)
+        h.headers = {"X-Forwarded-For": fwd} if fwd is not None else {}
+        h.client_address = (peer, 0)
+        return h
+
+    def test_the_proxy_hop_wins_over_anything_the_client_sent(self):
+        h = self.handler("1.2.3.4, 5.6.7.8")
+        self.assertEqual(h.client_ip(), "5.6.7.8")
+
+    def test_a_forged_chain_cannot_manufacture_a_new_address(self):
+        seen = {self.handler(f"{i}.{i}.{i}.{i}, 5.6.7.8").client_ip() for i in range(1, 20)}
+        self.assertEqual(seen, {"5.6.7.8"}, "every forged prefix still lands on one address")
+
+    def test_no_proxy_header_falls_back_to_the_peer(self):
+        self.assertEqual(self.handler().client_ip(), "9.9.9.9")
+        self.assertEqual(self.handler("").client_ip(), "9.9.9.9")
+
+    def test_a_silly_header_cannot_blow_the_column_up(self):
+        self.assertLessEqual(len(self.handler("x" * 500).client_ip()), 64)
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

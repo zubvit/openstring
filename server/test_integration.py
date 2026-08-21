@@ -20,6 +20,7 @@ import threading
 import time
 import unittest
 import urllib.error
+import urllib.parse
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -142,24 +143,31 @@ class Flow(unittest.TestCase):
         self.assertIsNotNone(m, f"the email must contain a verify link; got: {body[:200]}")
         return m.group(1)
 
+    def follow(self, token):
+        """Spend a sign-in link the way the page's button does. Returns Location."""
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *a, **k):
+                return None
+
+        body = urllib.parse.urlencode({"t": token}).encode()
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{API_PORT}/api/consume", data=body, method="POST",
+            headers={"Content-Type": "application/x-www-form-urlencoded"})
+        try:
+            urllib.request.build_opener(NoRedirect).open(req, timeout=10)
+            self.fail("expected a redirect")
+        except urllib.error.HTTPError as e:
+            return e.code, e.headers.get("Location"), e
+
     def sign_in(self, address):
-        """Request a link, follow it, return the session token."""
+        """Request a link, open it, press the button, return the session token."""
         status, _, _ = call("POST", "/api/request", {"email": address})
         self.assertEqual(status, 200)
         time.sleep(0.3)
         token = self.token_from_last_mail()
 
-        class NoRedirect(urllib.request.HTTPRedirectHandler):
-            def redirect_request(self, *a, **k):
-                return None
-
-        try:
-            urllib.request.build_opener(NoRedirect).open(
-                f"http://127.0.0.1:{API_PORT}/api/verify?t={token}", timeout=10)
-            self.fail("expected a redirect")
-        except urllib.error.HTTPError as e:
-            self.assertEqual(e.code, 302, "a valid link should redirect back to the app")
-            loc = e.headers["Location"]
+        code, loc, _ = self.follow(token)
+        self.assertEqual(code, 303, "pressing the button should send you back to the app")
         self.assertIn("#sync=", loc, "the session must come back in the URL fragment")
         return token, loc.split("#sync=")[1]
 
@@ -184,9 +192,11 @@ class Flow(unittest.TestCase):
         status, body, _ = call("GET", "/api/data", token=session)
         self.assertEqual(body["data"]["stats"]["s1f0"]["attempts"], 7)
 
-        # A used link must not work twice.
-        status, _, _ = call("GET", f"/api/verify?t={token}")
-        self.assertEqual(status, 400, "a magic link must be single use")
+        # A used link must not work twice. Single use is enforced where the link
+        # is SPENT, not where it is opened: opening deliberately says nothing
+        # about whether the token is still good, or a mail scanner would learn it.
+        code, _, _ = self.follow(token)
+        self.assertEqual(code, 400, "a magic link must be single use")
 
     def test_03_no_token_no_data(self):
         self.assertEqual(call("GET", "/api/data")[0], 401)
@@ -227,6 +237,61 @@ class Flow(unittest.TestCase):
         self.assertEqual(call("GET", "/api/data", token=session)[0], 401,
                          "the session must stop working after signing out")
 
+
+    # A mail scanner opens every link in a message before the recipient does.
+    # It burned the single-use token - so the real person was told the link had
+    # already been used - and was handed a working session in the redirect.
+    def test_11_a_scanner_opening_the_link_does_not_spend_it(self):
+        status, _, _ = call("POST", "/api/request", {"email": "scanned@example.com"})
+        self.assertEqual(status, 200)
+        time.sleep(0.3)
+        token = self.token_from_last_mail()
+
+        # What a scanner does: a plain GET.
+        with urllib.request.urlopen(
+                f"http://127.0.0.1:{API_PORT}/api/verify?t={token}", timeout=10) as r:
+            self.assertEqual(r.status, 200, "the link shows a page rather than redirecting")
+            page = r.read().decode()
+        self.assertNotIn("#sync=", page, "no session may be handed out for a GET")
+        self.assertIn("/api/consume", page, "the page carries a form that spends it")
+
+        # The person then clicks, and it still works.
+        code, loc, _ = self.follow(token)
+        self.assertEqual(code, 303, "the link survived the scanner")
+        self.assertIn("#sync=", loc)
+
+    def test_12_a_link_can_still_only_be_spent_once(self):
+        _, session = self.sign_in("once@example.com")
+        self.assertTrue(session)
+        token = self.token_from_last_mail()
+        code, _, err = self.follow(token)
+        self.assertEqual(code, 400, "the second press must be refused")
+        self.assertIn("already used", err.read().decode())
+
+    # Valid JSON that is not an object used to reach .get and kill the thread,
+    # so the client saw a reset connection instead of a reason.
+    def test_13_odd_bodies_get_an_answer_rather_than_a_dropped_connection(self):
+        for body in ("[1]", '"mydata"', "42", "null"):
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{API_PORT}/api/request", data=body.encode(),
+                method="POST", headers={"Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    code = r.status
+            except urllib.error.HTTPError as e:
+                code = e.code
+            self.assertEqual(code, 400, f"{body} should be a clean 400")
+
+        # And the same for the endpoint that takes the blob.
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{API_PORT}/api/data", data=b'"mydata"', method="PUT",
+            headers={"Content-Type": "application/json", "Authorization": "Bearer nonsense"})
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                code = r.status
+        except urllib.error.HTTPError as e:
+            code = e.code
+        self.assertEqual(code, 400)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
