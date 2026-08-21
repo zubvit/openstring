@@ -79,4 +79,39 @@ t('wording is never served staler than the code that asks for it', () => {
   assert.match(call[1], /cache:\s*'no-cache'/, 'catalogue fetch must revalidate');
 });
 
+t('the drill itself ends, and offers the next stage where the player is', () => {
+  // He played 118 notes on a mastered three-note stage - ring at 100%, tick on
+  // the title - and asked when it ends. It did not: the only exits were walking
+  // away for three minutes or pressing End, and the offer to move on lived on
+  // the Progress tab, which nobody opens mid-practice.
+  assert.match(js, /function roundVerdict\(\)/, 'the drill has no end condition');
+  assert.match(js, /const ROUND_NOTES = RECENT_WINDOW/,
+    'the round length must be the same number the card reports on');
+
+  // nextQuestion must consult it BEFORE picking another note, or the round
+  // always runs one note long.
+  const next = /function nextQuestion\(\)\s*\{([\s\S]*?)const pool = poolFor/.exec(js);
+  assert.ok(next, 'nextQuestion has moved');
+  assert.match(next[1], /roundVerdict\(\)/, 'nextQuestion asks for another note without checking');
+
+  // And the offer has to be reachable from the reading screen.
+  assert.match(html, /id="roundActions"/, 'nowhere on the drill screen to offer the next stage');
+  assert.match(js, /function showRoundActions\(/);
+  assert.match(js, /nextStageBtn/, 'no button to move on');
+  assert.match(js, /againBtn/, 'no button to play another round');
+});
+
+t('the round decision is made where it can be tested', () => {
+  // The rule itself lives in curriculum.js with real tests over it. What this
+  // file guards is that the app actually asks, and passes the state the rule
+  // needs - a correct rule called with the wrong arguments is still a bug.
+  const verdict = /function roundVerdict\(\)\s*\{([\s\S]*?)\n\}/.exec(js);
+  assert.ok(verdict, 'roundVerdict has moved');
+  for (const field of ['asked', 'target', 'stageReady', 'stageWasReady']) {
+    assert.match(verdict[1], new RegExp(field + ':'), `roundOver called without ${field}`);
+  }
+  assert.match(js, /read\.stageWasReady = readyToAdvance\(/,
+    'the round must record whether the stage was already done when it started');
+});
+
 console.log(`layout: ${pass} groups passed`);

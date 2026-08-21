@@ -3,7 +3,9 @@ import { updateStat, emptyStat, weightFor, pickNext, isFluent, poolMastery, rece
   tuningDrift, DRIFT_MIN_SAMPLES,
 } from '../js/srs.js';
 import { Progress, MemoryStorage } from '../js/progress.js';
-import { STAGES, poolFor, readyToAdvance, unlockedStages, expectedOnsets, RHYTHMS, nextStage } from '../js/curriculum.js';
+import { STAGES, poolFor, readyToAdvance, unlockedStages, expectedOnsets, RHYTHMS, nextStage,
+  roundOver,
+} from '../js/curriculum.js';
 import { yForDiatonic, ledgersFor, renderNote, renderFretboard, stringWeight, LINE_GAP } from '../js/staff.js';
 import { spell, writtenAt } from '../js/theory.js';
 
@@ -497,6 +499,40 @@ t('junk samples cannot make it accuse anything', () => {
   assert.equal(tuningDrift([sample(3, NaN), sample(3, NaN), sample(3, NaN)]), null);
   assert.equal(tuningDrift([{ string: null, cents: -100 }, { string: null, cents: -100 }]), null);
   assert.equal(tuningDrift([null, undefined]), null);
+});
+
+
+// ---------------------------------------------------------------------------
+// A round that ends.
+//
+// "when does it end? this stage feels endless" - at 100% fluent, 19 of the last
+// 20 right, a tick on the stage title, and 118 notes played in one sitting.
+
+const round = (o) => roundOver({ asked: 0, target: 20, stageReady: false, stageWasReady: false, ...o });
+
+t('a round runs to its length and then stops', () => {
+  assert.equal(round({ asked: 0 }), null);
+  assert.equal(round({ asked: 19 }), null);
+  assert.equal(round({ asked: 20 }), 'round');
+  assert.equal(round({ asked: 118 }), 'round', 'ran well past the end without stopping');
+});
+
+t('finishing the stage ends the round there and then, whatever the count', () => {
+  // Not at the end of the twenty, and not on another tab: the moment it knows.
+  assert.equal(round({ asked: 3, stageReady: true }), 'stage');
+});
+
+t('a stage finished before the round started is not news', () => {
+  // Revisiting a mastered stage is ordinary practice. Without this the round
+  // would stop on its very first note, every time.
+  assert.equal(round({ asked: 1, stageReady: true, stageWasReady: true }), null);
+  assert.equal(round({ asked: 20, stageReady: true, stageWasReady: true }), 'round',
+    'a revisited stage should still end at the ordinary round length');
+});
+
+t('completing the stage outranks completing the round', () => {
+  // Both true at once: he deserves to hear the bigger news.
+  assert.equal(round({ asked: 20, stageReady: true }), 'stage');
 });
 
 console.log(`learning: ${pass} groups passed`);

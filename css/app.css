@@ -141,6 +141,9 @@ svg.staff { width: min(100%, 320px); height: auto; }
 .verdict-main.bad { color: var(--bad); }
 .verdict-sub { font-size: .86rem; color: var(--ink-soft); }
 
+/* One obvious next step, where the round ended. */
+.round-actions { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; margin: .7rem 0 .2rem; }
+
 /* Said only when the app is sure the instrument, not the reading, is wrong. */
 .tune-nudge {
   display: block; width: 100%; margin: .5rem 0 .2rem; padding: .6rem .8rem;

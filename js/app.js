@@ -16,7 +16,7 @@ import {
 import { renderNote, renderPhrase, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
 import { pickNext, isFluent, emptyStat, recentForm, tuningDrift } from './srs.js';
 import { Progress } from './progress.js';
-import { STAGES, stageById, nextStage, poolFor, readyToAdvance, unlockedStages, RHYTHMS, expectedOnsets } from './curriculum.js';
+import { STAGES, stageById, nextStage, poolFor, readyToAdvance, roundOver, unlockedStages, RHYTHMS, expectedOnsets } from './curriculum.js';
 import { gradeTiming } from './onset.js';
 import { initPieceView } from './piece-view.js';
 import { Sync } from './sync.js';
@@ -192,6 +192,10 @@ setInterval(() => { anyDrillRunning() ? holdScreenAwake() : letScreenSleep(); },
 // How many recent notes the card reports on. Long enough to be steady, short
 // enough that a good run visibly moves it.
 const RECENT_WINDOW = 20;
+// A round is that same twenty. One number, so "right first time, last 20" is a
+// report on the round just played rather than on some other window - and so
+// there is an end in sight while playing, which there was not.
+const ROUND_NOTES = RECENT_WINDOW;
 
 // Practice stops when you walk away, but the app used to keep the session open
 // and keep the current note's clock running - so the note you happened to be on
@@ -222,6 +226,10 @@ const read = {
   // the string it was asked on. A mistuned string shows up here as the same
   // error over and over; a wrong finger does not.
   tuning: [],
+  // Whether the stage was already complete when this round started. Reaching
+  // the end of the plan mid-round is news; starting a round on a stage that was
+  // finished last week is not, and must not stop the round on its first note.
+  stageWasReady: false,
   octavesThisNote: 0,
   lastActivity: 0,
   idleTimer: 0,
@@ -291,7 +299,33 @@ function showEmptyStaff() {
   $('staffHost').innerHTML = renderNote(null, { label: '' });
 }
 
+/**
+ * Is the round over, and why?
+ *
+ * The drill used to have no end at all. It asked until the player stopped, and
+ * the only thing that closed a session was walking away for three minutes. He
+ * played 118 notes on a three-note stage he had already mastered - the ring
+ * read 100%, the stage title carried a tick - and asked when it ends. It did
+ * not end, and the offer to move on was sitting on the Progress tab, which
+ * there is no reason to open in the middle of practising.
+ *
+ * Two ends, then. The stage being finished is the real one - that is the whole
+ * job of the app, and it now says so where he is working. Twenty notes is the
+ * ordinary one, so a round always has a visible finish.
+ */
+function roundVerdict() {
+  return roundOver({
+    asked: read.asked,
+    target: ROUND_NOTES,
+    stageReady: readyToAdvance(stage, progress.data.stats).ready,
+    stageWasReady: read.stageWasReady,
+  });
+}
+
 function nextQuestion() {
+  const over = roundVerdict();
+  if (over) { endReadSession({ reason: over }); return; }
+
   const pool = poolFor(stage);
 
   // With melodies on, the question is a short tune whose distances the
@@ -525,7 +559,7 @@ function updateSessionCard() {
   $('sSlipsRow').hidden = form.octaveSlips === 0;
   $('sSlips').textContent = String(form.octaveSlips);
 
-  $('sAsked').textContent = String(read.asked);
+  $('sAsked').textContent = `${read.asked} / ${ROUND_NOTES}`;
 }
 
 audio.onPitch = (stable, raw) => {
@@ -561,6 +595,8 @@ $('startRead').addEventListener('click', async () => {
   read.active = true;
   holdScreenAwake();
   read.asked = 0; read.correct = 0; read.times = []; read.recent = [];
+  read.stageWasReady = readyToAdvance(stage, progress.data.stats).ready;
+  $('roundActions').hidden = true;
   // A string tuned between sessions must not still be reported as out.
   read.tuning = [];
   showTuningNudge();
@@ -599,7 +635,7 @@ $('readMelody').addEventListener('change', () => {
 
 $('endSession').addEventListener('click', endReadSession);
 
-function endReadSession({ idle = false } = {}) {
+function endReadSession({ idle = false, reason = idle ? 'idle' : 'stopped' } = {}) {
   stopIdleWatch();
   if (read.asked > 0) {
     progress.recordSession({
@@ -616,10 +652,18 @@ function endReadSession({ idle = false } = {}) {
   read.states = {};
   $('startRead').textContent = t('read.start');
   $('skipNote').disabled = true;
-  $('verdictMain').textContent = idle
-    ? t('read.endedIdle')
-    : (read.asked ? t('read.sessionDone', { correct: read.correct, asked: read.asked }) : t('read.prompt'));
-  $('verdictMain').className = 'verdict-main';
+  const nxt = nextStage(stage.id);
+  if (reason === 'stage') {
+    $('verdictMain').textContent = nxt
+      ? t('read.stageComplete', { next: t(`stage.${nxt.id}.title`) })
+      : t('progress.finishedPlan');
+  } else {
+    $('verdictMain').textContent = reason === 'idle'
+      ? t('read.endedIdle')
+      : (read.asked ? t('read.sessionDone', { correct: read.correct, asked: read.asked }) : t('read.prompt'));
+  }
+  $('verdictMain').className = 'verdict-main' + (reason === 'stage' ? ' good' : '');
+  showRoundActions(reason, nxt);
   // The old "keep looking" line used to survive the end of the session and sit
   // under the summary telling him to hunt for a note that was no longer there.
   $('verdictSub').textContent = '';
@@ -627,6 +671,36 @@ function endReadSession({ idle = false } = {}) {
   showEmptyStaff();
   $('hintHost').hidden = true;
   renderStageHeader();
+}
+
+/**
+ * What to do next, offered where the round ended rather than on another tab.
+ *
+ * One obvious step. Finishing the stage offers the next stage, because that is
+ * what the app decided; finishing a round offers another round. Nothing is
+ * forced - the stage picker above still lets him go anywhere he has earned.
+ */
+function showRoundActions(reason, nxt) {
+  const box = $('roundActions');
+  if (!box) return;
+  if (reason !== 'stage' && reason !== 'round') { box.hidden = true; box.innerHTML = ''; return; }
+
+  const again = `<button type="button" class="btn" id="againBtn">${t('read.anotherRound')}</button>`;
+  box.innerHTML = reason === 'stage' && nxt
+    ? `<button type="button" class="btn primary" id="nextStageBtn">${t('progress.moveOn')}</button>${again}`
+    : again;
+  box.hidden = false;
+
+  $('againBtn')?.addEventListener('click', () => $('startRead').click());
+  $('nextStageBtn')?.addEventListener('click', () => {
+    stage = nxt;
+    progress.setStage(stage.id);
+    renderStageHeader();
+    fillPatterns();
+    drawStrip();
+    box.hidden = true;
+    $('startRead').click();
+  });
 }
 
 function startIdleWatch() {
