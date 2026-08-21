@@ -33,6 +33,11 @@
 
 * { box-sizing: border-box; }
 
+/* Every layout class below sets `display`, and a class beats the browser
+   default for [hidden] - so an element the code hid stayed on the page,
+   holding its space. `hidden` has to mean gone, whatever else is set. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -164,8 +169,8 @@ svg.fretboard { width: min(100%, 300px); height: auto; }
 /* --------------------------------------------------------------- rhythm */
 
 .rhythm-picker { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: .8rem 0; }
-.rhythm-picker label { display: grid; gap: .25rem; font-size: .85rem; color: var(--ink-soft); }
-.rhythm-picker select, .rhythm-picker input { font: inherit; }
+.rhythm-picker label { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; font-size: .85rem; color: var(--ink-soft); }
+.rhythm-picker select, .rhythm-picker input { font: inherit; width: 100%; min-width: 0; }
 .rhythm-picker select { padding: .35rem; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
 
 .rhythm-strip {
@@ -234,7 +239,6 @@ table.heatmap td { padding: 1px; }
   display: grid; place-items: start center;
   padding: 2rem 1rem 3rem;
 }
-.welcome[hidden] { display: none; }
 .welcome-inner { max-width: 560px; }
 .welcome h1 { font-size: clamp(1.5rem, 4.5vw, 2.1rem); line-height: 1.15; letter-spacing: -.025em; margin: .3rem 0 .6rem; }
 .lede { font-size: 1.05rem; color: var(--ink-soft); margin-bottom: 1.4rem; }

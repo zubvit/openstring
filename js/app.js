@@ -597,13 +597,15 @@ const rhythm = { running: false, metro: null, expected: [], played: [], startTim
 function fillPatterns() {
   const sel = $('patternSelect');
   const allowed = stage.rhythm || Object.keys(RHYTHMS);
-  sel.innerHTML = Object.entries(RHYTHMS)
-    .map(([id]) => {
-      const title = t(`rhythmPattern.${id}`);
-      const label = allowed.includes(id) ? title : t('rhythmPattern.beyondStage', { title });
-      return `<option value="${id}">${label}</option>`;
-    })
-    .join('');
+  // Two groups rather than "(beyond this stage)" tacked onto six of seven names:
+  // the same information, said once, and every option stays short enough to read
+  // in the width the control actually has.
+  const group = (label, ids) => (ids.length
+    ? `<optgroup label="${label}">${ids.map((id) => `<option value="${id}">${t(`rhythmPattern.${id}`)}</option>`).join('')}</optgroup>`
+    : '');
+  const ids = Object.keys(RHYTHMS);
+  sel.innerHTML = group(t('rhythmPattern.groupCurrent'), ids.filter((id) => allowed.includes(id)))
+    + group(t('rhythmPattern.groupBeyond'), ids.filter((id) => !allowed.includes(id)));
   sel.value = allowed[0];
 }
 
