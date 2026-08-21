@@ -41,7 +41,6 @@
   "read.pause": "Παύση",
   "read.skip": "Παράλειψη",
   "read.showHint": "Δείξε μου πού είναι",
-  "read.asked": "Ερωτήσεις",
   "read.rightFirstTime": "Σωστές με την πρώτη",
   "read.typicalTime": "Συνήθης χρόνος εύρεσης",
   "read.endSession": "Τέλος συνεδρίας",
@@ -289,5 +288,9 @@
   "interval.6": "έκτη",
   "interval.8": "ογδόη",
   "interval.up": "πάνω",
-  "interval.down": "κάτω"
+  "interval.down": "κάτω",
+  "read.recentRight": "Σωστή με την πρώτη, τελευταίες {n}",
+  "read.octaveSlips": "Σωστή νότα, λάθος χορδή",
+  "read.sessionSoFar": "Αυτή η συνεδρία",
+  "read.endedIdle": "Η συνεδρία τελείωσε — για μερικά λεπτά δεν παίχτηκε τίποτα."
 }

@@ -41,7 +41,6 @@
   "read.pause": "Jeda",
   "read.skip": "Lewati",
   "read.showHint": "Tunjukkan letaknya",
-  "read.asked": "Ditanyakan",
   "read.rightFirstTime": "Benar sekali coba",
   "read.typicalTime": "Waktu biasa menemukannya",
   "read.endSession": "Akhiri sesi",
@@ -286,5 +285,9 @@
   "interval.6": "sekst",
   "interval.8": "oktaf",
   "interval.up": "naik",
-  "interval.down": "turun"
+  "interval.down": "turun",
+  "read.recentRight": "Benar sekali jadi, {n} terakhir",
+  "read.octaveSlips": "Nada benar, senar salah",
+  "read.sessionSoFar": "Sesi ini",
+  "read.endedIdle": "Sesi berakhir — beberapa menit tidak ada yang dimainkan."
 }

@@ -41,7 +41,6 @@
   "read.pause": "Duraklat",
   "read.skip": "Atla",
   "read.showHint": "Nerede olduğunu göster",
-  "read.asked": "Sorulan",
   "read.rightFirstTime": "İlk seferde doğru",
   "read.typicalTime": "Bulma süresi",
   "read.endSession": "Çalışmayı bitir",
@@ -289,5 +288,9 @@
   "interval.6": "altılı",
   "interval.8": "oktav",
   "interval.up": "yukarı",
-  "interval.down": "aşağı"
+  "interval.down": "aşağı",
+  "read.recentRight": "İlk seferde doğru, son {n}",
+  "read.octaveSlips": "Nota doğru, tel yanlış",
+  "read.sessionSoFar": "Bu oturum",
+  "read.endedIdle": "Oturum bitti — birkaç dakikadır hiçbir şey çalınmadı."
 }

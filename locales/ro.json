@@ -41,7 +41,6 @@
   "read.pause": "Pauză",
   "read.skip": "Sari peste",
   "read.showHint": "Arată-mi unde e",
-  "read.asked": "Întrebate",
   "read.rightFirstTime": "Corecte din prima",
   "read.typicalTime": "Timp obișnuit de căutare",
   "read.endSession": "Încheie sesiunea",
@@ -292,5 +291,9 @@
   "interval.6": "sextă",
   "interval.8": "octavă",
   "interval.up": "în sus",
-  "interval.down": "în jos"
+  "interval.down": "în jos",
+  "read.recentRight": "Din prima, ultimele {n}",
+  "read.octaveSlips": "Nota corectă, coarda greșită",
+  "read.sessionSoFar": "Sesiunea aceasta",
+  "read.endedIdle": "Sesiune încheiată — câteva minute nu s-a cântat nimic."
 }

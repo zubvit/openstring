@@ -41,7 +41,6 @@
   "read.pause": "Pause",
   "read.skip": "Überspringen",
   "read.showHint": "Zeig mir, wo sie liegt",
-  "read.asked": "Gefragt",
   "read.rightFirstTime": "Auf Anhieb richtig",
   "read.typicalTime": "Übliche Suchdauer",
   "read.endSession": "Einheit beenden",
@@ -289,5 +288,9 @@
   "interval.6": "Sexte",
   "interval.8": "Oktave",
   "interval.up": "aufwärts",
-  "interval.down": "abwärts"
+  "interval.down": "abwärts",
+  "read.recentRight": "Auf Anhieb richtig, letzte {n}",
+  "read.octaveSlips": "Richtiger Ton, falsche Saite",
+  "read.sessionSoFar": "Diese Sitzung",
+  "read.endedIdle": "Sitzung beendet — ein paar Minuten lang wurde nichts gespielt."
 }

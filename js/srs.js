@@ -108,3 +108,40 @@ export function weakest(pool, stats = {}, limit = 5) {
     .sort((a, b) => (a.stat.accuracy - b.stat.accuracy) || (b.stat.avgMs - a.stat.avgMs))
     .slice(0, limit);
 }
+
+/**
+ * How you are playing NOW, rather than how the whole sitting went.
+ *
+ * The session card used to be running totals from the moment you pressed
+ * start. After two hundred notes those barely move: sixteen good ones in a row
+ * cannot shift a fraction with a denominator that large, so the card stopped
+ * telling you anything about the last ten minutes. A fixed window does tell
+ * you, and it is the number you actually want mid-practice.
+ *
+ * (The fluency ring is a different thing and was already rolling - each
+ * position carries exponential moving averages, so recent playing dominates
+ * there by construction.)
+ *
+ * The median time counts every note, fumbles included: how long a note took to
+ * find IS the reading speed, and dropping the slow ones would flatter it.
+ */
+export function recentForm(entries, { window: size = 20 } = {}) {
+  const recent = entries.slice(-size);
+  if (!recent.length) return { count: 0, clean: 0, medianMs: null, octaveSlips: 0, window: size };
+
+  const times = recent
+    .map((e) => e.ms)
+    .filter((ms) => Number.isFinite(ms))
+    .sort((a, b) => a - b);
+
+  return {
+    count: recent.length,
+    clean: recent.filter((e) => e.clean).length,
+    medianMs: times.length ? times[Math.floor(times.length / 2)] : null,
+    // Worth counting separately: on a stage whose notes are not an octave
+    // apart, "right note, wrong string" over and over is more likely to be the
+    // listener mishearing an octave than the player picking the wrong string.
+    octaveSlips: recent.reduce((n, e) => n + (e.octaves || 0), 0),
+    window: size,
+  };
+}

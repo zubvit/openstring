@@ -41,7 +41,6 @@
   "read.pause": "一時停止",
   "read.skip": "スキップ",
   "read.showHint": "場所を教えて",
-  "read.asked": "出題",
   "read.rightFirstTime": "一発で正解",
   "read.typicalTime": "見つけるまでの平均",
   "read.endSession": "練習を終える",
@@ -286,5 +285,9 @@
   "interval.6": "6度",
   "interval.8": "オクターブ",
   "interval.up": "上に",
-  "interval.down": "下に"
+  "interval.down": "下に",
+  "read.recentRight": "一度目で正解、直近 {n} 音",
+  "read.octaveSlips": "音は合って弦が違う",
+  "read.sessionSoFar": "今回の練習",
+  "read.endedIdle": "練習を終了しました — 数分間なにも鳴りませんでした。"
 }

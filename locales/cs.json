@@ -41,7 +41,6 @@
   "read.pause": "Pauza",
   "read.skip": "Přeskočit",
   "read.showHint": "Ukaž mi, kde je",
-  "read.asked": "Dotázáno",
   "read.rightFirstTime": "Správně napoprvé",
   "read.typicalTime": "Obvyklý čas hledání",
   "read.endSession": "Ukončit lekci",
@@ -295,5 +294,9 @@
   "interval.6": "sexta",
   "interval.8": "oktáva",
   "interval.up": "nahoru",
-  "interval.down": "dolů"
+  "interval.down": "dolů",
+  "read.recentRight": "Napoprvé správně, posledních {n}",
+  "read.octaveSlips": "Správný tón, špatná struna",
+  "read.sessionSoFar": "Tato relace",
+  "read.endedIdle": "Relace ukončena — několik minut se nic nehrálo."
 }

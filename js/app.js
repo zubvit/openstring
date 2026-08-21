@@ -11,7 +11,7 @@ import {
   positionId, parsePositionId, positionsFor, midiToHz,
 } from './theory.js';
 import { renderNote, renderPhrase, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
-import { pickNext, isFluent, emptyStat } from './srs.js';
+import { pickNext, isFluent, emptyStat, recentForm } from './srs.js';
 import { Progress } from './progress.js';
 import { STAGES, stageById, nextStage, poolFor, readyToAdvance, RHYTHMS, expectedOnsets } from './curriculum.js';
 import { gradeTiming } from './onset.js';
@@ -71,6 +71,15 @@ async function ensureAudio() {
 
 // =================================================================== READING
 
+// How many recent notes the card reports on. Long enough to be steady, short
+// enough that a good run visibly moves it.
+const RECENT_WINDOW = 20;
+
+// Practice stops when you walk away, but the app used to keep the session open
+// and keep the current note's clock running - so the note you happened to be on
+// when the phone rang got recorded as having taken twenty minutes to find.
+const IDLE_MS = 3 * 60 * 1000;
+
 const read = {
   active: false,
   target: null,      // { string, fret, sounding, written }
@@ -87,6 +96,12 @@ const read = {
   states: {},         // notehead index -> 'correct' | 'wrong'
   melody: null,       // { notes, intervals } when this phrase is a tune
   intervalProgress: new IntervalProgress(),
+  // One entry per note resolved, newest last. The card reads the tail of this
+  // rather than totals, so it shows how the last few minutes went.
+  recent: [],
+  octavesThisNote: 0,
+  lastActivity: 0,
+  idleTimer: 0,
   asked: 0,
   correct: 0,
   times: [],
@@ -205,6 +220,7 @@ function judge(heardMidi, hz) {
 
   if (verdict !== 'right') {
     read.attempts += 1;
+    if (verdict === 'octave') read.octavesThisNote += 1;
     read.states[read.step] = 'wrong';
     main.textContent = t(verdict === 'octave' ? 'read.rightNoteWrongString' : 'read.notThatOne',
       { heard: noteName(heardMidi) });
@@ -227,6 +243,9 @@ function judge(heardMidi, hz) {
   const clean = read.attempts === 0;
   read.states[read.step] = 'correct';
   read.asked += 1;
+  read.lastActivity = performance.now();
+  read.recent.push({ clean, ms, octaves: read.octavesThisNote });
+  if (read.recent.length > 200) read.recent = read.recent.slice(-200);
   if (clean) { read.correct += 1; read.times.push(ms); }
   progress.recordAnswer(positionId(read.target.string, read.target.fret), { correct: clean, ms });
 
@@ -248,6 +267,7 @@ function judge(heardMidi, hz) {
 
   read.step += 1;
   read.attempts = 0;
+  read.octavesThisNote = 0;
   read.stepAt = performance.now();
 
   if (read.step < read.phrase.length) {
@@ -273,12 +293,17 @@ function judge(heardMidi, hz) {
 
 function updateSessionCard() {
   $('sessionCard').hidden = read.asked === 0;
+
+  const form = recentForm(read.recent, { window: RECENT_WINDOW });
+  $('sRecentLabel').textContent = t('read.recentRight', { n: form.window });
+  $('sCorrect').textContent = `${form.clean} / ${form.count}`;
+  $('sSpeed').textContent = form.medianMs ? `${(form.medianMs / 1000).toFixed(1)}s` : '\u2014';
+
+  // Only worth showing when it is happening.
+  $('sSlipsRow').hidden = form.octaveSlips === 0;
+  $('sSlips').textContent = String(form.octaveSlips);
+
   $('sAsked').textContent = String(read.asked);
-  $('sCorrect').textContent = String(read.correct);
-  const med = read.times.length
-    ? [...read.times].sort((a, b) => a - b)[Math.floor(read.times.length / 2)]
-    : null;
-  $('sSpeed').textContent = med ? `${(med / 1000).toFixed(1)}s` : '—';
 }
 
 audio.onPitch = (stable, raw) => {
@@ -312,7 +337,12 @@ $('startRead').addEventListener('click', async () => {
   }
   if (!(await ensureAudio())) return;
   read.active = true;
-  read.asked = 0; read.correct = 0; read.times = []; read.startedAt = Date.now();
+  read.asked = 0; read.correct = 0; read.times = []; read.recent = [];
+  read.octavesThisNote = 0;
+  read.startedAt = Date.now();
+  read.startedPerf = performance.now();
+  read.lastActivity = read.startedPerf;
+  startIdleWatch();
   $('startRead').textContent = t('read.pause');
   $('skipNote').disabled = false;
   nextQuestion();
@@ -323,6 +353,8 @@ $('skipNote').addEventListener('click', () => {
   if (read.target && !read.judged) {
     progress.recordAnswer(positionId(read.target.string, read.target.fret), { correct: false, ms: 8000 });
     read.asked += 1;
+    read.recent.push({ clean: false, ms: 8000, octaves: read.octavesThisNote });
+    read.lastActivity = performance.now();
     updateSessionCard();
   }
   nextQuestion();
@@ -336,10 +368,14 @@ $('readMelody').addEventListener('change', () => {
 
 $('endSession').addEventListener('click', endReadSession);
 
-function endReadSession() {
+function endReadSession({ idle = false } = {}) {
+  stopIdleWatch();
   if (read.asked > 0) {
     progress.recordSession({
-      ms: Date.now() - read.startedAt, asked: read.asked, correct: read.correct, stageId: stage.id,
+      // Measured to the last note played, not to now: a session that ended
+      // because he walked away did not last however long he was gone.
+      ms: Math.max(0, (read.lastActivity || performance.now()) - read.startedPerf),
+      asked: read.asked, correct: read.correct, stageId: stage.id,
     });
   }
   read.active = false;
@@ -349,14 +385,30 @@ function endReadSession() {
   read.states = {};
   $('startRead').textContent = t('read.start');
   $('skipNote').disabled = true;
-  $('verdictMain').textContent = read.asked
-    ? t('read.sessionDone', { correct: read.correct, asked: read.asked })
-    : t('read.prompt');
+  $('verdictMain').textContent = idle
+    ? t('read.endedIdle')
+    : (read.asked ? t('read.sessionDone', { correct: read.correct, asked: read.asked }) : t('read.prompt'));
   $('verdictMain').className = 'verdict-main';
+  // The old "keep looking" line used to survive the end of the session and sit
+  // under the summary telling him to hunt for a note that was no longer there.
+  $('verdictSub').textContent = '';
   // Leave the staff empty rather than showing the last answer indefinitely.
   showEmptyStaff();
   $('hintHost').hidden = true;
   renderStageHeader();
+}
+
+function startIdleWatch() {
+  stopIdleWatch();
+  read.idleTimer = setInterval(() => {
+    if (!read.active) return stopIdleWatch();
+    if (performance.now() - read.lastActivity > IDLE_MS) endReadSession({ idle: true });
+  }, 15000);
+}
+
+function stopIdleWatch() {
+  if (read.idleTimer) clearInterval(read.idleTimer);
+  read.idleTimer = 0;
 }
 
 // ==================================================================== RHYTHM
@@ -1186,6 +1238,9 @@ window.addEventListener('localechange', () => {
   drawStrip();
   renderSync();
   renderProgress();
+  // The card's first label carries a placeholder, so a plain re-translate
+  // leaves "last {n}" sitting there until the next answer fills it in.
+  updateSessionCard();
   paintTuner(null);
   buildChordPicker();
   paintChord();

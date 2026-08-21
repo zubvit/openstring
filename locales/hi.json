@@ -41,7 +41,6 @@
   "read.pause": "ठहराव",
   "read.skip": "छोड़ें",
   "read.showHint": "दिखाइए यह कहाँ है",
-  "read.asked": "पूछे गए",
   "read.rightFirstTime": "पहली बार में सही",
   "read.typicalTime": "ढूँढ़ने में सामान्य समय",
   "read.endSession": "अभ्यास समाप्त करें",
@@ -289,5 +288,9 @@
   "interval.6": "षष्ठ",
   "interval.8": "अष्टक",
   "interval.up": "ऊपर",
-  "interval.down": "नीचे"
+  "interval.down": "नीचे",
+  "read.recentRight": "पहली बार में सही, पिछले {n}",
+  "read.octaveSlips": "स्वर सही, तार ग़लत",
+  "read.sessionSoFar": "यह सत्र",
+  "read.endedIdle": "सत्र समाप्त — कुछ मिनटों से कुछ नहीं बजा।"
 }

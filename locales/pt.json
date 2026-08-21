@@ -41,7 +41,6 @@
   "read.pause": "Pausa",
   "read.skip": "Saltar",
   "read.showHint": "Mostra-me onde está",
-  "read.asked": "Perguntadas",
   "read.rightFirstTime": "Certas à primeira",
   "read.typicalTime": "Tempo habitual para a encontrar",
   "read.endSession": "Terminar sessão",
@@ -289,5 +288,9 @@
   "interval.6": "sexta",
   "interval.8": "oitava",
   "interval.up": "para cima",
-  "interval.down": "para baixo"
+  "interval.down": "para baixo",
+  "read.recentRight": "À primeira, últimas {n}",
+  "read.octaveSlips": "Nota certa, corda errada",
+  "read.sessionSoFar": "Esta sessão",
+  "read.endedIdle": "Sessão terminada — nada foi tocado durante alguns minutos."
 }

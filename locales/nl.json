@@ -41,7 +41,6 @@
   "read.pause": "Pauze",
   "read.skip": "Overslaan",
   "read.showHint": "Laat zien waar hij zit",
-  "read.asked": "Gevraagd",
   "read.rightFirstTime": "Meteen goed",
   "read.typicalTime": "Gebruikelijke zoektijd",
   "read.endSession": "Sessie beëindigen",
@@ -289,5 +288,9 @@
   "interval.6": "sext",
   "interval.8": "octaaf",
   "interval.up": "omhoog",
-  "interval.down": "omlaag"
+  "interval.down": "omlaag",
+  "read.recentRight": "In één keer goed, laatste {n}",
+  "read.octaveSlips": "Goede noot, verkeerde snaar",
+  "read.sessionSoFar": "Deze sessie",
+  "read.endedIdle": "Sessie beëindigd — er is een paar minuten niets gespeeld."
 }

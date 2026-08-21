@@ -41,7 +41,6 @@
   "read.pause": "Pausa",
   "read.skip": "Salta",
   "read.showHint": "Mostrami dov’è",
-  "read.asked": "Chieste",
   "read.rightFirstTime": "Giuste al primo colpo",
   "read.typicalTime": "Tempo tipico per trovarla",
   "read.endSession": "Termina la sessione",
@@ -289,5 +288,9 @@
   "interval.6": "sesta",
   "interval.8": "ottava",
   "interval.up": "in su",
-  "interval.down": "in giù"
+  "interval.down": "in giù",
+  "read.recentRight": "Giusto al primo colpo, ultime {n}",
+  "read.octaveSlips": "Nota giusta, corda sbagliata",
+  "read.sessionSoFar": "Questa sessione",
+  "read.endedIdle": "Sessione conclusa — per qualche minuto non è stato suonato nulla."
 }

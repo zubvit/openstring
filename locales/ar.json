@@ -41,7 +41,6 @@
   "read.pause": "إيقاف مؤقّت",
   "read.skip": "تخطٍّ",
   "read.showHint": "أرني أين هي",
-  "read.asked": "المطلوبة",
   "read.rightFirstTime": "صحيحة من أول مرة",
   "read.typicalTime": "الزمن المعتاد لإيجادها",
   "read.endSession": "إنهاء الجلسة",
@@ -301,5 +300,9 @@
   "interval.6": "سادسة",
   "interval.8": "ثامنة",
   "interval.up": "صعودًا",
-  "interval.down": "نزولًا"
+  "interval.down": "نزولًا",
+  "read.recentRight": "صحيح من أول مرة، آخر {n}",
+  "read.octaveSlips": "النغمة صحيحة والوتر خطأ",
+  "read.sessionSoFar": "هذه الجلسة",
+  "read.endedIdle": "انتهت الجلسة — لم يُعزف شيء لبضع دقائق."
 }

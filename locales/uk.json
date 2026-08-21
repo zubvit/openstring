@@ -39,7 +39,6 @@
   "read.pause": "Пауза",
   "read.skip": "Пропустити",
   "read.showHint": "Показати, де вона",
-  "read.asked": "Запитано",
   "read.rightFirstTime": "Правильно з першого разу",
   "read.typicalTime": "Звичний час на пошук",
   "read.endSession": "Завершити заняття",
@@ -295,5 +294,9 @@
   "interval.6": "секста",
   "interval.8": "октава",
   "interval.up": "вгору",
-  "interval.down": "вниз"
+  "interval.down": "вниз",
+  "read.recentRight": "З першого разу, останні {n}",
+  "read.octaveSlips": "Нота правильна, струна не та",
+  "read.sessionSoFar": "Цей сеанс",
+  "read.endedIdle": "Сеанс завершено — кілька хвилин нічого не звучало."
 }

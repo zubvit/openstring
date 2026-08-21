@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { updateStat, emptyStat, weightFor, pickNext, isFluent, poolMastery } from '../js/srs.js';
+import { updateStat, emptyStat, weightFor, pickNext, isFluent, poolMastery, recentForm } from '../js/srs.js';
 import { Progress, MemoryStorage } from '../js/progress.js';
 import { STAGES, poolFor, readyToAdvance, expectedOnsets, RHYTHMS, nextStage } from '../js/curriculum.js';
 import { yForDiatonic, ledgersFor, renderNote, renderFretboard, stringWeight, LINE_GAP } from '../js/staff.js';
@@ -292,6 +292,60 @@ t('the drawn thickness follows the string, not the row it happens to be in', () 
   const svg = renderFretboard({ strings: [4, 5, 6], mark: null });
   const widths = [...svg.matchAll(/class="fb-string" stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
   assert.deepEqual(widths, [stringWeight(4), stringWeight(5), stringWeight(6)]);
+});
+
+// ------------------------------------------------------------- recent form
+
+// The session card used to be running totals. Two hundred notes in, sixteen
+// good ones in a row could not move it, so it stopped describing the practice
+// you were actually doing.
+t('recent form describes the last few notes, not the whole sitting', () => {
+  const bad = Array.from({ length: 200 }, () => ({ clean: false, ms: 5000 }));
+  const good = Array.from({ length: 20 }, () => ({ clean: true, ms: 900 }));
+  const form = recentForm([...bad, ...good], { window: 20 });
+  assert.equal(form.count, 20);
+  assert.equal(form.clean, 20, 'a good run shows as a good run');
+  assert.equal(form.medianMs, 900);
+});
+
+t('a short session reports what there is, not a padded window', () => {
+  const form = recentForm([{ clean: true, ms: 1000 }, { clean: false, ms: 3000 }], { window: 20 });
+  assert.equal(form.count, 2);
+  assert.equal(form.clean, 1);
+});
+
+t('nothing played reports nothing rather than zero out of twenty', () => {
+  const form = recentForm([], { window: 20 });
+  assert.deepEqual([form.count, form.clean, form.medianMs, form.octaveSlips], [0, 0, null, 0]);
+});
+
+// The displayed time counts fumbles too. How long a note took to find IS the
+// reading speed; dropping the slow ones would flatter it.
+t('the typical time includes the notes that took hunting', () => {
+  const form = recentForm([
+    { clean: true, ms: 500 }, { clean: false, ms: 4000 }, { clean: true, ms: 600 },
+  ], { window: 20 });
+  assert.equal(form.medianMs, 600, 'median of all three, not of the clean two');
+});
+
+t('octave slips are counted, because a run of them is a clue', () => {
+  const form = recentForm([
+    { clean: false, ms: 2000, octaves: 2 },
+    { clean: true, ms: 800 },
+    { clean: false, ms: 2000, octaves: 1 },
+  ], { window: 20 });
+  assert.equal(form.octaveSlips, 3);
+});
+
+// The ring is a different measurement and was already rolling: the per-note
+// averages are exponential, so recent playing dominates without a window.
+t('a position recovers from a bad patch within a handful of good answers', () => {
+  let stat = emptyStat();
+  for (let i = 0; i < 20; i++) stat = updateStat(stat, { correct: false, ms: 5000 });
+  assert.ok(stat.accuracy < 0.1, 'thoroughly wrong');
+  for (let i = 0; i < 8; i++) stat = updateStat(stat, { correct: true, ms: 900 });
+  assert.ok(stat.accuracy > 0.85, `eight good answers brought it back to ${stat.accuracy.toFixed(2)}`);
+  assert.ok(isFluent(stat), 'and it counts as fluent again without erasing history');
 });
 
 console.log(`learning: ${pass} groups passed`);

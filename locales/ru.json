@@ -41,7 +41,6 @@
   "read.pause": "Пауза",
   "read.skip": "Пропустить",
   "read.showHint": "Показать, где она",
-  "read.asked": "Задано",
   "read.rightFirstTime": "Верно с первого раза",
   "read.typicalTime": "Обычное время поиска",
   "read.endSession": "Завершить занятие",
@@ -295,5 +294,9 @@
   "interval.6": "секста",
   "interval.8": "октава",
   "interval.up": "вверх",
-  "interval.down": "вниз"
+  "interval.down": "вниз",
+  "read.recentRight": "С первого раза, последние {n}",
+  "read.octaveSlips": "Нота верная, струна не та",
+  "read.sessionSoFar": "Этот сеанс",
+  "read.endedIdle": "Сеанс завершён — несколько минут ничего не звучало."
 }

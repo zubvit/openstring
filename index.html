@@ -106,9 +106,10 @@
   </div>
 
   <div class="card session" id="sessionCard" hidden>
-    <div class="row"><span data-i18n="read.asked">Asked</span><strong id="sAsked">0</strong></div>
-    <div class="row"><span data-i18n="read.rightFirstTime">Right first time</span><strong id="sCorrect">0</strong></div>
+    <div class="row"><span id="sRecentLabel" data-i18n="read.recentRight">Right first time, last 20</span><strong id="sCorrect">0</strong></div>
     <div class="row"><span data-i18n="read.typicalTime">Typical time to find</span><strong id="sSpeed">—</strong></div>
+    <div class="row" id="sSlipsRow" hidden><span data-i18n="read.octaveSlips">Right note, wrong string</span><strong id="sSlips">0</strong></div>
+    <div class="row muted small"><span data-i18n="read.sessionSoFar">This session</span><strong id="sAsked">0</strong></div>
     <button class="btn small" id="endSession" data-i18n="read.endSession">End session</button>
   </div>
 

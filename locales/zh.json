@@ -41,7 +41,6 @@
   "read.pause": "暂停",
   "read.skip": "跳过",
   "read.showHint": "告诉我它在哪",
-  "read.asked": "出题",
   "read.rightFirstTime": "一次答对",
   "read.typicalTime": "找到它的平均用时",
   "read.endSession": "结束这次练习",
@@ -286,5 +285,9 @@
   "interval.6": "六度",
   "interval.8": "八度",
   "interval.up": "向上",
-  "interval.down": "向下"
+  "interval.down": "向下",
+  "read.recentRight": "一次就对，最近 {n} 个",
+  "read.octaveSlips": "音对了，弦错了",
+  "read.sessionSoFar": "本次练习",
+  "read.endedIdle": "练习已结束——有几分钟没有弹奏。"
 }

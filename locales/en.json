@@ -39,7 +39,6 @@
   "read.pause": "Pause",
   "read.skip": "Skip",
   "read.showHint": "Show me where it is",
-  "read.asked": "Asked",
   "read.rightFirstTime": "Right first time",
   "read.typicalTime": "Typical time to find",
   "read.endSession": "End session",
@@ -289,5 +288,9 @@
   "interval.6": "sixth",
   "interval.8": "octave",
   "interval.up": "up",
-  "interval.down": "down"
+  "interval.down": "down",
+  "read.recentRight": "Right first time, last {n}",
+  "read.octaveSlips": "Right note, wrong string",
+  "read.sessionSoFar": "This session",
+  "read.endedIdle": "Session ended — nothing played for a few minutes."
 }
