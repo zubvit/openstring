@@ -858,13 +858,31 @@ function renderHeatmap() {
         : st?.attempts
           ? ` · ${st.attempts} tries, ${Math.round(st.accuracy * 100)}%, ${(st.avgMs / 1000).toFixed(1)}s`
           : ' · not asked yet';
-      html += `<td><div class="hm-cell ${cls}" title="${name} · string ${s} fret ${f}${why}">${text}</div></td>`;
+      const detail = `${name} · string ${s} fret ${f}${why}`;
+      html += `<td><div class="hm-cell ${cls}" tabindex="0" role="button" `
+        + `title="${esc(detail)}" data-detail="${esc(detail)}">${text}</div></td>`;
     }
     html += '</tr>';
   }
   html += '</table>';
   $('heatmapHost').innerHTML = html;
+  $('heatDetail').textContent = '';
 }
+
+// The squares said what they meant in a hover tooltip, which a touch screen does
+// not have - so on a phone the tries, accuracy and speed behind each colour were
+// unreachable. Delegated, because the table is rebuilt on every redraw.
+$('heatmapHost').addEventListener('click', (e) => {
+  const cell = e.target.closest?.('.hm-cell');
+  if (cell) $('heatDetail').textContent = cell.dataset.detail || '';
+});
+$('heatmapHost').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const cell = e.target.closest?.('.hm-cell');
+  if (!cell) return;
+  e.preventDefault();
+  $('heatDetail').textContent = cell.dataset.detail || '';
+});
 
 $('exportBtn').addEventListener('click', () => {
   const blob = new Blob([progress.export()], { type: 'application/json' });

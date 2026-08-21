@@ -439,3 +439,43 @@ select.stage-title { width: 100%; }
 /* iOS Safari zooms the whole page in when you focus a control smaller than
    16px, and does not zoom back out. These four inherit .85rem from their labels. */
 #langSelect, #beatsSelect, #patternSelect, #barsSelect { font-size: 1rem; }
+
+/* --- touch ---------------------------------------------------------------
+   Everything here is behind `pointer: coarse`, which asks whether the pointing
+   device is imprecise rather than whether the screen is small. A finger covers
+   roughly 44px however wide the window is, and a mouse does not need the room -
+   so the desktop layout stays as compact as it was.
+
+   Measured before this: the help button was 24px, the chord chips 33x28, the
+   shape switcher 22px tall, and the checkboxes 13px inside 22px labels. */
+@media (pointer: coarse) {
+  .help-btn { width: 44px; height: 44px; font-size: 1rem; }
+
+  .btn.small { min-height: 44px; padding: .6rem 1rem; }
+  .btn.round { width: 44px; height: 44px; }
+
+  .chip { min-height: 44px; padding: .55rem .9rem; display: inline-flex; align-items: center; }
+  .chip.small { min-height: 44px; padding: .5rem .85rem; font-size: .82rem; }
+
+  /* The label is the target, so it has to be the full height - not just the
+     13px box sitting inside it. */
+  .check { min-height: 44px; gap: .6rem; }
+  .check input[type="checkbox"], .check input[type="radio"] { width: 22px; height: 22px; }
+
+  /* "Erase everything" sat directly beside Export and Import. It asks before it
+     does anything, but a mistap should not be one pixel away either. */
+  .controls .btn.small.danger { margin-inline-start: auto; }
+
+  /* The stage picker showed its border on hover only, so on a touch screen
+     nothing said the stage name could be changed. */
+  select.stage-title { border-color: var(--line); background: var(--panel); }
+
+  .hm-cell { width: 32px; height: 30px; font-size: .7rem; }
+}
+
+/* Every heatmap square carried its detail in a hover tooltip, which does not
+   exist on a touch screen - so on a phone the numbers behind the colours were
+   simply unreachable. Tapping one now says the same thing out loud. */
+.hm-cell { cursor: pointer; }
+.hm-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.heat-detail { min-height: 1.4em; margin-top: .4rem; }
