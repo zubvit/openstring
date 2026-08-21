@@ -297,5 +297,6 @@
   "read.thePlan": "Il piano",
   "progress.locked": "bloccata",
   "sync.pushConfirm": "Sostituire quanto è salvato nel tuo account con i progressi di questo dispositivo? Andrà perso ciò che è stato suonato su un altro dispositivo e non ancora scaricato.",
-  "sync.chooseDirection": "Accesso eseguito. Non è stato cambiato nulla: su questo dispositivo c'è già del lavoro, quindi scegli se inviarlo o scaricare i progressi salvati."
+  "sync.chooseDirection": "Accesso eseguito. Non è stato cambiato nulla: su questo dispositivo c'è già del lavoro, quindi scegli se inviarlo o scaricare i progressi salvati.",
+  "piece.repeatLabel": "Battuta {from}, poi di nuovo alla {to}"
 }

@@ -297,5 +297,6 @@
   "read.thePlan": "Het plan",
   "progress.locked": "op slot",
   "sync.pushConfirm": "Wat in je account staat vervangen door de voortgang van dit apparaat? Wat op een ander apparaat is geoefend en nog niet is opgehaald, gaat verloren.",
-  "sync.chooseDirection": "Ingelogd. Er is niets veranderd — op dit apparaat staat al oefening, dus kies of je die omhoog stuurt of de opgeslagen voortgang ophaalt."
+  "sync.chooseDirection": "Ingelogd. Er is niets veranderd — op dit apparaat staat al oefening, dus kies of je die omhoog stuurt of de opgeslagen voortgang ophaalt.",
+  "piece.repeatLabel": "Maat {from}, en terug naar maat {to}"
 }

@@ -297,5 +297,6 @@
   "read.thePlan": "El plan",
   "progress.locked": "bloqueada",
   "sync.pushConfirm": "¿Sustituir lo guardado en tu cuenta por el progreso de este dispositivo? Se perderá lo practicado en otro dispositivo y aún no descargado.",
-  "sync.chooseDirection": "Sesión iniciada. No se ha cambiado nada: este dispositivo ya tiene práctica, así que elige si enviarla o traer el progreso guardado."
+  "sync.chooseDirection": "Sesión iniciada. No se ha cambiado nada: este dispositivo ya tiene práctica, así que elige si enviarla o traer el progreso guardado.",
+  "piece.repeatLabel": "Compás {from}, y de vuelta al {to}"
 }

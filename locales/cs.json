@@ -303,5 +303,6 @@
   "read.thePlan": "Plán",
   "progress.locked": "zamčeno",
   "sync.pushConfirm": "Nahradit to, co je uloženo v účtu, postupem z tohoto zařízení? Přijdeš o vše, co bylo hráno na jiném zařízení a ještě nestaženo.",
-  "sync.chooseDirection": "Přihlášeno. Nic se nezměnilo — na tomto zařízení už nějaké cvičení je, takže vyber, jestli ho poslat nahoru, nebo stáhnout uložený postup."
+  "sync.chooseDirection": "Přihlášeno. Nic se nezměnilo — na tomto zařízení už nějaké cvičení je, takže vyber, jestli ho poslat nahoru, nebo stáhnout uložený postup.",
+  "piece.repeatLabel": "Takt {from}, a zpět na takt {to}"
 }

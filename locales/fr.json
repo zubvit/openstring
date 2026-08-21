@@ -297,5 +297,6 @@
   "read.thePlan": "Le plan",
   "progress.locked": "verrouillée",
   "sync.pushConfirm": "Remplacer ce qui est enregistré sur ton compte par la progression de cet appareil ? Ce qui a été travaillé sur un autre appareil et pas encore récupéré sera perdu.",
-  "sync.chooseDirection": "Connecté. Rien n'a été modifié — cet appareil contient déjà du travail, choisis donc de l'envoyer ou de récupérer la progression enregistrée."
+  "sync.chooseDirection": "Connecté. Rien n'a été modifié — cet appareil contient déjà du travail, choisis donc de l'envoyer ou de récupérer la progression enregistrée.",
+  "piece.repeatLabel": "Mesure {from}, puis retour à la mesure {to}"
 }

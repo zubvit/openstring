@@ -294,5 +294,6 @@
   "read.thePlan": "Rencananya",
   "progress.locked": "terkunci",
   "sync.pushConfirm": "Ganti yang tersimpan di akunmu dengan kemajuan di perangkat ini? Semua yang dilatih di perangkat lain dan belum diambil ke sini akan hilang.",
-  "sync.chooseDirection": "Sudah masuk. Tidak ada yang diubah — perangkat ini sudah punya latihan, jadi pilih apakah mengirimnya ke atas atau mengambil kemajuan yang tersimpan."
+  "sync.chooseDirection": "Sudah masuk. Tidak ada yang diubah — perangkat ini sudah punya latihan, jadi pilih apakah mengirimnya ke atas atau mengambil kemajuan yang tersimpan.",
+  "piece.repeatLabel": "Birama {from}, lalu kembali ke birama {to}"
 }

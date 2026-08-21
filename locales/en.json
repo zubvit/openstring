@@ -297,5 +297,6 @@
   "read.thePlan": "The plan",
   "progress.locked": "locked",
   "sync.pushConfirm": "Replace what is stored for your account with this device's progress? Anything practised on another device and not yet brought down will be lost.",
-  "sync.chooseDirection": "Signed in. Nothing has been changed — this device already has practice on it, so choose whether to send it up or bring the stored progress down."
+  "sync.chooseDirection": "Signed in. Nothing has been changed — this device already has practice on it, so choose whether to send it up or bring the stored progress down.",
+  "piece.repeatLabel": "Bar {from}, then back to bar {to}"
 }

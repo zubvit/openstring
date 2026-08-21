@@ -182,6 +182,7 @@ export function parseMusicXML(xmlText, DOMParserImpl = globalThis.DOMParser) {
   for (const [index, measureEl] of [...part.getElementsByTagName('measure')].entries()) {
     const notes = [];
     const harmonies = [];
+    const marks = {};   // repeat and ending signs on this bar's barlines
 
     // ONE walk over the measure, in document order, sharing ONE cursor.
     //
@@ -224,6 +225,11 @@ export function parseMusicXML(xmlText, DOMParserImpl = globalThis.DOMParser) {
         const h = readHarmony(child);
         const offset = num(child, 'offset') ?? 0;
         if (h) harmonies.push({ ...h, startDiv: cursor + offset });
+        continue;
+      }
+
+      if (tag === 'barline') {
+        readBarline(child, marks);
         continue;
       }
 
@@ -294,6 +300,7 @@ export function parseMusicXML(xmlText, DOMParserImpl = globalThis.DOMParser) {
       lengthBeats: implicit ? Math.min(content, fullBar) : fullBar,
       notes,
       harmonies,
+      ...marks,
     });
   }
 
@@ -363,6 +370,84 @@ function resolveOctaveConvention(notes, declaredShift) {
 }
 
 /** Flatten to a practice sequence: one entry per attack, rests preserved. */
+/** Repeat signs and first/second-time endings, as written on a bar's barlines. */
+function readBarline(el, marks) {
+  const rep = el.getElementsByTagName('repeat')[0];
+  if (rep) {
+    const dir = rep.getAttribute('direction');
+    if (dir === 'forward') marks.repeatStart = true;
+    if (dir === 'backward') marks.repeatEnd = true;
+  }
+  const ending = el.getElementsByTagName('ending')[0];
+  if (ending) {
+    const numbers = (ending.getAttribute('number') || '')
+      .split(',').map((n) => Number(n.trim())).filter(Number.isFinite);
+    const type = ending.getAttribute('type');
+    if (type === 'start') marks.endingStart = numbers.length ? numbers : [1];
+    else marks.endingStop = numbers.length ? numbers : [1];   // stop or discontinue
+  }
+}
+
+/**
+ * Which bar actually follows which, when the piece is PLAYED.
+ *
+ * The drill practises the joins between bars, on the argument that joins are
+ * where a piece comes apart. That argument only holds if the joins are real
+ * ones. Read straight off the page, a first-time ending is followed by a
+ * second-time ending - but nobody ever plays that: at the end of the first you
+ * go back to the repeat. Drilling it means rehearsing a transition that does
+ * not exist in the music, over and over.
+ *
+ * Meanwhile the joins that DO exist at a repeat are exactly the awkward ones -
+ * jumping back to the start of the section, and coming out of the repeat into
+ * the second-time bar - and they were never drilled at all.
+ *
+ * The music itself is deliberately NOT expanded. This drills bars, not
+ * performances: playing a repeated section once is the point, and duplicating
+ * its bars would have the scheduler treat one bar as two different things.
+ */
+export function performanceJoins(measures) {
+  const joins = [];
+  const byNumber = new Map(measures.map((m, i) => [m.number, i]));
+
+  // Where each run of endings begins, so a later ending knows what really
+  // precedes it: the bar before the FIRST ending, not the ending before it.
+  let groupStart = null;
+  const groupStartOf = new Array(measures.length).fill(null);
+  measures.forEach((m, i) => {
+    if (m.endingStart) {
+      if (groupStart === null) groupStart = i;
+      groupStartOf[i] = groupStart;
+    }
+    if (m.endingStop && measures[i + 1] && !measures[i + 1].endingStart) groupStart = null;
+  });
+
+  for (let i = 0; i < measures.length - 1; i++) {
+    const a = measures[i];
+    const b = measures[i + 1];
+    // On the page one ending follows another; in performance it never does.
+    if (a.endingStop && b.endingStart) continue;
+    joins.push({ from: a.number, to: b.number, kind: 'next' });
+  }
+
+  // Coming back out of the repeat into the next ending.
+  measures.forEach((m, i) => {
+    if (!m.endingStart || groupStartOf[i] === null || groupStartOf[i] === i) return;
+    const before = measures[groupStartOf[i] - 1];
+    if (before) joins.push({ from: before.number, to: m.number, kind: 'ending' });
+  });
+
+  // The jump back to the start of a repeated section.
+  measures.forEach((m, i) => {
+    if (!m.repeatEnd) return;
+    let target = measures[0];
+    for (let j = i; j >= 0; j--) if (measures[j].repeatStart) { target = measures[j]; break; }
+    if (target.number !== m.number) joins.push({ from: m.number, to: target.number, kind: 'repeat' });
+  });
+
+  return joins.filter((j) => byNumber.has(j.from) && byNumber.has(j.to));
+}
+
 export function toSequence(piece, { skipChordNotes = true, joinTies = true } = {}) {
   const seq = [];
   let barStart = 0;

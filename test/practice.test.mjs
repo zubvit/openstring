@@ -214,4 +214,41 @@ t('grading scales with tempo rather than assuming 60', () => {
   assert.ok(!gradeChunk(notes, fast, { bpm: 60, layer: 'timing' }).passed);
 });
 
+// ------------------------------------------------- a seam that runs backwards
+//
+// The jump to the start of a repeated section is a real join, and the awkward
+// one, but it lands on a bar EARLIER in the piece. Left alone the second half
+// carries beat numbers smaller than the first, which draws the notes out of
+// order and gives the drill an end time before its start.
+
+const chunkOf = (id, notes, first, last) => ({ id, notes, firstMeasure: first, lastMeasure: last, kind: 'chunk' });
+const n = (beat, sounding = 60) => ({ beat, beats: 1, sounding, written: sounding + 12, isRest: false });
+
+t('a backward seam is re-timed so its two halves run in order', () => {
+  const end = chunkOf('bars-3-3', [n(8), n(9), n(10)], 3, 3);
+  const start = chunkOf('bars-1-1', [n(0), n(1), n(2)], 1, 1);
+  const seam = makeSeam(end, start);
+  const beats = seam.notes.map((x) => x.beat);
+  for (let i = 1; i < beats.length; i++) {
+    assert.ok(beats[i] > beats[i - 1], `beats go backwards: ${beats.join(' ')}`);
+  }
+  assert.equal(seam.backwards, true, 'and it knows which way round it is');
+});
+
+t('an ordinary forward seam keeps its real spacing', () => {
+  const a = chunkOf('bars-1-1', [n(0), n(1), n(2)], 1, 1);
+  // Bar two starts a beat late - a rest sits at the join, and that gap is
+  // part of what the seam is meant to teach.
+  const b = chunkOf('bars-2-2', [n(5), n(6)], 2, 2);
+  const seam = makeSeam(a, b);
+  assert.deepEqual(seam.notes.map((x) => x.beat), [0, 1, 2, 5, 6]);
+  assert.equal(seam.backwards, false);
+});
+
+t('re-timing does not damage the original chunk', () => {
+  const start = chunkOf('bars-1-1', [n(0), n(1)], 1, 1);
+  makeSeam(chunkOf('bars-9-9', [n(40)], 9, 9), start);
+  assert.deepEqual(start.notes.map((x) => x.beat), [0, 1], 'the bar itself is untouched');
+});
+
 console.log(`practice: ${pass} groups passed`);

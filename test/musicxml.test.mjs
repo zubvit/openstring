@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { parseMusicXML, toSequence, harmonySequence } from '../js/musicxml.js';
+import { parseMusicXML, toSequence, harmonySequence, performanceJoins } from '../js/musicxml.js';
 import { ShimDOMParser } from './xml-shim.mjs';
 import { noteName, soundingAt } from '../js/theory.js';
 
@@ -407,6 +407,89 @@ t('a tie joins across the other voice sitting between its halves', () => {
   assert.equal(bass[0].beat, 0);
   assert.equal(bass[0].beats, 3, 'held across both bars');
   assert.equal(seq.filter((n) => n.string !== 6).length, 3, 'and the melody is untouched');
+});
+
+// ============================================== repeats and first/second endings
+//
+// The drill practises the joins BETWEEN bars, on the argument that joins are
+// where a piece comes apart. That only holds if the joins are real. Read
+// straight off the page a first-time ending is followed by a second-time
+// ending, but nobody ever plays that - and meanwhile the joins that DO exist at
+// a repeat are the awkward ones, and were never drilled at all.
+
+const bars = (bodies) => raw(`<part id="P1">${bodies.map((b, i) =>
+  `<measure number="${i + 1}">${i === 0
+    ? '<attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>' : ''}`
+  + b + '</measure>').join('')}</part>`);
+const plain = (step) => `<note><pitch><step>${step}</step><octave>4</octave></pitch><duration>16</duration>`
+  + `<notations><technical><string>3</string><fret>0</fret></technical></notations></note>`;
+const leftBar = (inner) => `<barline location="left">${inner}</barline>`;
+const rightBar = (inner) => `<barline location="right">${inner}</barline>`;
+const joinsOf = (xml) => performanceJoins(parseMusicXML(xml, P).measures)
+  .map((j) => `${j.from}${j.kind === 'next' ? '>' : j.kind === 'repeat' ? '@' : '~'}${j.to}`);
+
+t('a piece with no repeat signs just runs from one bar to the next', () => {
+  assert.deepEqual(joinsOf(bars([plain('G'), plain('A'), plain('B')])), ['1>2', '2>3']);
+});
+
+t('a repeated section adds the jump back to its start', () => {
+  const xml = bars([
+    leftBar('<repeat direction="forward"/>') + plain('G'),
+    plain('A'),
+    plain('B') + rightBar('<repeat direction="backward"/>'),
+    plain('C'),
+  ]);
+  const j = joinsOf(xml);
+  assert.ok(j.includes('3@1'), `the jump back is missing: ${j.join(' ')}`);
+  assert.ok(j.includes('3>4'), 'and the way out of the repeat is still there');
+});
+
+t('a repeat with no opening sign goes back to the beginning', () => {
+  const xml = bars([plain('G'), plain('A') + rightBar('<repeat direction="backward"/>')]);
+  assert.ok(joinsOf(xml).includes('2@1'));
+});
+
+// The whole point of the exercise.
+t('the first-time bar never leads to the second-time bar', () => {
+  const xml = bars([
+    leftBar('<repeat direction="forward"/>') + plain('G'),
+    plain('A'),
+    leftBar('<ending number="1" type="start"/>') + plain('B')
+      + rightBar('<ending number="1" type="stop"/><repeat direction="backward"/>'),
+    leftBar('<ending number="2" type="start"/>') + plain('C')
+      + rightBar('<ending number="2" type="discontinue"/>'),
+  ]);
+  const j = joinsOf(xml);
+  assert.ok(!j.includes('3>4'), `a join nobody ever plays: ${j.join(' ')}`);
+  assert.ok(j.includes('3@1'), 'at the end of the first ending you go back');
+  assert.ok(j.includes('2~4'), 'and the second time round you come out of bar 2 into the second ending');
+  assert.ok(j.includes('1>2'), 'the ordinary joins are untouched');
+});
+
+t('an ending written for both times is not treated as a second one', () => {
+  const xml = bars([
+    leftBar('<repeat direction="forward"/>') + plain('G'),
+    leftBar('<ending number="1,2" type="start"/>') + plain('A')
+      + rightBar('<ending number="1,2" type="stop"/>'),
+    plain('B'),
+  ]);
+  const j = joinsOf(xml);
+  assert.ok(j.includes('2>3'), `nothing to suppress here: ${j.join(' ')}`);
+});
+
+t('joins never point at a bar that is not there', () => {
+  const xml = bars([plain('G'), plain('A') + rightBar('<repeat direction="backward"/>')]);
+  const piece = parseMusicXML(xml, P);
+  for (const j of performanceJoins(piece.measures)) {
+    assert.ok(piece.measures.some((m) => m.number === j.from), `no bar ${j.from}`);
+    assert.ok(piece.measures.some((m) => m.number === j.to), `no bar ${j.to}`);
+  }
+});
+
+t('a score with no barline elements at all is unaffected', () => {
+  const piece = parseMusicXML(bars([plain('G'), plain('A')]), P);
+  assert.equal(piece.measures[0].repeatStart, undefined);
+  assert.equal(piece.measures[0].endingStart, undefined);
 });
 
 console.log(`musicxml: ${pass} groups passed`);

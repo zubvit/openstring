@@ -62,13 +62,28 @@ export function makeSeam(a, b, { notesEachSide = 3 } = {}) {
   const left = a.notes.slice(-notesEachSide);
   const right = b.notes.slice(0, notesEachSide);
   if (!left.length || !right.length) return null;
+
+  // A seam can now run BACKWARDS - the jump to the start of a repeated section
+  // is exactly the join worth drilling, and it lands on a bar earlier in the
+  // piece. Left alone, the second half of such a seam carries beat numbers
+  // smaller than the first, which draws the notes out of order and gives the
+  // drill an end time before its start. So the right-hand side is re-timed to
+  // follow the left. Only when it needs to be: an ordinary seam is genuinely
+  // contiguous and its real spacing, rests included, is worth keeping.
+  const leftEnd = Math.max(...left.map((n) => n.beat + (n.beats || 0)));
+  const shift = right[0].beat < leftEnd ? leftEnd - right[0].beat : 0;
+  const joined = shift ? right.map((n) => ({ ...n, beat: n.beat + shift })) : right;
+
   return {
     id: `seam-${a.id}-${b.id}`,
     firstMeasure: a.lastMeasure,
     lastMeasure: b.firstMeasure,
-    notes: [...left, ...right],
+    notes: [...left, ...joined],
     kind: 'seam',
     joins: [a.id, b.id],
+    // Which way round it is, so the label can say "back to bar 1" rather than
+    // pretending bar 3 is followed by bar 1.
+    backwards: shift > 0,
   };
 }
 

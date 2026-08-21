@@ -1,6 +1,6 @@
 // The Pieces tab: import a score, drill it chunk by chunk, join the chunks up.
 
-import { parseMusicXML, toSequence, harmonySequence } from './musicxml.js';
+import { parseMusicXML, toSequence, harmonySequence, performanceJoins } from './musicxml.js';
 import { readStore, writeStore, removeStore } from './stores.js';
 import {
   makeChunks, makeSeam, newChunkState, applyAttempt, chunkMastered,
@@ -56,15 +56,28 @@ export function initPieceView({ audio, ensureAudio }) {
 
   function rebuildChunks() {
     const base = makeChunks(st.sequence, { bars: 1 });
+    const byMeasure = new Map(base.map((c) => [c.firstMeasure, c]));
+
+    // Seams follow the joins the music actually has. Pairing every chunk with
+    // the next one on the page drilled the step from a first-time ending into a
+    // second-time ending - a transition nobody ever plays - and never drilled
+    // the jump back to the start of a repeat, which is the awkward one.
+    const joins = st.piece?.measures
+      ? performanceJoins(st.piece.measures)
+      : base.slice(0, -1).map((c, i) => ({ from: c.firstMeasure, to: base[i + 1].firstMeasure }));
+
     const seams = [];
-    for (let i = 0; i < base.length - 1; i++) {
+    const seen = new Set();
+    for (const join of joins) {
+      const a = byMeasure.get(join.from);
+      const b = byMeasure.get(join.to);
+      if (!a || !b || a.id === b.id) continue;
       // A seam only becomes worth drilling once both its neighbours stand up.
-      const a = st.states[base[i].id];
-      const b = st.states[base[i + 1].id];
-      if (a && b && chunkMastered(a, st.targetBpm) && chunkMastered(b, st.targetBpm)) {
-        const s = makeSeam(base[i], base[i + 1]);
-        if (s) seams.push(s);
-      }
+      const sa = st.states[a.id];
+      const sb = st.states[b.id];
+      if (!(sa && sb && chunkMastered(sa, st.targetBpm) && chunkMastered(sb, st.targetBpm))) continue;
+      const seam = makeSeam(a, b);
+      if (seam && !seen.has(seam.id)) { seen.add(seam.id); seams.push(seam); }
     }
     st.chunks = [...base, ...seams];
   }
@@ -115,8 +128,12 @@ export function initPieceView({ audio, ensureAudio }) {
   }
 
   function renderChunkStaff(chunk) {
+    // A backward seam is the jump to the top of a repeat, and calling that "the
+    // join between bars 3 and 1" would describe something the page does not do.
     $('chunkLabel').textContent = chunk.kind === 'seam'
-      ? t('piece.joinLabel', { from: chunk.firstMeasure, to: chunk.lastMeasure })
+      ? (chunk.backwards
+          ? t('piece.repeatLabel', { from: chunk.firstMeasure, to: chunk.lastMeasure })
+          : t('piece.joinLabel', { from: chunk.firstMeasure, to: chunk.lastMeasure }))
       : (chunk.lastMeasure !== chunk.firstMeasure
           ? t('piece.barRange', { from: chunk.firstMeasure, to: chunk.lastMeasure })
           : t('piece.bar', { n: chunk.firstMeasure }));
