@@ -479,3 +479,7 @@ select.stage-title { width: 100%; }
 .hm-cell { cursor: pointer; }
 .hm-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .heat-detail { min-height: 1.4em; margin-top: .4rem; }
+
+/* An open string is a ring beside the nut, not a blob on top of it. */
+.fb-dot.open { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+.fb-dot.wrong.open { fill: none; stroke: var(--bad); stroke-width: 2.5; }

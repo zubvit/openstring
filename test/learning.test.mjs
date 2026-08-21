@@ -403,4 +403,36 @@ t('an unknown stage id lands you at the start rather than nowhere', () => {
   assert.equal(rows[0].unlocked, true);
 });
 
+// Every note on the landmark stage is an open string, and an open string used
+// to be marked ON the nut - a filled dot centred on the thick nut line, half of
+// it spilling over the string number beside it. It was drawn, and it was very
+// easy to miss.
+t('an open string is marked clear of the nut, not on top of it', () => {
+  const svg = renderFretboard({ minFret: 0, maxFret: 3, mark: { string: 3, fret: 0 } });
+  const m = /<circle cx="([\d.]+)"[^>]*class="fb-dot open"/.exec(svg);
+  assert.ok(m, `no open-string mark drawn: ${svg.slice(0, 200)}`);
+  const nut = Number(/<line x1="([\d.]+)"[^>]*class="fb-nut"/.exec(svg)[1]);
+  assert.ok(Number(m[1]) < nut - 6, `the mark sits at ${m[1]} with the nut at ${nut}`);
+});
+
+t('a stopped note is still marked between its frets', () => {
+  const svg = renderFretboard({ minFret: 0, maxFret: 3, mark: { string: 6, fret: 2 } });
+  assert.ok(/class="fb-dot"/.test(svg), 'a solid dot, not a ring');
+  assert.ok(!/class="fb-dot open"/.test(svg));
+});
+
+t('the open-string mark does not collide with the string number', () => {
+  const svg = renderFretboard({ minFret: 0, maxFret: 3, mark: { string: 1, fret: 0 } });
+  const ring = Number(/<circle cx="([\d.]+)"[^>]*class="fb-dot open"/.exec(svg)[1]);
+  // The labels are right-aligned, so their text ends at this x.
+  const label = Number(/<text x="([\d.]+)"[^>]*class="fb-label"/.exec(svg)[1]);
+  assert.ok(ring - 5.5 > label, `ring starts at ${ring - 5.5}, label ends at ${label}`);
+});
+
+t('a board with nothing to mark still draws', () => {
+  const svg = renderFretboard({ minFret: 0, maxFret: 3, mark: null });
+  assert.equal((svg.match(/class="fb-string"/g) || []).length, 6);
+  assert.ok(!/fb-dot/.test(svg), 'and marks nothing');
+});
+
 console.log(`learning: ${pass} groups passed`);

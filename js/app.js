@@ -355,12 +355,15 @@ function drawQuestion() {
 
 function updateHint() {
   const host = $('hintHost');
-  if (!$('showHint').checked || !read.target) { host.hidden = true; host.innerHTML = ''; return; }
+  if (!$('showHint').checked) { host.hidden = true; host.innerHTML = ''; return; }
+  // Ticking the box before a session starts used to do nothing at all, silently,
+  // and then work later - which reads as the tickbox being broken. Show the neck
+  // straight away; the mark arrives with the first question.
   host.hidden = false;
   host.innerHTML = renderFretboard({
     minFret: stage.region.minFret,
     maxFret: Math.max(stage.region.minFret + 3, stage.region.maxFret),
-    mark: { string: read.target.string, fret: read.target.fret },
+    mark: read.target ? { string: read.target.string, fret: read.target.fret } : null,
   });
 }
 $('showHint').addEventListener('change', updateHint);

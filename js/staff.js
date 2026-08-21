@@ -145,7 +145,9 @@ export function renderFretboard({
   width = 260,
 } = {}) {
   const nFrets = maxFret - minFret;
-  const padL = 34, padR = 14, padT = 16, padB = 18;
+  // Room to the left of the nut for the open-string marks, which live outside
+  // the grid rather than on top of it.
+  const padL = 42, padR = 14, padT = 16, padB = 18;
   const rowGap = 18;
   const height = padT + padB + (strings.length - 1) * rowGap;
   const colW = (width - padL - padR) / Math.max(1, nFrets);
@@ -160,7 +162,7 @@ export function renderFretboard({
     const y = padT + i * rowGap;
     parts.push(`<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" `
       + `class="fb-string" stroke-width="${stringWeight(s)}"/>`);
-    parts.push(`<text x="${padL - 10}" y="${y + 4}" class="fb-label" text-anchor="end">${s}</text>`);
+    parts.push(`<text x="${padL - 26}" y="${y + 4}" class="fb-label" text-anchor="end">${s}</text>`);
   });
 
   for (let f = 0; f <= nFrets; f++) {
@@ -177,8 +179,18 @@ export function renderFretboard({
     const i = ordered.indexOf(m.string);
     if (i === -1 || m.fret < minFret || m.fret > maxFret) return;
     const y = padT + i * rowGap;
-    // An open string is marked at the nut; a stopped note between its frets.
-    const x = m.fret === 0 ? padL : padL + (m.fret - minFret - 0.5) * colW;
+
+    // An open string used to be marked AT the nut - centred on the thick nut
+    // line, with half the dot spilling over the string number beside it. It was
+    // there, and it was very easy to miss, which on the landmark stage is every
+    // single note. Open strings now get a ring clear of the grid, which is how
+    // every chord book on earth marks them and how this app's own chord boxes
+    // already do.
+    if (m.fret === 0) {
+      parts.push(`<circle cx="${padL - 13}" cy="${y}" r="5.5" class="${cls} open"/>`);
+      return;
+    }
+    const x = padL + (m.fret - minFret - 0.5) * colW;
     parts.push(`<circle cx="${x}" cy="${y}" r="6.5" class="${cls}"/>`);
   };
   dot(wrongMark, 'fb-dot wrong');
