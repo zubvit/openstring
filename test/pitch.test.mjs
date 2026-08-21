@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { detectPitch, PitchTracker, rms } from '../js/pitch.js';
+import { detectPitch, PitchTracker, rms , AnswerGate } from '../js/pitch.js';
 import { midiToHz, noteName, hzToMidiFloat } from '../js/theory.js';
 
 const SR = 48000;
@@ -117,6 +117,67 @@ t('detection is fast enough for real time', () => {
   // A 2048-sample frame is 42.7 ms of audio; analysis must be far under that.
   assert.ok(msPerFrame < 8, `too slow: ${msPerFrame.toFixed(2)} ms/frame`);
   console.log(`  detection: ${msPerFrame.toFixed(2)} ms per 42.7 ms frame`);
+});
+
+// ------------------------------------------------------- telling an answer
+// apart from the note still ringing
+//
+// This gate exists because of a bug that quietly wrecked every score in the
+// app: a plucked string rings for seconds, so the note you had just played was
+// arriving as a wrong answer to the NEXT question before you touched a string.
+// Accuracy sat around three quarters however well you played.
+
+t('the note just answered is not an answer to the next question', () => {
+  const g = new AnswerGate();
+  g.mute(67);                               // G was the answer; it rings on
+  assert.equal(g.accept(67), null);
+  assert.equal(g.accept(67), null);
+  assert.equal(g.accept(67), null, 'however long it rings');
+});
+
+t('a different note ends the tail and counts', () => {
+  const g = new AnswerGate();
+  g.mute(67);
+  assert.equal(g.accept(71), 71, 'playing B is an answer');
+  assert.equal(g.accept(67), 67, 'and G counts again once it is no longer the tail');
+});
+
+t('a held note is one answer, not sixty a second', () => {
+  const g = new AnswerGate();
+  assert.equal(g.accept(64), 64);
+  for (let i = 0; i < 50; i++) assert.equal(g.accept(64), null);
+});
+
+t('silence clears everything, so the same note can be played twice', () => {
+  const g = new AnswerGate();
+  assert.equal(g.accept(64), 64);
+  assert.equal(g.accept(64), null);
+  assert.equal(g.accept(null), null, 'the string stopped');
+  assert.equal(g.accept(64), 64, 'and playing it again is a new answer');
+});
+
+t('a new question carries over whatever is still sounding', () => {
+  const g = new AnswerGate();
+  g.reset(60);
+  assert.equal(g.accept(60), null, 'the leftover is ignored');
+  assert.equal(g.accept(62), 62);
+});
+
+t('a fresh question with nothing ringing accepts the first note', () => {
+  const g = new AnswerGate();
+  g.reset(null);
+  assert.equal(g.accept(60), 60);
+});
+
+// The failure this replaced, stated as a test: the old rule was "count any
+// pitch that differs from the last one counted", which lets the decaying
+// previous answer straight through at the start of every question.
+t('the old rule would have let the ringing note through, this one does not', () => {
+  const g = new AnswerGate();
+  g.mute(67);
+  const framesWhileItDecays = [67, 67, 67, 67];
+  const judged = framesWhileItDecays.map((m) => g.accept(m)).filter((m) => m != null);
+  assert.deepEqual(judged, [], 'not one of those frames is an answer');
 });
 
 console.log(`pitch: ${pass} groups passed`);

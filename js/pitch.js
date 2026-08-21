@@ -168,3 +168,60 @@ export class PitchTracker {
     return this.stable;
   }
 }
+
+/**
+ * Decides which stable readings are ANSWERS and which are the last note still
+ * sounding.
+ *
+ * This exists because of a bug that quietly wrecked every score in the app. A
+ * plucked guitar string rings for seconds. The drill waited 350 ms after
+ * putting up a new note and then judged the first stable pitch it heard - which
+ * was, reliably, the note you had just played, still decaying. So most
+ * questions opened with a free mistake that nobody made, accuracy sat around
+ * three quarters no matter how well you played, and the fluency ring could
+ * never reach its bar.
+ *
+ * Waiting longer does not fix it: a note can ring for four seconds and no
+ * beginner should be made to wait that out. The fix is to know WHICH pitch is
+ * the leftover and ignore that one specifically, until the microphone has been
+ * quiet once - which is what happens the moment you damp the string or simply
+ * stop it by fretting the next note.
+ */
+export class AnswerGate {
+  constructor() {
+    this.muted = null;      // the note we are still hearing the tail of
+    this.counted = null;    // the note already taken as an answer
+  }
+
+  /** Start a fresh question. `ringing` is the note just played, if any. */
+  reset(ringing = null) {
+    this.muted = ringing;
+    this.counted = null;
+  }
+
+  /** After an answer, its own note becomes the one to ignore. */
+  mute(midi) {
+    this.muted = midi;
+    this.counted = null;
+  }
+
+  /**
+   * Feed one stable reading, or null for silence.
+   * Returns the note to judge, or null when there is nothing new to judge.
+   */
+  accept(midi) {
+    if (midi == null) {
+      // Silence means the string stopped: whatever was ringing is gone, and the
+      // same note may legitimately be played again from here.
+      this.muted = null;
+      this.counted = null;
+      return null;
+    }
+    if (midi === this.muted) return null;   // the tail of the last answer
+    if (midi === this.counted) return null; // still the same note, already counted
+    this.counted = midi;
+    // A different note means the old one is over, whether or not we heard a gap.
+    this.muted = null;
+    return midi;
+  }
+}

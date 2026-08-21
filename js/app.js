@@ -1,6 +1,7 @@
 // Openstring - wiring the drills to the audio engine and the progress store.
 
 import { AudioEngine, Metronome, outputContext, playChord } from './audio.js';
+import { AnswerGate } from './pitch.js';
 import { Tuner, tapTempo, readingView, STRING_ORDER } from './tuner.js';
 import { ROOTS, QUALITY_ORDER, shapesFor, shapeNotes, chordToneNames, chordName } from './chords.js';
 import { targetFor, ChordAttempt, ChordProgress, DRILL_POOL } from './chord-drill.js';
@@ -87,7 +88,7 @@ const read = {
   graceUntil: 0,
   judged: false,      // resolved: found it, or skipped
   attempts: 0,        // wrong tries at THIS note
-  lastHeard: null,    // the pitch already counted, so a ringing string is not counted twice
+  gate: new AnswerGate(),   // tells an answer apart from the last note still ringing
   // A question is a phrase. In the ordinary drill it is one note long; with
   // melodies switched on it is a few, read left to right. Everything below
   // works the same way for both, which is why there is only one of it.
@@ -195,7 +196,9 @@ function nextQuestion() {
   read.graceUntil = read.shownAt + 350;
   read.judged = false;
   read.attempts = 0;
-  read.lastHeard = null;
+  // Whatever was just played is still sounding; it must not be read as an
+  // answer to the question that has only this second appeared.
+  read.gate.reset(read.lastAnswered);
   audio.resetTracking();
 
   setTargetFromStep();
@@ -259,6 +262,9 @@ function judge(heardMidi, hz) {
 
   if (verdict !== 'right') {
     read.attempts += 1;
+    // Hunting for a note IS practising. Without this the idle timer could close
+    // the session while he was still playing, just not finding it.
+    read.lastActivity = performance.now();
     if (verdict === 'octave') read.octavesThisNote += 1;
     read.states[read.step] = 'wrong';
     main.textContent = t(verdict === 'octave' ? 'read.rightNoteWrongString' : 'read.notThatOne',
@@ -282,6 +288,8 @@ function judge(heardMidi, hz) {
   const clean = read.attempts === 0;
   read.states[read.step] = 'correct';
   read.asked += 1;
+  read.lastAnswered = target;
+  read.gate.mute(target);
   read.lastActivity = performance.now();
   read.recent.push({ clean, ms, octaves: read.octavesThisNote });
   if (read.recent.length > 200) read.recent = read.recent.slice(-200);
@@ -355,13 +363,13 @@ audio.onPitch = (stable, raw) => {
     const cents = centsFromTarget(raw.hz, m);
     $('tunerNeedle').style.left = `${50 + Math.max(-50, Math.min(50, cents)) }%`;
   }
-  if (!read.active || read.judged || !stable) return;
+  if (!read.active || read.judged) return;
   if (performance.now() < read.graceUntil) return;
-  // A plucked string reports the same pitch every frame for seconds. Only a
-  // change of note is a new attempt, or one wrong note would count as fifty.
-  const heard = Math.round(hzToMidiFloat(stable.hz));
-  if (heard === read.lastHeard) return;
-  read.lastHeard = heard;
+  // The gate does two jobs: it drops the tail of the note just answered, which
+  // otherwise arrives as a wrong answer to the next question before a string is
+  // touched, and it counts a held note once rather than sixty times a second.
+  const heard = read.gate.accept(stable ? Math.round(hzToMidiFloat(stable.hz)) : null);
+  if (heard == null) return;
   judge(heard, stable.hz);
 };
 
@@ -973,7 +981,7 @@ const chordDrill = {
   target: null,
   attempt: null,
   shownAt: 0,
-  lastJudged: null,     // the pitch already counted, so a ringing string is not counted twice
+  gate: new AnswerGate(),   // same job as the reading drill's: ignore the ringing tail
   lastName: null,
   asked: 0,
   clean: 0,
@@ -1001,7 +1009,7 @@ function nextChord() {
   chordDrill.lastName = name;
   chordDrill.attempt = new ChordAttempt(chordDrill.target);
   chordDrill.shownAt = performance.now();
-  chordDrill.lastJudged = null;
+  chordDrill.gate.reset(chordDrill.lastAnswered);
   $('cVerdictMain').textContent = t('chords.waiting');
   $('cVerdictMain').className = 'verdict-main';
   $('cVerdictSub').textContent = '';
@@ -1012,6 +1020,10 @@ function judgeChordNote(midi) {
   const a = chordDrill.attempt;
   if (!a || a.done) return;
   const { verdict } = a.play(midi);
+  // Whatever was just played is now the tail to ignore, whether it was right
+  // or wrong - it rings on either way.
+  chordDrill.lastAnswered = midi;
+  chordDrill.gate.mute(midi);
 
   if (verdict === 'wrong' || verdict === 'octave') {
     $('cVerdictMain').textContent = t(verdict === 'octave' ? 'chords.octaveOff' : 'chords.wrongNote');
@@ -1102,13 +1114,9 @@ $('endChordSession').addEventListener('click', stopChordDrill);
 
 /** Called from the shared pitch callback. */
 function feedChordDrill(stable) {
-  if (!chordDrill.active || !stable) return;
-  const midi = Math.round(hzToMidiFloat(stable.hz));
-  // A plucked string rings for seconds and reports the same pitch every frame.
-  // Only a CHANGE of note is a new event - the expected notes always rise, so
-  // this never swallows one that was genuinely played.
-  if (midi === chordDrill.lastJudged) return;
-  chordDrill.lastJudged = midi;
+  if (!chordDrill.active) return;
+  const midi = chordDrill.gate.accept(stable ? Math.round(hzToMidiFloat(stable.hz)) : null);
+  if (midi == null) return;
   judgeChordNote(midi);
 }
 
