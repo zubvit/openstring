@@ -206,6 +206,7 @@ const read = {
   judged: false,      // resolved: found it, or skipped
   attempts: 0,        // wrong tries at THIS note
   gate: new AnswerGate(),   // tells an answer apart from the last note still ringing
+  lastHeard: null,          // the last pitch judged, right or wrong - it is still sounding
   // A question is a phrase. In the ordinary drill it is one note long; with
   // melodies switched on it is a few, read left to right. Everything below
   // works the same way for both, which is why there is only one of it.
@@ -315,7 +316,11 @@ function nextQuestion() {
   read.attempts = 0;
   // Whatever was just played is still sounding; it must not be read as an
   // answer to the question that has only this second appeared.
-  read.gate.reset(read.lastAnswered);
+  // Whatever was last HEARD is the thing still ringing - not just whatever was
+  // last right. A wrong note rings exactly as long as a correct one, and muting
+  // only the correct ones left every wrong attempt free to decay into the next
+  // question and be counted against it a second time.
+  read.gate.reset(read.lastHeard);
   audio.resetTracking();
 
   setTargetFromStep();
@@ -377,6 +382,8 @@ function judge(heardMidi, hz) {
   const main = $('verdictMain');
   const sub = $('verdictSub');
 
+  read.lastHeard = heardMidi;
+
   if (verdict !== 'right') {
     read.attempts += 1;
     // Hunting for a note IS practising. Without this the idle timer could close
@@ -405,7 +412,6 @@ function judge(heardMidi, hz) {
   const clean = read.attempts === 0;
   read.states[read.step] = 'correct';
   read.asked += 1;
-  read.lastAnswered = target;
   read.gate.mute(target);
   read.lastActivity = performance.now();
   read.recent.push({ clean, ms, octaves: read.octavesThisNote });
@@ -506,7 +512,7 @@ $('startRead').addEventListener('click', async () => {
   read.octavesThisNote = 0;
   // Nothing is ringing from a session that ended minutes ago; carrying the note
   // over would make the first question ignore it if it came up again.
-  read.lastAnswered = null;
+  read.lastHeard = null;
   read.gate.reset(null);
   read.startedAt = Date.now();
   read.startedPerf = performance.now();

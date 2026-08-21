@@ -180,4 +180,15 @@ t('the old rule would have let the ringing note through, this one does not', () 
   assert.deepEqual(judged, [], 'not one of those frames is an answer');
 });
 
+// The second half of the same bug. Muting only the note you got RIGHT left
+// every wrong note free to ring on into the next question and be counted
+// against it a second time - so a fumble cost you two marks, not one, and the
+// worse you were doing the more phantom mistakes you collected.
+t('a wrong note is still ringing too, and must also be ignored', () => {
+  const g = new AnswerGate();
+  g.reset(60);                  // 60 was the last thing heard - and it was WRONG
+  assert.equal(g.accept(60), null, 'its tail is not an answer to the new question');
+  assert.equal(g.accept(64), 64, 'the note actually played is');
+});
+
 console.log(`pitch: ${pass} groups passed`);
