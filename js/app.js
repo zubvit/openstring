@@ -43,6 +43,12 @@ document.querySelectorAll('.tab').forEach((tab) => {
     // holding the wide analysis window would slow the drills down.
     if (tab.dataset.view !== 'tools') { stopTuning(); stopMetro(); }
     if (tab.dataset.view !== 'chords') stopChordDrill();
+    // And the reading drill, which was the one that never stopped. It listens
+    // through the same microphone as everything else, so a session left running
+    // behind the rhythm drill or a piece was quietly marking every note played
+    // there as an answer to a question on a screen he could not see - and
+    // marking most of them wrong. It also heard the rhythm drill's metronome.
+    if (tab.dataset.view !== 'read' && read.active) endReadSession();
   });
 });
 
@@ -53,7 +59,14 @@ function setMic(state, label) {
   $('micLabel').textContent = label;
 }
 
-async function ensureAudio() {
+/**
+ * Open the microphone, and put any refusal in front of whoever asked for it.
+ *
+ * It used to write the reason into the reading drill's verdict line whatever
+ * had asked - so a refusal while starting the tuner or a chord drill left the
+ * mic indicator red and the explanation sitting on a tab he was not looking at.
+ */
+async function ensureAudio({ onError = null } = {}) {
   if (audio.running) return true;
   setMic('', t('mic.starting'));
   try {
@@ -64,10 +77,19 @@ async function ensureAudio() {
     return true;
   } catch (err) {
     setMic('error', t('mic.unavailable'));
-    $('verdictMain').textContent = err.message;
-    $('verdictMain').className = 'verdict-main bad';
+    if (onError) onError(err.message);
     return false;
   }
+}
+
+/** Show a failure on one of the drill verdict lines. */
+function verdictError(id) {
+  return (message) => {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = message;
+    el.className = 'verdict-main bad';
+  };
 }
 
 // =================================================================== READING
@@ -382,10 +404,14 @@ $('startRead').addEventListener('click', async () => {
     endReadSession();
     return;
   }
-  if (!(await ensureAudio())) return;
+  if (!(await ensureAudio({ onError: verdictError('verdictMain') }))) return;
   read.active = true;
   read.asked = 0; read.correct = 0; read.times = []; read.recent = [];
   read.octavesThisNote = 0;
+  // Nothing is ringing from a session that ended minutes ago; carrying the note
+  // over would make the first question ignore it if it came up again.
+  read.lastAnswered = null;
+  read.gate.reset(null);
   read.startedAt = Date.now();
   read.startedPerf = performance.now();
   read.stageAtStart = stage.id;
@@ -520,7 +546,7 @@ function drawStrip(result = null) {
 
 $('startRhythm').addEventListener('click', async () => {
   if (rhythm.running) return;
-  if (!(await ensureAudio())) return;
+  if (!(await ensureAudio({ onError: verdictError('rVerdictMain') }))) return;
 
   const patternId = $('patternSelect').value;
   const bpm = Number($('bpmRange').value);
@@ -930,7 +956,11 @@ async function startTuning() {
   if (tune.active) { stopTuning(); return; }
   if (read.active) endReadSession();
   stopChordDrill();
-  if (!(await ensureAudio())) return;
+  const failed = (message) => {
+    $('tuneVerdict').textContent = message;
+    $('tuneVerdict').className = 'tune-verdict bad';
+  };
+  if (!(await ensureAudio({ onError: failed }))) return;
   audio.setAnalysisWindow(TUNE_WINDOW);
   tune.engine.clearNote();
   tune.active = true;
@@ -1074,12 +1104,10 @@ async function startChordDrill() {
   if (chordDrill.active) { stopChordDrill(); return; }
   if (read.active) endReadSession();
   stopTuning();
-  if (!(await ensureAudio())) {
-    $('cVerdictMain').textContent = t('mic.unavailable');
-    $('cVerdictMain').className = 'verdict-main bad';
-    return;
-  }
+  if (!(await ensureAudio({ onError: verdictError('cVerdictMain') }))) return;
   chordDrill.active = true;
+  chordDrill.lastAnswered = null;
+  chordDrill.gate.reset(null);
   chordDrill.asked = 0; chordDrill.clean = 0; chordDrill.times = [];
   $('startChords').textContent = t('chords.stop');
   $('skipChord').disabled = false;
@@ -1293,6 +1321,11 @@ window.addEventListener('localechange', () => {
   buildChordPicker();
   paintChord();
   drawChordQuestion();
+  // applyToDom resets every labelled button to its resting text, so anything
+  // that changes label while running has to be put back. Missing this one left
+  // "Start listening" on screen during a live session: pressing it ended the
+  // session when it plainly promised the opposite.
+  $('startRead').textContent = t(read.active ? 'read.pause' : 'read.start');
   $('startChords').textContent = t(chordDrill.active ? 'chords.stop' : 'chords.start');
   $('startTune').textContent = t(tune.active ? 'tools.stop' : 'tools.start');
   $('startMetro').textContent = t(metro.running ? 'tools.metroStop' : 'tools.metroStart');

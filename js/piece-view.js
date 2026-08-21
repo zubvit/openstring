@@ -204,7 +204,10 @@ export function initPieceView({ audio, ensureAudio }) {
 
   $('startPiece').addEventListener('click', async () => {
     if (st.running || !st.current) return;
-    if (!(await ensureAudio())) return;
+    if (!(await ensureAudio({ onError: (message) => {
+      $('pVerdictMain').textContent = message;
+      $('pVerdictMain').className = 'verdict-main bad';
+    } }))) return;
 
     const chunk = st.current;
     const state = st.states[chunk.id];
