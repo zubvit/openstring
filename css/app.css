@@ -141,6 +141,15 @@ svg.staff { width: min(100%, 320px); height: auto; }
 .verdict-main.bad { color: var(--bad); }
 .verdict-sub { font-size: .86rem; color: var(--ink-soft); }
 
+/* Said only when the app is sure the instrument, not the reading, is wrong. */
+.tune-nudge {
+  display: block; width: 100%; margin: .5rem 0 .2rem; padding: .6rem .8rem;
+  border: 1px solid var(--bad); border-radius: 8px; background: transparent;
+  color: var(--bad); font: inherit; font-size: .88rem; text-align: left; cursor: pointer;
+}
+.tune-nudge:hover { background: var(--panel); }
+@media (pointer: coarse) { .tune-nudge { min-height: 44px; } }
+
 .heard { display: grid; gap: .4rem; justify-items: center; margin: .5rem 0; }
 .heard-note { font-size: 1.6rem; font-weight: 300; font-variant-numeric: tabular-nums; min-height: 2rem; letter-spacing: -.02em; }
 .tuner { position: relative; width: min(100%, 260px); height: 6px; background: var(--line); border-radius: 3px; }

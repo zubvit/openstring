@@ -145,3 +145,53 @@ export function recentForm(entries, { window: size = 20 } = {}) {
     window: size,
   };
 }
+
+/**
+ * Is the guitar out of tune, rather than the player wrong?
+ *
+ * A beginner cannot tell these apart, and the app was not helping. Play the
+ * correct fret on a string that is a semitone flat and the microphone hears a
+ * different note - correctly - so the drill says "not that one, try higher" and
+ * sends him hunting up the neck for a note that is already under his finger.
+ * Every note on that string is then wrong, however well he reads, and the score
+ * says he cannot read. The app has the pitch in its hand and can say so.
+ *
+ * The signal is CONSISTENCY, not size. A wrong fret is a large error that
+ * varies from try to try. A mistuned string is the same error every single
+ * time, because it is the string, not the finger. So: several attempts on one
+ * string, all agreeing closely, all well off - that is the instrument.
+ *
+ * Deliberately no similarity scoring anywhere here. Every sample is an exact
+ * measured distance in cents, and a string is reported only when the readings
+ * agree inside a stated window.
+ */
+export const DRIFT_MIN_SAMPLES = 3;
+export const DRIFT_MAX_SPREAD_CENTS = 40;  // wider than this is not one cause
+export const DRIFT_MIN_CENTS = 35;         // below this, tuning is not the story
+
+export function tuningDrift(samples, {
+  minSamples = DRIFT_MIN_SAMPLES,
+  maxSpread = DRIFT_MAX_SPREAD_CENTS,
+  minCents = DRIFT_MIN_CENTS,
+} = {}) {
+  const byString = new Map();
+  for (const s of samples) {
+    if (!s || !Number.isFinite(s.cents) || !s.string) continue;
+    if (!byString.has(s.string)) byString.set(s.string, []);
+    byString.get(s.string).push(s.cents);
+  }
+
+  let worst = null;
+  for (const [string, list] of byString) {
+    if (list.length < minSamples) continue;
+    const sorted = [...list].sort((a, b) => a - b);
+    const spread = sorted[sorted.length - 1] - sorted[0];
+    if (spread > maxSpread) continue;              // not one consistent cause
+    const median = sorted[Math.floor(sorted.length / 2)];
+    if (Math.abs(median) < minCents) continue;     // in tune enough to read by
+    if (!worst || Math.abs(median) > Math.abs(worst.cents)) {
+      worst = { string, cents: median, direction: median < 0 ? 'flat' : 'sharp', samples: list.length };
+    }
+  }
+  return worst;
+}

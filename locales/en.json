@@ -274,6 +274,7 @@
   "chords.endSession": "End session",
   "read.notThatOne": "That was {heard} — not the one.",
   "read.rightNoteWrongString": "{heard} — right note, wrong string.",
+  "read.outOfTune": "The {name} string sounds out of tune. Tap here to check it — a note played on a string that is out is heard as a different note.",
   "read.tryHigher": "It is higher. Keep looking.",
   "read.tryLower": "It is lower. Keep looking.",
   "read.foundIt": "{note} — found it.",

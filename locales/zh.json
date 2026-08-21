@@ -271,6 +271,7 @@
   "chords.endSession": "结束",
   "read.notThatOne": "刚才是 {heard} — 不是这个。",
   "read.rightNoteWrongString": "{heard} — 音对了，弦错了。",
+  "read.outOfTune": "{name} 弦听起来走音了。点这里检查——走音的弦上弹出的音会被听成另一个音。",
   "read.tryHigher": "它更高。继续找。",
   "read.tryLower": "它更低。继续找。",
   "read.foundIt": "{note} — 找到了。",

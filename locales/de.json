@@ -274,6 +274,7 @@
   "chords.endSession": "Sitzung beenden",
   "read.notThatOne": "Das war {heard} — nicht dieser.",
   "read.rightNoteWrongString": "{heard} — richtiger Ton, falsche Saite.",
+  "read.outOfTune": "Die {name}-Saite klingt verstimmt. Zum Prüfen hier tippen — ein Ton auf einer verstimmten Saite wird als anderer Ton gehört.",
   "read.tryHigher": "Er liegt höher. Such weiter.",
   "read.tryLower": "Er liegt tiefer. Such weiter.",
   "read.foundIt": "{note} — gefunden.",

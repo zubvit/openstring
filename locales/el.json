@@ -274,6 +274,7 @@
   "chords.endSession": "Τέλος",
   "read.notThatOne": "Αυτή ήταν {heard} — δεν είναι αυτή.",
   "read.rightNoteWrongString": "{heard} — σωστή νότα, λάθος χορδή.",
+  "read.outOfTune": "Η χορδή {name} ακούγεται ξεκούρδιστη. Πάτησε εδώ για έλεγχο — μια νότα σε ξεκούρδιστη χορδή ακούγεται σαν άλλη νότα.",
   "read.tryHigher": "Είναι πιο ψηλά. Ψάξε κι άλλο.",
   "read.tryLower": "Είναι πιο χαμηλά. Ψάξε κι άλλο.",
   "read.foundIt": "{note} — τη βρήκες.",

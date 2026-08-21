@@ -277,6 +277,7 @@
   "chords.endSession": "Încheie",
   "read.notThatOne": "Aceea a fost {heard} — nu e ea.",
   "read.rightNoteWrongString": "{heard} — nota corectă, coarda greșită.",
+  "read.outOfTune": "Coarda {name} sună dezacordat. Atinge aici ca s-o verifici — o notă pe o coardă dezacordată se aude ca altă notă.",
   "read.tryHigher": "E mai sus. Caută mai departe.",
   "read.tryLower": "E mai jos. Caută mai departe.",
   "read.foundIt": "{note} — ai găsit-o.",

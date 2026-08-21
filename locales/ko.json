@@ -271,6 +271,7 @@
   "chords.endSession": "세션 끝내기",
   "read.notThatOne": "방금은 {heard} 였습니다 — 그 음이 아닙니다.",
   "read.rightNoteWrongString": "{heard} — 음은 맞고 줄이 틀렸습니다.",
+  "read.outOfTune": "{name}줄의 음이 맞지 않는 것 같습니다. 여기를 눌러 확인하세요 — 음이 틀어진 줄에서 친 음은 다른 음으로 들립니다.",
   "read.tryHigher": "더 높습니다. 계속 찾아보세요.",
   "read.tryLower": "더 낮습니다. 계속 찾아보세요.",
   "read.foundIt": "{note} — 찾았습니다.",

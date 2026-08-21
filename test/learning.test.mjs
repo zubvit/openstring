@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { updateStat, emptyStat, weightFor, pickNext, isFluent, poolMastery, recentForm } from '../js/srs.js';
+import { updateStat, emptyStat, weightFor, pickNext, isFluent, poolMastery, recentForm,
+  tuningDrift, DRIFT_MIN_SAMPLES,
+} from '../js/srs.js';
 import { Progress, MemoryStorage } from '../js/progress.js';
 import { STAGES, poolFor, readyToAdvance, unlockedStages, expectedOnsets, RHYTHMS, nextStage } from '../js/curriculum.js';
 import { yForDiatonic, ledgersFor, renderNote, renderFretboard, stringWeight, LINE_GAP } from '../js/staff.js';
@@ -433,6 +435,68 @@ t('a board with nothing to mark still draws', () => {
   const svg = renderFretboard({ minFret: 0, maxFret: 3, mark: null });
   assert.equal((svg.match(/class="fb-string"/g) || []).length, 6);
   assert.ok(!/fb-dot/.test(svg), 'and marks nothing');
+});
+
+
+// ---------------------------------------------------------------------------
+// Telling a guitar that needs tuning apart from a player who cannot read.
+//
+// Play the right fret on a string that is a semitone flat and the microphone
+// hears a different note - correctly - so the drill marks it wrong and says
+// "try higher", sending a beginner up the neck for a note already under his
+// finger. Every note on that string is then wrong however well he reads.
+
+const sample = (string, cents) => ({ string, cents });
+
+t('a string consistently off is reported as the instrument', () => {
+  const d = tuningDrift([sample(3, -98), sample(3, -104), sample(3, -95), sample(3, -101)]);
+  assert.ok(d, 'a whole semitone flat on every attempt went unreported');
+  assert.equal(d.string, 3);
+  assert.equal(d.direction, 'flat');
+  assert.ok(Math.abs(d.cents + 98) < 10, `expected about -98 cents, got ${d.cents}`);
+});
+
+t('wrong fingers are not reported as a tuning problem', () => {
+  // Large errors, but all over the place - that is a player hunting, and telling
+  // him his guitar is out would send him to fix the wrong thing.
+  assert.equal(tuningDrift([sample(3, -200), sample(3, 100), sample(3, -95), sample(3, 300)]), null);
+});
+
+t('an in-tune guitar says nothing at all', () => {
+  assert.equal(tuningDrift([sample(3, -8), sample(3, 4), sample(3, -11), sample(3, 2), sample(3, 6)]), null);
+});
+
+t('one or two attempts are never enough to accuse the instrument', () => {
+  const off = Array.from({ length: DRIFT_MIN_SAMPLES - 1 }, () => sample(3, -100));
+  assert.equal(tuningDrift(off), null);
+  assert.ok(tuningDrift([...off, sample(3, -100)]), 'never reports however many agree');
+});
+
+t('each string is judged on its own', () => {
+  // Five strings fine, one badly out: the one that is out must be named.
+  const fine = [1, 2, 4, 5, 6].flatMap((n) => [sample(n, 3), sample(n, -5), sample(n, 1)]);
+  const d = tuningDrift([...fine, sample(3, -95), sample(3, -100), sample(3, -92)]);
+  assert.equal(d?.string, 3);
+});
+
+t('the worst string is the one named', () => {
+  const d = tuningDrift([
+    sample(2, 40), sample(2, 44), sample(2, 38),
+    sample(3, -150), sample(3, -145), sample(3, -152),
+  ]);
+  assert.equal(d.string, 3, 'named the mildly-off string over the badly-off one');
+});
+
+t('sharp is reported as sharp', () => {
+  const d = tuningDrift([sample(5, 70), sample(5, 66), sample(5, 74)]);
+  assert.equal(d.direction, 'sharp');
+});
+
+t('junk samples cannot make it accuse anything', () => {
+  assert.equal(tuningDrift([]), null);
+  assert.equal(tuningDrift([sample(3, NaN), sample(3, NaN), sample(3, NaN)]), null);
+  assert.equal(tuningDrift([{ string: null, cents: -100 }, { string: null, cents: -100 }]), null);
+  assert.equal(tuningDrift([null, undefined]), null);
 });
 
 console.log(`learning: ${pass} groups passed`);

@@ -271,6 +271,7 @@
   "chords.endSession": "終了",
   "read.notThatOne": "いまのは {heard} です — その音ではありません。",
   "read.rightNoteWrongString": "{heard} — 音は合っていますが、弦が違います。",
+  "read.outOfTune": "{name}弦の音が狂っているようです。ここをタップして確認してください——狂った弦で弾いた音は別の音に聞こえます。",
   "read.tryHigher": "もっと高い音です。探し続けて。",
   "read.tryLower": "もっと低い音です。探し続けて。",
   "read.foundIt": "{note} — 見つかりました。",

@@ -274,6 +274,7 @@
   "chords.endSession": "Oturumu bitir",
   "read.notThatOne": "O {heard} idi — bu değil.",
   "read.rightNoteWrongString": "{heard} — nota doğru, tel yanlış.",
+  "read.outOfTune": "{name} teli akortsuz geliyor. Kontrol etmek için buraya dokun — akortsuz bir telde çalınan nota başka bir nota olarak duyulur.",
   "read.tryHigher": "Daha tizde. Aramaya devam et.",
   "read.tryLower": "Daha peste. Aramaya devam et.",
   "read.foundIt": "{note} — buldun.",

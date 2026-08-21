@@ -14,7 +14,7 @@ import {
   positionId, parsePositionId, positionsFor, midiToHz,
 } from './theory.js';
 import { renderNote, renderPhrase, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
-import { pickNext, isFluent, emptyStat, recentForm } from './srs.js';
+import { pickNext, isFluent, emptyStat, recentForm, tuningDrift } from './srs.js';
 import { Progress } from './progress.js';
 import { STAGES, stageById, nextStage, poolFor, readyToAdvance, unlockedStages, RHYTHMS, expectedOnsets } from './curriculum.js';
 import { gradeTiming } from './onset.js';
@@ -218,6 +218,10 @@ const read = {
   // One entry per note resolved, newest last. The card reads the tail of this
   // rather than totals, so it shows how the last few minutes went.
   recent: [],
+  // Signed distance in cents from what was asked for to what was heard, with
+  // the string it was asked on. A mistuned string shows up here as the same
+  // error over and over; a wrong finger does not.
+  tuning: [],
   octavesThisNote: 0,
   lastActivity: 0,
   idleTimer: 0,
@@ -368,6 +372,18 @@ function updateHint() {
 }
 $('showHint').addEventListener('change', updateHint);
 
+// Tapping the out-of-tune notice goes where the fix is, with the string already
+// chosen - the point of saying it at all is that he can act on it now.
+$('tuneNudge').addEventListener('click', () => {
+  const string = Number($('tuneNudge').dataset.string);
+  document.querySelector('.tab[data-view="tools"]').click();
+  if (string) {
+    tune.engine.pin(string);
+    paintTuner(null);
+  }
+  if (!tune.active) startTuning();
+});
+
 /**
  * Judge one played note against the note the phrase is waiting for.
  *
@@ -382,6 +398,13 @@ function judge(heardMidi, hz) {
 
   const target = read.target.sounding;
   const { verdict, direction } = compareNote(target, heardMidi);
+
+  // Every attempt, right or wrong, is a measurement of this string against the
+  // note that was asked for. Kept so the app can tell "you are reading it wrong"
+  // apart from "this string is not where it should be".
+  read.tuning.push({ string: read.target.string, cents: centsFromTarget(hz, target) });
+  if (read.tuning.length > TUNING_SAMPLES) read.tuning = read.tuning.slice(-TUNING_SAMPLES);
+  showTuningNudge();
   const main = $('verdictMain');
   const sub = $('verdictSub');
 
@@ -464,6 +487,32 @@ function judge(heardMidi, hz) {
   setTimeout(() => { if (read.active) nextQuestion(); }, read.melody ? 1200 : (clean ? 750 : 1100));
 }
 
+// Two dozen attempts is a couple of minutes of practice - long enough to be
+// sure, short enough that a string tuned mid-session stops being reported.
+const TUNING_SAMPLES = 24;
+
+/**
+ * Say when the guitar, not the reading, is what is wrong.
+ *
+ * Silent unless it is sure: several attempts on one string, all agreeing, all
+ * well off pitch. Tapping it opens the tuner with that string already chosen,
+ * because the next thing he needs is to fix it, not to read about it.
+ */
+function showTuningNudge() {
+  const el = $('tuneNudge');
+  if (!el) return;
+  const drift = tuningDrift(read.tuning);
+  el.hidden = !drift;
+  if (!drift) return;
+  el.dataset.string = String(drift.string);
+  el.textContent = t('read.outOfTune', { name: stringLabel(drift.string) });
+}
+
+/** "G" - the letter a player calls the string by, without the octave digit. */
+function stringLabel(string) {
+  return noteName(STANDARD_TUNING[string]).replace(/\d+$/, '');
+}
+
 function updateSessionCard() {
   $('sessionCard').hidden = read.asked === 0;
 
@@ -512,6 +561,9 @@ $('startRead').addEventListener('click', async () => {
   read.active = true;
   holdScreenAwake();
   read.asked = 0; read.correct = 0; read.times = []; read.recent = [];
+  // A string tuned between sessions must not still be reported as out.
+  read.tuning = [];
+  showTuningNudge();
   read.octavesThisNote = 0;
   // Nothing is ringing from a session that ended minutes ago; carrying the note
   // over would make the first question ignore it if it came up again.

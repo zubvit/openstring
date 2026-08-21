@@ -274,6 +274,7 @@
   "chords.endSession": "सत्र समाप्त",
   "read.notThatOne": "वह {heard} था — यह वाला नहीं।",
   "read.rightNoteWrongString": "{heard} — स्वर सही, तार ग़लत।",
+  "read.outOfTune": "{name} तार बेसुरा लग रहा है। जाँचने के लिए यहाँ टैप करें — बेसुरे तार पर बजाया गया स्वर दूसरा स्वर सुनाई देता है।",
   "read.tryHigher": "यह ऊपर है। खोजते रहिए।",
   "read.tryLower": "यह नीचे है। खोजते रहिए।",
   "read.foundIt": "{note} — मिल गया।",

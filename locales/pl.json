@@ -280,6 +280,7 @@
   "chords.endSession": "Zakończ",
   "read.notThatOne": "To było {heard} — nie ten.",
   "read.rightNoteWrongString": "{heard} — dźwięk dobry, struna zła.",
+  "read.outOfTune": "Struna {name} brzmi rozstrojona. Dotknij, aby ją sprawdzić — dźwięk zagrany na rozstrojonej strunie słychać jako inny dźwięk.",
   "read.tryHigher": "Jest wyżej. Szukaj dalej.",
   "read.tryLower": "Jest niżej. Szukaj dalej.",
   "read.foundIt": "{note} — znalezione.",

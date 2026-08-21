@@ -286,6 +286,7 @@
   "chords.endSession": "إنهاء الجلسة",
   "read.notThatOne": "كانت {heard} — ليست هذه.",
   "read.rightNoteWrongString": "{heard} — النغمة صحيحة والوتر خطأ.",
+  "read.outOfTune": "يبدو أن وتر {name} غير مضبوط. اضغط هنا لفحصه — النغمة المعزوفة على وتر غير مضبوط تُسمع نغمة أخرى.",
   "read.tryHigher": "إنها أعلى. واصل البحث.",
   "read.tryLower": "إنها أخفض. واصل البحث.",
   "read.foundIt": "{note} — وجدتها.",

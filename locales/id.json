@@ -271,6 +271,7 @@
   "chords.endSession": "Akhiri sesi",
   "read.notThatOne": "Itu tadi {heard} — bukan yang itu.",
   "read.rightNoteWrongString": "{heard} — nadanya benar, senarnya salah.",
+  "read.outOfTune": "Senar {name} terdengar fals. Ketuk di sini untuk memeriksanya — nada yang dipetik pada senar yang fals terdengar sebagai nada lain.",
   "read.tryHigher": "Lebih tinggi. Cari lagi.",
   "read.tryLower": "Lebih rendah. Cari lagi.",
   "read.foundIt": "{note} — ketemu.",

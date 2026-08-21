@@ -274,6 +274,7 @@
   "chords.endSession": "Terminar sessão",
   "read.notThatOne": "Isso foi {heard} — não é essa.",
   "read.rightNoteWrongString": "{heard} — nota certa, corda errada.",
+  "read.outOfTune": "A corda {name} soa desafinada. Toque aqui para a verificar — uma nota numa corda desafinada ouve-se como outra nota.",
   "read.tryHigher": "Está mais acima. Continua a procurar.",
   "read.tryLower": "Está mais abaixo. Continua a procurar.",
   "read.foundIt": "{note} — encontraste.",

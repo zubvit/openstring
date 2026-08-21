@@ -274,6 +274,7 @@
   "chords.endSession": "Termina",
   "read.notThatOne": "Era {heard} — non è quella.",
   "read.rightNoteWrongString": "{heard} — nota giusta, corda sbagliata.",
+  "read.outOfTune": "La corda {name} suona scordata. Tocca qui per controllarla — una nota su una corda scordata si sente come un'altra nota.",
   "read.tryHigher": "È più in alto. Continua a cercare.",
   "read.tryLower": "È più in basso. Continua a cercare.",
   "read.foundIt": "{note} — trovata.",

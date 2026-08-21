@@ -274,6 +274,7 @@
   "chords.endSession": "Sessie beëindigen",
   "read.notThatOne": "Dat was {heard} — die niet.",
   "read.rightNoteWrongString": "{heard} — goede noot, verkeerde snaar.",
+  "read.outOfTune": "De {name}-snaar klinkt ontstemd. Tik hier om hem te controleren — een noot op een ontstemde snaar wordt als een andere noot gehoord.",
   "read.tryHigher": "Hij ligt hoger. Blijf zoeken.",
   "read.tryLower": "Hij ligt lager. Blijf zoeken.",
   "read.foundIt": "{note} — gevonden.",

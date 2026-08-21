@@ -280,6 +280,7 @@
   "chords.endSession": "Завершить",
   "read.notThatOne": "Это было {heard} — не та.",
   "read.rightNoteWrongString": "{heard} — нота верная, струна не та.",
+  "read.outOfTune": "Струна {name} звучит расстроенно. Нажмите, чтобы проверить её — нота на расстроенной струне слышится как другая нота.",
   "read.tryHigher": "Она выше. Ищите дальше.",
   "read.tryLower": "Она ниже. Ищите дальше.",
   "read.foundIt": "{note} — нашли.",

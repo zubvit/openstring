@@ -280,6 +280,7 @@
   "chords.endSession": "Ukončit",
   "read.notThatOne": "To bylo {heard} — ten ne.",
   "read.rightNoteWrongString": "{heard} — tón správný, struna špatná.",
+  "read.outOfTune": "Struna {name} zní rozladěně. Klepnutím ji zkontrolujete — tón zahraný na rozladěné struně se ozve jako jiný tón.",
   "read.tryHigher": "Je výš. Hledej dál.",
   "read.tryLower": "Je níž. Hledej dál.",
   "read.foundIt": "{note} — máš to.",
