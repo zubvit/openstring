@@ -70,4 +70,13 @@ t('the pattern list says "beyond this stage" once, not on every option', () => {
   assert.match(js, /<optgroup label="\$\{/, 'options should be grouped under headings');
 });
 
+t('wording is never served staler than the code that asks for it', () => {
+  // A cached catalogue next to fresh code prints "rhythmPattern.groupCurrent"
+  // where a heading should be. Seen live, in the ten minutes after this commit.
+  const i18n = read('js/i18n.js');
+  const call = /fetch\(new URL\(`\.\.\/locales[^)]*\)([^)]*)\)/.exec(i18n);
+  assert.ok(call, 'the catalogue fetch has moved');
+  assert.match(call[1], /cache:\s*'no-cache'/, 'catalogue fetch must revalidate');
+});
+
 console.log(`layout: ${pass} groups passed`);

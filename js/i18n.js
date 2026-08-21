@@ -62,7 +62,10 @@ export function detectLocale() {
 export function getLocale() { return current; }
 
 async function fetchCatalogue(code) {
-  const res = await fetch(new URL(`../locales/${code}.json`, import.meta.url));
+  // Revalidate rather than trust the cache. The code and its wording ship
+  // together, so a stale catalogue paired with fresh code prints raw key names
+  // on screen. An ETag check costs one 304 and removes that window entirely.
+  const res = await fetch(new URL(`../locales/${code}.json`, import.meta.url), { cache: 'no-cache' });
   if (!res.ok) throw new Error(`no catalogue for ${code}`);
   return res.json();
 }
