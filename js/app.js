@@ -29,6 +29,7 @@ const esc = (v) => String(v)
 
 const progress = new Progress();
 const audio = new AudioEngine();
+let pieceView = null;
 let stage = stageById(progress.data.stageId || STAGES[0].id);
 
 // ------------------------------------------------------------------ tabs
@@ -49,6 +50,12 @@ document.querySelectorAll('.tab').forEach((tab) => {
     // there as an answer to a question on a screen he could not see - and
     // marking most of them wrong. It also heard the rhythm drill's metronome.
     if (tab.dataset.view !== 'read' && read.active) endReadSession();
+    // The rhythm exercise and the piece drill were the last two that carried on
+    // behind your back. Both keep a metronome running, and the microphone hears
+    // it - so a click track was still sounding into whatever you switched to.
+    if (tab.dataset.view !== 'rhythm' && rhythm.running) finishRhythm(true);
+    if (tab.dataset.view !== 'piece') pieceView?.stop();
+    releaseAudioIfIdle();
   });
 });
 
@@ -91,6 +98,28 @@ function verdictError(id) {
     el.className = 'verdict-main bad';
   };
 }
+
+/**
+ * Hand the microphone back when no drill wants it.
+ *
+ * Nothing ever called audio.stop(). Once you granted permission, the recording
+ * light stayed on for as long as the page was open and the pitch detector kept
+ * running on every animation frame - analysing the room, forever, while you sat
+ * on the Progress tab. On a laptop that is rude; on a phone it is the battery.
+ *
+ * Run as one watchdog rather than a call at the end of each stop path, because
+ * there are six of those and the seventh would have been forgotten.
+ */
+function releaseAudioIfIdle() {
+  if (!audio.running) return;
+  const busy = read.active || chordDrill.active || tune.active
+    || rhythm.running || !!pieceView?.isRunning();
+  if (busy) return;
+  audio.stop();
+  setMic('', t('mic.off'));
+}
+
+setInterval(releaseAudioIfIdle, 20000);
 
 // =================================================================== READING
 
@@ -572,7 +601,7 @@ $('startRhythm').addEventListener('click', async () => {
   rhythm.endsAt = rhythm.startTime + pat.meter[0] * bars * beat + 0.6;
 
   audio.resetTracking();
-  $('rVerdictMain').textContent = t('rhythm.countingIn');
+  $('rVerdictMain').textContent = t('drill.countingIn');
   $('rVerdictSub').textContent = '';
   drawStrip();
 
@@ -586,8 +615,8 @@ $('startRhythm').addEventListener('click', async () => {
       cursor.style.display = rel >= 0 && rel <= 1 ? 'block' : 'none';
       cursor.style.left = `${4 + Math.max(0, Math.min(1, rel)) * 92}%`;
     }
-    if (tNow > rhythm.startTime && $('rVerdictMain').textContent === t('rhythm.countingIn')) {
-      $('rVerdictMain').textContent = t('rhythm.playing');
+    if (tNow > rhythm.startTime && $('rVerdictMain').textContent === t('drill.countingIn')) {
+      $('rVerdictMain').textContent = t('drill.playing');
     }
     if (tNow >= rhythm.endsAt) { finishRhythm(); return; }
     rhythm.raf = requestAnimationFrame(tick);
@@ -613,7 +642,7 @@ function finishRhythm(aborted = false) {
   $('stopRhythm').disabled = true;
 
   if (aborted && rhythm.played.length === 0) {
-    $('rVerdictMain').textContent = t('rhythm.stopped');
+    $('rVerdictMain').textContent = t('drill.stopped');
     return;
   }
 
@@ -1342,7 +1371,7 @@ checkStorage();
 initI18n().then(() => {
   applyToDom();
   buildLanguagePicker();
-  initPieceView({ audio, ensureAudio });
+  pieceView = initPieceView({ audio, ensureAudio });
   renderSync();
   renderStageHeader();
   fillPatterns();
@@ -1357,7 +1386,7 @@ initI18n().then(() => {
   drawChordQuestion();
 }).catch(() => {
   // Even if catalogues fail entirely, the built-in English markup still works.
-  initPieceView({ audio, ensureAudio });
+  pieceView = initPieceView({ audio, ensureAudio });
   renderSync();
   renderStageHeader();
   fillPatterns();

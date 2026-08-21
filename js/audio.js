@@ -210,7 +210,10 @@ export class AudioEngine {
    * the app should touch this.
    */
   setAnalysisWindow(size) {
-    if (!this.analyser) return;
+    // `analyser` survives stop() as a node belonging to a closed context, so
+    // running has to be checked too - now that the microphone is released when
+    // no drill wants it, a late call here would be reaching into a dead graph.
+    if (!this.running || !this.analyser) return;
     this.analyser.fftSize = size;
     this._analysisBuf = new Float32Array(this.analyser.fftSize);
     this._tracker.reset();

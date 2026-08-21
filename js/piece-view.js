@@ -231,27 +231,38 @@ export function initPieceView({ audio, ensureAudio }) {
     const endsAt = startTime + (last.beat - first + last.beats) * beat + 0.8;
 
     audio.resetTracking();
-    $('pVerdictMain').textContent = 'Count-in…';
+    $('pVerdictMain').textContent = t('drill.countingIn');
+    let announced = false;
 
+    // NOTE: this loop used to name its clock `t`, which shadowed the translate
+    // function imported at the top of the file - so any translated string in
+    // here would have thrown "t is not a function" sixty times a second. It also
+    // decided the count-in was over by comparing the text on screen against an
+    // English literal, which stops working the moment anything is translated.
     const tick = () => {
       if (!st.running) return;
-      const t = audio.now();
-      if (t > startTime && $('pVerdictMain').textContent === 'Count-in…') $('pVerdictMain').textContent = 'Playing…';
-      if (t >= endsAt) { finish(chunk, state, bpm, startTime); return; }
+      const now = audio.now();
+      if (!announced && now > startTime) {
+        announced = true;
+        $('pVerdictMain').textContent = t('drill.playing');
+      }
+      if (now >= endsAt) { finish(chunk, state, bpm, startTime); return; }
       st.raf = requestAnimationFrame(tick);
     };
     tick();
   });
 
-  $('stopPiece').addEventListener('click', () => {
+  function stopPlaying() {
     if (!st.running) return;
     st.running = false;
     cancelAnimationFrame(st.raf);
     st.metro?.stop();
     $('startPiece').disabled = false;
     $('stopPiece').disabled = true;
-    $('pVerdictMain').textContent = 'Stopped.';
-  });
+    $('pVerdictMain').textContent = t('drill.stopped');
+  }
+
+  $('stopPiece').addEventListener('click', stopPlaying);
 
   audio.onNoteEvent = (ev) => {
     if (st.running && ev.sounding != null) st.events.push(ev);
@@ -312,5 +323,5 @@ export function initPieceView({ audio, ensureAudio }) {
   if (load()) { renderHead(); renderChunkList(); nextChunk(); }
   else renderHead();
 
-  return { hasPiece: () => !!st.piece };
+  return { hasPiece: () => !!st.piece, isRunning: () => st.running, stop: stopPlaying };
 }
