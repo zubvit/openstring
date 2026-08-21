@@ -39,7 +39,7 @@
   "read.playIt": "Speel hem.",
   "read.start": "Beginnen met luisteren",
   "read.pause": "Pauze",
-  "read.skip": "Overslaan",
+  "read.skip": "Ik vind hem niet",
   "read.showHint": "Laat zien waar hij zit",
   "read.rightFirstTime": "Meteen goed",
   "read.typicalTime": "Gebruikelijke zoektijd",
@@ -292,5 +292,8 @@
   "read.recentRight": "In één keer goed, laatste {n}",
   "read.octaveSlips": "Goede noot, verkeerde snaar",
   "read.sessionSoFar": "Deze sessie",
-  "read.endedIdle": "Sessie beëindigd — er is een paar minuten niets gespeeld."
+  "read.endedIdle": "Sessie beëindigd — er is een paar minuten niets gespeeld.",
+  "read.stageOf": "Fase {n} van {total}",
+  "read.thePlan": "Het plan",
+  "progress.locked": "op slot"
 }

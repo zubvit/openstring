@@ -72,7 +72,10 @@
 <section class="view is-active" id="view-read">
   <div class="stage-bar">
     <div>
-      <div class="stage-title" id="stageTitle">Open position, top three strings</div>
+      <div class="stage-pick">
+        <span class="stage-pos muted small" id="stagePos"></span>
+        <select id="stageSelect" class="stage-title" data-i18n-aria-label="read.thePlan" aria-label="The plan"></select>
+      </div>
       <div class="stage-blurb" id="stageBlurb"></div>
     </div>
     <div class="stage-mastery">
@@ -97,7 +100,7 @@
 
     <div class="controls">
       <button class="btn primary" id="startRead" data-i18n="read.start">Start listening</button>
-      <button class="btn" id="skipNote" data-i18n="read.skip" disabled>Skip</button>
+      <button class="btn" id="skipNote" data-i18n="read.skip" disabled>Can’t find it</button>
       <label class="check"><input type="checkbox" id="showHint"> <span data-i18n="read.showHint">Show me where it is</span></label>
       <label class="check"><input type="checkbox" id="readMelody"> <span data-i18n="read.melodyMode">Read a short melody</span></label>
     </div>

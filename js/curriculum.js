@@ -166,3 +166,31 @@ export function expectedOnsets(patternId, bpm, { startAt = 0, bars = 1 } = {}) {
   }
   return out;
 }
+
+/**
+ * Which stages you are allowed to switch to: back freely, forward when earned.
+ *
+ * Going back is not cheating - revisiting a stage you have already done is
+ * ordinary practice, and until now there was no way to do it at all: the only
+ * route between stages was the advance button, which only ever moved forward.
+ * Someone who moved on too early was simply stuck there.
+ *
+ * Going forward stays gated, and that gate is the point of the whole project.
+ * An app that decides what to drill next stops deciding the moment you can jump
+ * anywhere from a dropdown, and then you are your own teacher again exactly
+ * when you know least.
+ *
+ * Nothing new is stored: a stage is open if it is one you have already been at,
+ * or if the one before it is finished. That heals itself if you jump back - the
+ * stages you had earned stay earned, because the statistics behind them do.
+ */
+export function unlockedStages(currentId, stats = {}, stages = STAGES) {
+  const currentIndex = Math.max(0, stages.findIndex((s) => s.id === currentId));
+  return stages.map((st, i) => ({
+    stage: st,
+    index: i,
+    current: i === currentIndex,
+    done: readyToAdvance(st, stats).ready,
+    unlocked: i === 0 || i <= currentIndex || readyToAdvance(stages[i - 1], stats).ready,
+  }));
+}

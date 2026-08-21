@@ -37,7 +37,7 @@
   "read.playIt": "Tócala.",
   "read.start": "Empezar a escuchar",
   "read.pause": "Pausa",
-  "read.skip": "Saltar",
+  "read.skip": "No la encuentro",
   "read.showHint": "Enséñame dónde está",
   "read.rightFirstTime": "Acertadas a la primera",
   "read.typicalTime": "Tiempo habitual en encontrarla",
@@ -292,5 +292,8 @@
   "read.recentRight": "A la primera, últimas {n}",
   "read.octaveSlips": "Nota correcta, cuerda equivocada",
   "read.sessionSoFar": "Esta sesión",
-  "read.endedIdle": "Sesión terminada — no has tocado nada durante unos minutos."
+  "read.endedIdle": "Sesión terminada — no has tocado nada durante unos minutos.",
+  "read.stageOf": "Etapa {n} de {total}",
+  "read.thePlan": "El plan",
+  "progress.locked": "bloqueada"
 }

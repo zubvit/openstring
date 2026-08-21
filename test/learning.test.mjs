@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { updateStat, emptyStat, weightFor, pickNext, isFluent, poolMastery, recentForm } from '../js/srs.js';
 import { Progress, MemoryStorage } from '../js/progress.js';
-import { STAGES, poolFor, readyToAdvance, expectedOnsets, RHYTHMS, nextStage } from '../js/curriculum.js';
+import { STAGES, poolFor, readyToAdvance, unlockedStages, expectedOnsets, RHYTHMS, nextStage } from '../js/curriculum.js';
 import { yForDiatonic, ledgersFor, renderNote, renderFretboard, stringWeight, LINE_GAP } from '../js/staff.js';
 import { spell, writtenAt } from '../js/theory.js';
 
@@ -346,6 +346,61 @@ t('a position recovers from a bad patch within a handful of good answers', () =>
   for (let i = 0; i < 8; i++) stat = updateStat(stat, { correct: true, ms: 900 });
   assert.ok(stat.accuracy > 0.85, `eight good answers brought it back to ${stat.accuracy.toFixed(2)}`);
   assert.ok(isFluent(stat), 'and it counts as fluent again without erasing history');
+});
+
+// ------------------------------------------------------------- the plan
+
+const fluentStat = { attempts: 8, correct: 8, accuracy: 0.95, avgMs: 1100, lastSeen: Date.now(), streak: 8 };
+const finish = (stats, stage) => {
+  for (const id of poolFor(stage)) stats[id] = { ...fluentStat };
+  return stats;
+};
+
+t('a beginner can only start at the beginning', () => {
+  const rows = unlockedStages(STAGES[0].id, {});
+  assert.equal(rows.length, STAGES.length, 'the whole plan is visible');
+  assert.equal(rows[0].unlocked, true);
+  assert.equal(rows[0].current, true);
+  for (const r of rows.slice(1)) assert.equal(r.unlocked, false, `${r.stage.id} should be locked`);
+});
+
+// The gate is the product. An app that decides what to drill next stops
+// deciding the moment you can pick any stage from a list.
+t('a stage you have not earned stays shut', () => {
+  const stats = finish({}, STAGES[0]);
+  const rows = unlockedStages(STAGES[0].id, stats);
+  assert.equal(rows[1].unlocked, true, 'finishing stage one opens stage two');
+  assert.equal(rows[2].unlocked, false, 'and no further');
+});
+
+// Until now the only route between stages was the advance button, which only
+// ever went forwards. Moving on too early left you stuck there.
+t('you can always go back to a stage you have already been at', () => {
+  const rows = unlockedStages(STAGES[3].id, {});
+  for (const r of rows.slice(0, 4)) assert.equal(r.unlocked, true, `${r.stage.id} should be open`);
+  assert.equal(rows[4].unlocked, false, 'but not ahead of where you are');
+});
+
+t('going back does not re-lock what you had earned', () => {
+  const stats = finish(finish({}, STAGES[0]), STAGES[1]);
+  const rows = unlockedStages(STAGES[0].id, stats);
+  assert.equal(rows[1].unlocked, true, 'stage two is still open');
+  assert.equal(rows[2].unlocked, true, 'and so is the one its work earned');
+  assert.equal(rows[3].unlocked, false);
+});
+
+t('finished stages are marked as finished, wherever you are standing', () => {
+  const stats = finish({}, STAGES[0]);
+  const rows = unlockedStages(STAGES[2].id, stats);
+  assert.equal(rows[0].done, true);
+  assert.equal(rows[1].done, false);
+  assert.equal(rows[2].current, true);
+});
+
+t('an unknown stage id lands you at the start rather than nowhere', () => {
+  const rows = unlockedStages('no-such-stage', {});
+  assert.equal(rows[0].current, true);
+  assert.equal(rows[0].unlocked, true);
 });
 
 console.log(`learning: ${pass} groups passed`);

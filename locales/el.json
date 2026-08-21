@@ -39,7 +39,7 @@
   "read.playIt": "Παίξ' την.",
   "read.start": "Ξεκίνα την ακρόαση",
   "read.pause": "Παύση",
-  "read.skip": "Παράλειψη",
+  "read.skip": "Δεν τη βρίσκω",
   "read.showHint": "Δείξε μου πού είναι",
   "read.rightFirstTime": "Σωστές με την πρώτη",
   "read.typicalTime": "Συνήθης χρόνος εύρεσης",
@@ -292,5 +292,8 @@
   "read.recentRight": "Σωστή με την πρώτη, τελευταίες {n}",
   "read.octaveSlips": "Σωστή νότα, λάθος χορδή",
   "read.sessionSoFar": "Αυτή η συνεδρία",
-  "read.endedIdle": "Η συνεδρία τελείωσε — για μερικά λεπτά δεν παίχτηκε τίποτα."
+  "read.endedIdle": "Η συνεδρία τελείωσε — για μερικά λεπτά δεν παίχτηκε τίποτα.",
+  "read.stageOf": "Στάδιο {n} από {total}",
+  "read.thePlan": "Το σχέδιο",
+  "progress.locked": "κλειδωμένο"
 }

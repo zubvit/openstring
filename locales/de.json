@@ -39,7 +39,7 @@
   "read.playIt": "Spiel sie.",
   "read.start": "Zuhören starten",
   "read.pause": "Pause",
-  "read.skip": "Überspringen",
+  "read.skip": "Ich finde ihn nicht",
   "read.showHint": "Zeig mir, wo sie liegt",
   "read.rightFirstTime": "Auf Anhieb richtig",
   "read.typicalTime": "Übliche Suchdauer",
@@ -292,5 +292,8 @@
   "read.recentRight": "Auf Anhieb richtig, letzte {n}",
   "read.octaveSlips": "Richtiger Ton, falsche Saite",
   "read.sessionSoFar": "Diese Sitzung",
-  "read.endedIdle": "Sitzung beendet — ein paar Minuten lang wurde nichts gespielt."
+  "read.endedIdle": "Sitzung beendet — ein paar Minuten lang wurde nichts gespielt.",
+  "read.stageOf": "Stufe {n} von {total}",
+  "read.thePlan": "Der Plan",
+  "progress.locked": "gesperrt"
 }

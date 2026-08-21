@@ -39,7 +39,7 @@
   "read.playIt": "اعزفها.",
   "read.start": "ابدأ الإنصات",
   "read.pause": "إيقاف مؤقّت",
-  "read.skip": "تخطٍّ",
+  "read.skip": "لا أجدها",
   "read.showHint": "أرني أين هي",
   "read.rightFirstTime": "صحيحة من أول مرة",
   "read.typicalTime": "الزمن المعتاد لإيجادها",
@@ -304,5 +304,8 @@
   "read.recentRight": "صحيح من أول مرة، آخر {n}",
   "read.octaveSlips": "النغمة صحيحة والوتر خطأ",
   "read.sessionSoFar": "هذه الجلسة",
-  "read.endedIdle": "انتهت الجلسة — لم يُعزف شيء لبضع دقائق."
+  "read.endedIdle": "انتهت الجلسة — لم يُعزف شيء لبضع دقائق.",
+  "read.stageOf": "المرحلة {n} من {total}",
+  "read.thePlan": "الخطة",
+  "progress.locked": "مقفلة"
 }

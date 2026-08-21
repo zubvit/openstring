@@ -39,7 +39,7 @@
   "read.playIt": "연주하세요.",
   "read.start": "듣기 시작",
   "read.pause": "일시정지",
-  "read.skip": "건너뛰기",
+  "read.skip": "못 찾겠어요",
   "read.showHint": "어디인지 보여줘",
   "read.rightFirstTime": "한 번에 정답",
   "read.typicalTime": "찾는 데 걸리는 시간",
@@ -289,5 +289,8 @@
   "read.recentRight": "한 번에 정답, 최근 {n}개",
   "read.octaveSlips": "음은 맞고 줄이 틀림",
   "read.sessionSoFar": "이번 연습",
-  "read.endedIdle": "연습을 마쳤습니다 — 몇 분 동안 아무 소리도 없었습니다."
+  "read.endedIdle": "연습을 마쳤습니다 — 몇 분 동안 아무 소리도 없었습니다.",
+  "read.stageOf": "{total}단계 중 {n}단계",
+  "read.thePlan": "학습 계획",
+  "progress.locked": "잠김"
 }

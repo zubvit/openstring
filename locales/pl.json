@@ -39,7 +39,7 @@
   "read.playIt": "Zagraj ją.",
   "read.start": "Zacznij słuchać",
   "read.pause": "Pauza",
-  "read.skip": "Pomiń",
+  "read.skip": "Nie mogę znaleźć",
   "read.showHint": "Pokaż, gdzie ona jest",
   "read.rightFirstTime": "Dobrze za pierwszym razem",
   "read.typicalTime": "Zwykły czas szukania",
@@ -298,5 +298,8 @@
   "read.recentRight": "Za pierwszym razem, ostatnie {n}",
   "read.octaveSlips": "Dobry dźwięk, zła struna",
   "read.sessionSoFar": "Ta sesja",
-  "read.endedIdle": "Sesja zakończona — przez kilka minut nic nie zabrzmiało."
+  "read.endedIdle": "Sesja zakończona — przez kilka minut nic nie zabrzmiało.",
+  "read.stageOf": "Etap {n} z {total}",
+  "read.thePlan": "Plan",
+  "progress.locked": "zablokowany"
 }

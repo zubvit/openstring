@@ -37,7 +37,7 @@
   "read.playIt": "Play it.",
   "read.start": "Start listening",
   "read.pause": "Pause",
-  "read.skip": "Skip",
+  "read.skip": "Can't find it",
   "read.showHint": "Show me where it is",
   "read.rightFirstTime": "Right first time",
   "read.typicalTime": "Typical time to find",
@@ -292,5 +292,8 @@
   "read.recentRight": "Right first time, last {n}",
   "read.octaveSlips": "Right note, wrong string",
   "read.sessionSoFar": "This session",
-  "read.endedIdle": "Session ended — nothing played for a few minutes."
+  "read.endedIdle": "Session ended — nothing played for a few minutes.",
+  "read.stageOf": "Stage {n} of {total}",
+  "read.thePlan": "The plan",
+  "progress.locked": "locked"
 }

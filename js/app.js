@@ -13,7 +13,7 @@ import {
 import { renderNote, renderPhrase, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
 import { pickNext, isFluent, emptyStat, recentForm } from './srs.js';
 import { Progress } from './progress.js';
-import { STAGES, stageById, nextStage, poolFor, readyToAdvance, RHYTHMS, expectedOnsets } from './curriculum.js';
+import { STAGES, stageById, nextStage, poolFor, readyToAdvance, unlockedStages, RHYTHMS, expectedOnsets } from './curriculum.js';
 import { gradeTiming } from './onset.js';
 import { initPieceView } from './piece-view.js';
 import { Sync } from './sync.js';
@@ -110,13 +110,52 @@ const read = {
 };
 
 function renderStageHeader() {
-  $('stageTitle').textContent = t(`stage.${stage.id}.title`);
+  renderStagePicker();
   $('stageBlurb').textContent = t(`stage.${stage.id}.blurb`);
   $('stageAdvice').textContent = t(`stage.${stage.id}.advice`);
   const pct = Math.round(progress.mastery(poolFor(stage)) * 100);
   $('masteryRing').style.setProperty('--pct', pct);
   $('masteryPct').textContent = `${pct}%`;
 }
+
+/**
+ * The plan, where you practise rather than only in the Progress tab.
+ *
+ * Skip was never navigation - it is an escape hatch that records the note as a
+ * miss - and the plan was only visible on another screen, reachable one way,
+ * forwards. So there was no sense of being two of seven through anything.
+ *
+ * Stages you have reached are selectable; ones you have not earned are shown
+ * but disabled, because seeing what is coming is useful and jumping into it is
+ * not. The gate is the product: an app that decides what to drill next stops
+ * deciding the moment you can pick anything from a list.
+ */
+function renderStagePicker() {
+  const sel = $('stageSelect');
+  const rows = unlockedStages(stage.id, progress.data.stats);
+  const here = rows.find((r) => r.current);
+
+  $('stagePos').textContent = t('read.stageOf', { n: (here?.index ?? 0) + 1, total: rows.length });
+  sel.innerHTML = rows.map(({ stage: st, index, done, unlocked }) => {
+    const label = `${index + 1} · ${t(`stage.${st.id}.title`)}`
+      + (done ? ' \u2713' : '')
+      + (unlocked ? '' : ` \u2014 ${t('progress.locked')}`);
+    return `<option value="${st.id}"${unlocked ? '' : ' disabled'}${st.id === stage.id ? ' selected' : ''}>${esc(label)}</option>`;
+  }).join('');
+}
+
+$('stageSelect').addEventListener('change', () => {
+  const picked = stageById($('stageSelect').value);
+  if (!picked || picked.id === stage.id) return;
+  stage = picked;
+  progress.setStage(stage.id);
+  renderStageHeader();
+  fillPatterns();
+  drawStrip();
+  // Mid-session, the next question simply comes from the new region rather than
+  // throwing away the sitting.
+  if (read.active) nextQuestion();
+});
 
 /**
  * The staff, with its clef and nothing on it.
@@ -341,6 +380,7 @@ $('startRead').addEventListener('click', async () => {
   read.octavesThisNote = 0;
   read.startedAt = Date.now();
   read.startedPerf = performance.now();
+  read.stageAtStart = stage.id;
   read.lastActivity = read.startedPerf;
   startIdleWatch();
   $('startRead').textContent = t('read.pause');
@@ -375,7 +415,7 @@ function endReadSession({ idle = false } = {}) {
       // Measured to the last note played, not to now: a session that ended
       // because he walked away did not last however long he was gone.
       ms: Math.max(0, (read.lastActivity || performance.now()) - read.startedPerf),
-      asked: read.asked, correct: read.correct, stageId: stage.id,
+      asked: read.asked, correct: read.correct, stageId: read.stageAtStart || stage.id,
     });
   }
   read.active = false;

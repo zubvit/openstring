@@ -39,7 +39,7 @@
   "read.playIt": "弾いてください。",
   "read.start": "聴き取りを開始",
   "read.pause": "一時停止",
-  "read.skip": "スキップ",
+  "read.skip": "見つかりません",
   "read.showHint": "場所を教えて",
   "read.rightFirstTime": "一発で正解",
   "read.typicalTime": "見つけるまでの平均",
@@ -289,5 +289,8 @@
   "read.recentRight": "一度目で正解、直近 {n} 音",
   "read.octaveSlips": "音は合って弦が違う",
   "read.sessionSoFar": "今回の練習",
-  "read.endedIdle": "練習を終了しました — 数分間なにも鳴りませんでした。"
+  "read.endedIdle": "練習を終了しました — 数分間なにも鳴りませんでした。",
+  "read.stageOf": "段階 {n} / {total}",
+  "read.thePlan": "学習の順序",
+  "progress.locked": "未開放"
 }

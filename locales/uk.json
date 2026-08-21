@@ -37,7 +37,7 @@
   "read.playIt": "Зіграйте її.",
   "read.start": "Почати слухати",
   "read.pause": "Пауза",
-  "read.skip": "Пропустити",
+  "read.skip": "Не можу знайти",
   "read.showHint": "Показати, де вона",
   "read.rightFirstTime": "Правильно з першого разу",
   "read.typicalTime": "Звичний час на пошук",
@@ -298,5 +298,8 @@
   "read.recentRight": "З першого разу, останні {n}",
   "read.octaveSlips": "Нота правильна, струна не та",
   "read.sessionSoFar": "Цей сеанс",
-  "read.endedIdle": "Сеанс завершено — кілька хвилин нічого не звучало."
+  "read.endedIdle": "Сеанс завершено — кілька хвилин нічого не звучало.",
+  "read.stageOf": "Етап {n} з {total}",
+  "read.thePlan": "План",
+  "progress.locked": "закрито"
 }

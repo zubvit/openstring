@@ -39,7 +39,7 @@
   "read.playIt": "Onu çal.",
   "read.start": "Dinlemeye başla",
   "read.pause": "Duraklat",
-  "read.skip": "Atla",
+  "read.skip": "Bulamıyorum",
   "read.showHint": "Nerede olduğunu göster",
   "read.rightFirstTime": "İlk seferde doğru",
   "read.typicalTime": "Bulma süresi",
@@ -292,5 +292,8 @@
   "read.recentRight": "İlk seferde doğru, son {n}",
   "read.octaveSlips": "Nota doğru, tel yanlış",
   "read.sessionSoFar": "Bu oturum",
-  "read.endedIdle": "Oturum bitti — birkaç dakikadır hiçbir şey çalınmadı."
+  "read.endedIdle": "Oturum bitti — birkaç dakikadır hiçbir şey çalınmadı.",
+  "read.stageOf": "Aşama {n} / {total}",
+  "read.thePlan": "Plan",
+  "progress.locked": "kilitli"
 }

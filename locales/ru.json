@@ -39,7 +39,7 @@
   "read.playIt": "Сыграйте её.",
   "read.start": "Начать слушать",
   "read.pause": "Пауза",
-  "read.skip": "Пропустить",
+  "read.skip": "Не могу найти",
   "read.showHint": "Показать, где она",
   "read.rightFirstTime": "Верно с первого раза",
   "read.typicalTime": "Обычное время поиска",
@@ -298,5 +298,8 @@
   "read.recentRight": "С первого раза, последние {n}",
   "read.octaveSlips": "Нота верная, струна не та",
   "read.sessionSoFar": "Этот сеанс",
-  "read.endedIdle": "Сеанс завершён — несколько минут ничего не звучало."
+  "read.endedIdle": "Сеанс завершён — несколько минут ничего не звучало.",
+  "read.stageOf": "Этап {n} из {total}",
+  "read.thePlan": "План",
+  "progress.locked": "закрыто"
 }

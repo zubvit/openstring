@@ -39,7 +39,7 @@
   "read.playIt": "Cânt-o.",
   "read.start": "Începe să asculți",
   "read.pause": "Pauză",
-  "read.skip": "Sari peste",
+  "read.skip": "Nu o găsesc",
   "read.showHint": "Arată-mi unde e",
   "read.rightFirstTime": "Corecte din prima",
   "read.typicalTime": "Timp obișnuit de căutare",
@@ -295,5 +295,8 @@
   "read.recentRight": "Din prima, ultimele {n}",
   "read.octaveSlips": "Nota corectă, coarda greșită",
   "read.sessionSoFar": "Sesiunea aceasta",
-  "read.endedIdle": "Sesiune încheiată — câteva minute nu s-a cântat nimic."
+  "read.endedIdle": "Sesiune încheiată — câteva minute nu s-a cântat nimic.",
+  "read.stageOf": "Etapa {n} din {total}",
+  "read.thePlan": "Planul",
+  "progress.locked": "blocată"
 }

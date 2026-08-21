@@ -414,3 +414,15 @@ svg.chordbox { width: 132px; height: auto; }
   .tabs { flex-wrap: wrap; justify-content: center; row-gap: .2rem; }
 }
 .chord-symbol { fill: var(--ink); font-size: 12px; font-weight: 600; }
+
+/* The plan, picked from where you practise. */
+.stage-pick { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+.stage-pos { white-space: nowrap; }
+select.stage-title {
+  font: inherit; font-weight: 650; font-size: 1.05rem; letter-spacing: -.01em;
+  color: var(--ink); background: transparent; border: 1px solid transparent;
+  border-radius: 8px; padding: .1rem .3rem; max-width: 100%; cursor: pointer;
+}
+select.stage-title:hover { border-color: var(--line); background: var(--panel); }
+select.stage-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+select.stage-title option:disabled { color: var(--ink-soft); }

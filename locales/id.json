@@ -39,7 +39,7 @@
   "read.playIt": "Mainkan.",
   "read.start": "Mulai mendengarkan",
   "read.pause": "Jeda",
-  "read.skip": "Lewati",
+  "read.skip": "Tidak ketemu",
   "read.showHint": "Tunjukkan letaknya",
   "read.rightFirstTime": "Benar sekali coba",
   "read.typicalTime": "Waktu biasa menemukannya",
@@ -289,5 +289,8 @@
   "read.recentRight": "Benar sekali jadi, {n} terakhir",
   "read.octaveSlips": "Nada benar, senar salah",
   "read.sessionSoFar": "Sesi ini",
-  "read.endedIdle": "Sesi berakhir — beberapa menit tidak ada yang dimainkan."
+  "read.endedIdle": "Sesi berakhir — beberapa menit tidak ada yang dimainkan.",
+  "read.stageOf": "Tahap {n} dari {total}",
+  "read.thePlan": "Rencananya",
+  "progress.locked": "terkunci"
 }

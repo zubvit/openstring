@@ -39,7 +39,7 @@
   "read.playIt": "Suonala.",
   "read.start": "Inizia ad ascoltare",
   "read.pause": "Pausa",
-  "read.skip": "Salta",
+  "read.skip": "Non la trovo",
   "read.showHint": "Mostrami dov’è",
   "read.rightFirstTime": "Giuste al primo colpo",
   "read.typicalTime": "Tempo tipico per trovarla",
@@ -292,5 +292,8 @@
   "read.recentRight": "Giusto al primo colpo, ultime {n}",
   "read.octaveSlips": "Nota giusta, corda sbagliata",
   "read.sessionSoFar": "Questa sessione",
-  "read.endedIdle": "Sessione conclusa — per qualche minuto non è stato suonato nulla."
+  "read.endedIdle": "Sessione conclusa — per qualche minuto non è stato suonato nulla.",
+  "read.stageOf": "Tappa {n} di {total}",
+  "read.thePlan": "Il piano",
+  "progress.locked": "bloccata"
 }
