@@ -141,6 +141,17 @@ svg.staff { width: min(100%, 320px); height: auto; }
 .verdict-main.bad { color: var(--bad); }
 .verdict-sub { font-size: .86rem; color: var(--ink-soft); }
 
+/* The finish line, chosen by the player. */
+.goal-pick { display: grid; gap: .3rem; justify-items: center; margin-top: .9rem; }
+.goal-pick label { font-size: .85rem; color: var(--ink-soft); }
+.goal-pick select {
+  font: inherit; font-size: .9rem; padding: .35rem .5rem; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  max-width: 100%; min-width: 0;
+}
+.goal-note { font-size: .8rem; color: var(--ink-soft); margin: .1rem 0 0; text-align: center; }
+@media (pointer: coarse) { .goal-pick select { min-height: 44px; } }
+
 /* One obvious next step, where the round ended. */
 .round-actions { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; margin: .7rem 0 .2rem; }
 

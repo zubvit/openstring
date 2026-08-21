@@ -15,8 +15,9 @@ import {
 } from './theory.js';
 import { renderNote, renderPhrase, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
 import { pickNext, isFluent, emptyStat, recentForm, tuningDrift } from './srs.js';
+import { GOALS, DEFAULT_GOAL_ID, goalById, goalProgress, roundOver } from './goals.js';
 import { Progress } from './progress.js';
-import { STAGES, stageById, nextStage, poolFor, readyToAdvance, roundOver, unlockedStages, RHYTHMS, expectedOnsets } from './curriculum.js';
+import { STAGES, stageById, nextStage, poolFor, readyToAdvance, unlockedStages, RHYTHMS, expectedOnsets } from './curriculum.js';
 import { gradeTiming } from './onset.js';
 import { initPieceView } from './piece-view.js';
 import { Sync } from './sync.js';
@@ -192,10 +193,9 @@ setInterval(() => { anyDrillRunning() ? holdScreenAwake() : letScreenSleep(); },
 // How many recent notes the card reports on. Long enough to be steady, short
 // enough that a good run visibly moves it.
 const RECENT_WINDOW = 20;
-// A round is that same twenty. One number, so "right first time, last 20" is a
-// report on the round just played rather than on some other window - and so
-// there is an end in sight while playing, which there was not.
-const ROUND_NOTES = RECENT_WINDOW;
+// What ends a round is now the player's choice, kept in js/goals.js. Twenty
+// right IN A ROW by default: a count of notes played measures attendance, a run
+// without slips measures reading.
 
 // Practice stops when you walk away, but the app used to keep the session open
 // and keep the current note's clock running - so the note you happened to be on
@@ -226,10 +226,11 @@ const read = {
   // the string it was asked on. A mistuned string shows up here as the same
   // error over and over; a wrong finger does not.
   tuning: [],
-  // Whether the stage was already complete when this round started. Reaching
-  // the end of the plan mid-round is news; starting a round on a stage that was
-  // finished last week is not, and must not stop the round on its first note.
-  stageWasReady: false,
+  // The run of clean answers. One slip and it is zero again - that is the whole
+  // point of it, and why it cannot be reached by grinding.
+  streak: 0,
+  bestStreak: 0,
+  goal: null,        // the chosen finish line, resolved at the start of a round
   octavesThisNote: 0,
   lastActivity: 0,
   idleTimer: 0,
@@ -313,12 +314,20 @@ function showEmptyStaff() {
  * job of the app, and it now says so where he is working. Twenty notes is the
  * ordinary one, so a round always has a visible finish.
  */
+/** How many notes of this stage he has ever found correctly. */
+function metCorrectly() {
+  const stats = progress.data.stats;
+  return poolFor(stage).filter((id) => (stats[id]?.correct || 0) > 0).length;
+}
+
 function roundVerdict() {
-  return roundOver({
+  const pool = poolFor(stage);
+  return roundOver(read.goal, {
+    streak: read.streak,
     asked: read.asked,
-    target: ROUND_NOTES,
-    stageReady: readyToAdvance(stage, progress.data.stats).ready,
-    stageWasReady: read.stageWasReady,
+    elapsedMs: performance.now() - read.startedPerf,
+    poolSize: pool.length,
+    metCorrectly: metCorrectly(),
   });
 }
 
@@ -446,6 +455,10 @@ function judge(heardMidi, hz) {
 
   if (verdict !== 'right') {
     read.attempts += 1;
+    // A slip ends the run there and then, even though the note is still up: the
+    // run is of notes read right FIRST time, which is the thing being trained.
+    read.streak = 0;
+    updateSessionCard();
     // Hunting for a note IS practising. Without this the idle timer could close
     // the session while he was still playing, just not finding it.
     read.lastActivity = performance.now();
@@ -476,7 +489,11 @@ function judge(heardMidi, hz) {
   read.lastActivity = performance.now();
   read.recent.push({ clean, ms, octaves: read.octavesThisNote });
   if (read.recent.length > 200) read.recent = read.recent.slice(-200);
-  if (clean) { read.correct += 1; read.times.push(ms); }
+  if (clean) {
+    read.correct += 1; read.times.push(ms);
+    read.streak += 1;
+    if (read.streak > read.bestStreak) read.bestStreak = read.streak;
+  }
   progress.recordAnswer(positionId(read.target.string, read.target.fret), { correct: clean, ms });
 
   // In a melody, the note you just found was reached by a distance, and that
@@ -547,6 +564,43 @@ function stringLabel(string) {
   return noteName(STANDARD_TUNING[string]).replace(/\d+$/, '');
 }
 
+/** m:ss, for the one goal measured in time. */
+function clockOf(ms) {
+  const total = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
+function buildGoalPicker() {
+  const sel = $('goalSelect');
+  if (!sel) return;
+  sel.innerHTML = GOALS.map((g) => `<option value="${g.id}">${esc(goalLabel(g))}</option>`).join('');
+  sel.value = progress.data.goalId || DEFAULT_GOAL_ID;
+  // Changing it mid-round would move the finish line under him; it takes effect
+  // on the next round, and the note explains that rather than leaving him to
+  // wonder why nothing happened.
+  sel.addEventListener('change', () => {
+    progress.setGoal(sel.value);
+    paintGoalNote();
+    if (!read.active) updateSessionCard();
+  });
+  paintGoalNote();
+}
+
+function goalLabel(g) {
+  if (g.kind === 'streak') return t('goal.streak', { n: g.n });
+  if (g.kind === 'notes') return t('goal.notes', { n: g.n });
+  return t(`goal.${g.id}`);
+}
+
+function paintGoalNote() {
+  const note = $('goalNote');
+  if (!note) return;
+  const g = goalById($('goalSelect').value);
+  note.textContent = read.active && read.goal && read.goal.id !== g.id
+    ? t('read.goalNextRound')
+    : t(g.completesStage ? 'read.goalHintStreak' : 'read.goalHintPractice');
+}
+
 function updateSessionCard() {
   $('sessionCard').hidden = read.asked === 0;
 
@@ -559,7 +613,18 @@ function updateSessionCard() {
   $('sSlipsRow').hidden = form.octaveSlips === 0;
   $('sSlips').textContent = String(form.octaveSlips);
 
-  $('sAsked').textContent = `${read.asked} / ${ROUND_NOTES}`;
+  // The row reports whatever the chosen finish line is, so what is counted and
+  // what ends the round are never two different numbers.
+  const goal = read.goal || goalById($('goalSelect').value);
+  const at = goalProgress(goal, {
+    streak: read.streak, asked: read.asked,
+    elapsedMs: read.active ? performance.now() - read.startedPerf : 0,
+  });
+  $('sAskedLabel').textContent = t(goal.kind === 'streak' ? 'read.inARow'
+    : goal.kind === 'time' ? 'read.timeThisRound' : 'read.sessionSoFar');
+  $('sAsked').textContent = goal.kind === 'time'
+    ? `${clockOf(at.current)} / ${clockOf(at.target)}`
+    : (at.target ? `${at.current} / ${at.target}` : String(at.current));
 }
 
 audio.onPitch = (stable, raw) => {
@@ -595,7 +660,8 @@ $('startRead').addEventListener('click', async () => {
   read.active = true;
   holdScreenAwake();
   read.asked = 0; read.correct = 0; read.times = []; read.recent = [];
-  read.stageWasReady = readyToAdvance(stage, progress.data.stats).ready;
+  read.streak = 0; read.bestStreak = 0;
+  read.goal = goalById($('goalSelect').value);
   $('roundActions').hidden = true;
   // A string tuned between sessions must not still be reported as out.
   read.tuning = [];
@@ -620,6 +686,7 @@ $('skipNote').addEventListener('click', () => {
   if (read.target && !read.judged) {
     progress.recordAnswer(positionId(read.target.string, read.target.fret), { correct: false, ms: 8000 });
     read.asked += 1;
+    read.streak = 0;
     read.recent.push({ clean: false, ms: 8000, octaves: read.octavesThisNote });
     read.lastActivity = performance.now();
     updateSessionCard();
@@ -657,6 +724,10 @@ function endReadSession({ idle = false, reason = idle ? 'idle' : 'stopped' } = {
     $('verdictMain').textContent = nxt
       ? t('read.stageComplete', { next: t(`stage.${nxt.id}.title`) })
       : t('progress.finishedPlan');
+  } else if (reason === 'round' && read.goal?.kind === 'streak') {
+    // Reporting "18 of 22 right first time" after a run of twenty describes the
+    // wrong thing. The run is what he was playing for, so the run is the news.
+    $('verdictMain').textContent = t('read.streakDone', { n: read.streak });
   } else {
     $('verdictMain').textContent = reason === 'idle'
       ? t('read.endedIdle')
@@ -1650,6 +1721,7 @@ initI18n().then(() => {
   drawStrip();
   $('bpmOut').textContent = $('bpmRange').value;
   buildStringRow();
+  buildGoalPicker();
   buildBeatRow();
   buildChordPicker();
   paintChord();
@@ -1665,6 +1737,7 @@ initI18n().then(() => {
   drawStrip();
   $('bpmOut').textContent = $('bpmRange').value;
   buildStringRow();
+  buildGoalPicker();
   buildBeatRow();
   buildChordPicker();
   paintChord();

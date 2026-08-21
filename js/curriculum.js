@@ -194,26 +194,3 @@ export function unlockedStages(currentId, stats = {}, stages = STAGES) {
     unlocked: i === 0 || i <= currentIndex || readyToAdvance(stages[i - 1], stats).ready,
   }));
 }
-
-/**
- * Is this round of the reading drill over, and why?
- *
- * The drill had no end. It asked until the player stopped, and the only thing
- * that closed a session was walking away for three minutes. He played 118 notes
- * on a three-note stage he had already mastered - the ring read 100%, the title
- * carried a tick - and asked when it ends. It did not, and the offer to move on
- * was sitting on the Progress tab, which there is no reason to open while
- * practising.
- *
- * Two ends. Finishing the stage is the real one: deciding what to drill next is
- * the whole job, so the moment it knows, it should say so. A fixed number of
- * notes is the ordinary one, so a round always has a visible finish.
- *
- * `stageWasReady` matters. Revisiting a finished stage is normal practice, and
- * without it every such round would stop on its first note.
- */
-export function roundOver({ asked, target, stageReady, stageWasReady }) {
-  if (stageReady && !stageWasReady) return 'stage';
-  if (asked >= target) return 'round';
-  return null;
-}

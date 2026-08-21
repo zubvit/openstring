@@ -15,6 +15,7 @@ const blank = () => ({
   sessions: [],     // { date, ms, asked, correct, stageId }
   rhythm: [],       // { date, bpm, patternId, meanAbsErrorMs, verdict }
   stageId: null,    // where the curriculum has got to
+  goalId: null,     // what the player has chosen as the finish line for a round
   seenWelcome: false,
   lastExport: 0,
   createdAt: Date.now(),
@@ -75,6 +76,11 @@ export class Progress {
   recordRhythm(entry) {
     this.data.rhythm.push({ date: Date.now(), ...entry });
     if (this.data.rhythm.length > 200) this.data.rhythm = this.data.rhythm.slice(-200);
+    this.save();
+  }
+
+  setGoal(goalId) {
+    this.data.goalId = goalId;
     this.save();
   }
 

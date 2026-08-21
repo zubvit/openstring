@@ -85,8 +85,6 @@ t('the drill itself ends, and offers the next stage where the player is', () => 
   // away for three minutes or pressing End, and the offer to move on lived on
   // the Progress tab, which nobody opens mid-practice.
   assert.match(js, /function roundVerdict\(\)/, 'the drill has no end condition');
-  assert.match(js, /const ROUND_NOTES = RECENT_WINDOW/,
-    'the round length must be the same number the card reports on');
 
   // nextQuestion must consult it BEFORE picking another note, or the round
   // always runs one note long.
@@ -102,16 +100,30 @@ t('the drill itself ends, and offers the next stage where the player is', () => 
 });
 
 t('the round decision is made where it can be tested', () => {
-  // The rule itself lives in curriculum.js with real tests over it. What this
-  // file guards is that the app actually asks, and passes the state the rule
-  // needs - a correct rule called with the wrong arguments is still a bug.
+  // The rule lives in js/goals.js with real tests over it. What this file
+  // guards is that the app asks, and hands over the state the rule needs - a
+  // correct rule called with the wrong arguments is still a bug.
   const verdict = /function roundVerdict\(\)\s*\{([\s\S]*?)\n\}/.exec(js);
   assert.ok(verdict, 'roundVerdict has moved');
-  for (const field of ['asked', 'target', 'stageReady', 'stageWasReady']) {
+  for (const field of ['streak', 'asked', 'elapsedMs', 'poolSize', 'metCorrectly']) {
     assert.match(verdict[1], new RegExp(field + ':'), `roundOver called without ${field}`);
   }
-  assert.match(js, /read\.stageWasReady = readyToAdvance\(/,
-    'the round must record whether the stage was already done when it started');
+});
+
+t('the run is broken by every kind of miss, not only a wrong note', () => {
+  // A streak that survived giving up would not be a streak.
+  const wrong = /if \(verdict !== 'right'\) \{([\s\S]*?)\n  \}/.exec(js);
+  assert.ok(wrong, 'the wrong-answer branch has moved');
+  assert.match(wrong[1], /read\.streak = 0/, 'a wrong note leaves the run standing');
+  const skip = /skipNote'\)\.addEventListener\('click'[\s\S]*?\n\}\);/.exec(js);
+  assert.ok(skip, 'the skip handler has moved');
+  assert.match(skip[0], /read\.streak = 0/, "\"Can't find it\" leaves the run standing");
+});
+
+t('the goal is chosen by the player and remembered', () => {
+  assert.match(html, /id="goalSelect"/, 'no way to choose a finish line');
+  assert.match(js, /progress\.setGoal\(/, 'the choice is not saved');
+  assert.match(js, /progress\.data\.goalId \|\| DEFAULT_GOAL_ID/, 'the saved choice is not read back');
 });
 
 console.log(`layout: ${pass} groups passed`);

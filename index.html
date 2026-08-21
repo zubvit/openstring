@@ -109,6 +109,12 @@
       <label class="check"><input type="checkbox" id="readMelody"> <span data-i18n="read.melodyMode">Read a short melody</span></label>
     </div>
 
+    <div class="goal-pick">
+      <label for="goalSelect" data-i18n="read.goalLabel">Finish when</label>
+      <select id="goalSelect"></select>
+      <p class="goal-note" id="goalNote"></p>
+    </div>
+
     <div id="hintHost" class="hint-host" hidden></div>
   </div>
 
@@ -116,7 +122,7 @@
     <div class="row"><span id="sRecentLabel" data-i18n="read.recentRight">Right first time, last 20</span><strong id="sCorrect">0</strong></div>
     <div class="row"><span data-i18n="read.typicalTime">Typical time to find</span><strong id="sSpeed">—</strong></div>
     <div class="row" id="sSlipsRow" hidden><span data-i18n="read.octaveSlips">Right note, wrong string</span><strong id="sSlips">0</strong></div>
-    <div class="row muted small"><span data-i18n="read.sessionSoFar">This session</span><strong id="sAsked">0</strong></div>
+    <div class="row muted small"><span id="sAskedLabel" data-i18n="read.inARow">In a row</span><strong id="sAsked">0 / 20</strong></div>
     <button class="btn small" id="endSession" data-i18n="read.endSession">End session</button>
   </div>
 
