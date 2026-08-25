@@ -280,6 +280,7 @@
   "read.outOfTune": "{name} teli akortsuz geliyor. Kontrol etmek için buraya dokun — akortsuz bir telde çalınan nota başka bir nota olarak duyulur.",
   "read.tryHigher": "Daha tizde. Aramaya devam et.",
   "read.tryLower": "Daha peste. Aramaya devam et.",
+  "read.openString": "Bu, boş {string} teli — doğru tel, ama parmak basılı değil.",
   "read.foundIt": "{note} — buldun.",
   "stage.landmarks.title": "Üç işaret noktası",
   "stage.landmarks.blurb": "Yalnızca üç nota ve üçü de boş tel — basılacak bir şey yok. Sol, anahtarın kıvrımının sardığı ikinci çizgide durur. Si orta çizgidir. Mi en üstteki aralıktır, en yüksek çizginin hemen altında. Bu üçünün yerini öğren, geri kalan her nota en yakınından adımlayarak bulunur.",

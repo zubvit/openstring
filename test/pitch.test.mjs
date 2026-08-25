@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { detectPitch, PitchTracker, rms , AnswerGate } from '../js/pitch.js';
+import { detectPitch, PitchTracker, rms , AnswerGate, Settling } from '../js/pitch.js';
 import { midiToHz, noteName, hzToMidiFloat } from '../js/theory.js';
 
 const SR = 48000;
@@ -246,6 +246,86 @@ t('the tail of the last answer is still ignored even after a fresh pluck', () =>
 t('without the onset rule the gate behaves as it always did', () => {
   const g = new AnswerGate();
   assert.equal(g.accept(60), 60, 'the tuner and anything else are unaffected');
+});
+
+// ------------------------------------------------------------- Settling
+//
+// The bug this exists for, from real playing: target D4 on string 2 fret 3, and
+// the app reported B3 - which is that same string OPEN. The finger had not
+// seated when the string was struck.
+
+const NOW = 1000;   // any clock origin; only differences matter
+
+t('a right answer is never made to wait', () => {
+  const s = new Settling();
+  assert.equal(s.waiting, false);
+  // The caller commits a right answer itself and never parks it, so nothing is
+  // pending and nothing can add lag to the outcome that should feel instant.
+  assert.equal(s.update(62, 293.66, NOW, 62), null, 'nothing was held back');
+});
+
+t('the open string heard first is replaced by the fretted note that follows', () => {
+  const s = new Settling({ windowMs: 200 });
+  s.hold(59, 246.94, NOW);                       // B3: string 2, open
+  assert.equal(s.waiting, true);
+  assert.equal(s.update(59, 246.94, NOW + 30, 62), null, 'still the open pitch');
+  const done = s.update(62, 293.66, NOW + 110, 62);   // D4: the finger seated
+  assert.equal(done.midi, 62, 'judged on where the note settled');
+  assert.equal(s.waiting, false, 'and the wait is over at once');
+});
+
+t('a wrong note that stays wrong is still judged wrong', () => {
+  const s = new Settling({ windowMs: 200 });
+  s.hold(59, 246.94, NOW);
+  assert.equal(s.update(59, 246.94, NOW + 100, 62), null);
+  const done = s.update(59, 246.94, NOW + 210, 62);
+  assert.equal(done.midi, 59, 'the window closed on it');
+});
+
+t('silence does not restart the wait, it leaves the last reading standing', () => {
+  const s = new Settling({ windowMs: 200 });
+  s.hold(59, 246.94, NOW);
+  assert.equal(s.update(null, null, NOW + 50, 62), null);
+  assert.equal(s.update(null, null, NOW + 120, 62), null);
+  const done = s.update(null, null, NOW + 250, 62);
+  assert.equal(done.midi, 59, 'a note plucked and damped is a real answer');
+});
+
+t('the window is anchored to the attack, so a wandering note still gets decided', () => {
+  const s = new Settling({ windowMs: 200 });
+  s.hold(59, 246.94, NOW);
+  // Each frame is a different wrong pitch. If the clock restarted on every new
+  // reading this would never resolve and the question would hang.
+  for (let ms = 20; ms < 200; ms += 20) {
+    assert.equal(s.update(57 + (ms / 20) % 3, 220, NOW + ms, 62), null);
+  }
+  assert.notEqual(s.update(58, 233, NOW + 220, 62), null, 'decided on time');
+});
+
+t('a settled reading is handed over exactly once', () => {
+  const s = new Settling({ windowMs: 200 });
+  s.hold(59, 246.94, NOW);
+  assert.notEqual(s.update(59, 246.94, NOW + 300, 62), null);
+  assert.equal(s.update(59, 246.94, NOW + 400, 62), null, 'nothing pending any more');
+});
+
+t('clearing drops a note left half-heard', () => {
+  const s = new Settling();
+  s.hold(59, 246.94, NOW);
+  s.clear();
+  assert.equal(s.waiting, false);
+  assert.equal(s.update(59, 246.94, NOW + 999, 62), null);
+});
+
+// The gate has to be told, or the string ringing on answers the question again.
+t('take() marks a reading used without accepting it', () => {
+  const g = new AnswerGate({ requireOnset: true });
+  g.arm();
+  assert.equal(g.accept(59), 59, 'the open string was heard first');
+  g.take(62);                                  // the settler decided on D4
+  assert.equal(g.accept(62), null, 'D4 ringing on is not a second answer');
+  g.arm();
+  assert.equal(g.accept(62), 62, 'but striking it again is');
 });
 
 console.log(`pitch: ${pass} groups passed`);

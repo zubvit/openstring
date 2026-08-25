@@ -280,6 +280,7 @@
   "read.outOfTune": "The {name} string sounds out of tune. Tap here to check it — a note played on a string that is out is heard as a different note.",
   "read.tryHigher": "It is higher. Keep looking.",
   "read.tryLower": "It is lower. Keep looking.",
+  "read.openString": "That is the {string} string open — right string, no finger down.",
   "read.foundIt": "{note} — found it.",
   "stage.landmarks.title": "Three landmarks",
   "stage.landmarks.blurb": "Three notes only, and all three are open strings — nothing to finger. G sits on the second line, the one the clef curls around. B is the middle line. E is the top space, just under the highest line. Learn where these three are and every other note can be found by stepping from the nearest one.",

@@ -228,6 +228,19 @@ export class AnswerGate {
    * Feed one stable reading, or null for silence.
    * Returns the note to judge, or null when there is nothing new to judge.
    */
+  /**
+   * Take `midi` as answered without it having gone through accept().
+   *
+   * The settler below pulls a reading out of the stream and decides on it a
+   * moment later. The gate still has to know that reading was used, or the
+   * string ringing on would answer the same question all over again.
+   */
+  take(midi) {
+    this.counted = midi;
+    this.muted = null;
+    this.armed = false;
+  }
+
   accept(midi) {
     if (midi == null) {
       // Silence means the string stopped: whatever was ringing is gone, and the
@@ -247,5 +260,73 @@ export class AnswerGate {
     // A different note means the old one is over, whether or not we heard a gap.
     this.muted = null;
     return midi;
+  }
+}
+
+/**
+ * Hold a WRONG answer back for a moment, in case the note is still arriving.
+ *
+ * A plucked string does not reach its pitch at the instant it is struck. While
+ * the finger is still seating — and on a beginner's nylon strings it usually
+ * is, for a tenth of a second — the string sounds at its OPEN pitch and only
+ * then jumps up to the fretted one. The tracker calls that first pitch stable,
+ * because for fifty milliseconds it genuinely is, and the answer gate then
+ * refuses the real note that follows because no new string was struck. One
+ * pluck, one answer, and the answer was whatever happened first.
+ *
+ * That is not a rare edge. Every wrong reading reported from real playing so
+ * far has been exactly an open string: two of them strings next to the one
+ * being fretted, one of them the very string being fretted.
+ *
+ * So a wrong reading is provisional. It waits out a short window and the note
+ * is judged on where it SETTLED. A right reading never waits — there is nothing
+ * to reconsider, and the drill stays as quick as it feels.
+ *
+ * The window has to sit above how long a finger takes to seat and below how
+ * fast anyone can reposition and pluck again on purpose. Seating is tens of
+ * milliseconds; a deliberate second attempt while sight-reading is a third of a
+ * second at the very best. 200 ms is between them with room either side, and
+ * the cost of being wrong is only that a mistake corrected within a fifth of a
+ * second is forgiven.
+ */
+export class Settling {
+  constructor({ windowMs = 200 } = {}) {
+    this.windowMs = windowMs;
+    this.pending = null;   // { midi, hz, until }
+  }
+
+  get waiting() { return this.pending !== null; }
+
+  clear() { this.pending = null; }
+
+  /** Park a reading that would be judged wrong. */
+  hold(midi, hz, now) {
+    this.pending = { midi, hz, until: now + this.windowMs };
+  }
+
+  /**
+   * One more frame of the note that is settling.
+   *
+   * `midi`/`hz` are the current stable reading, or null for nothing steady —
+   * silence does not restart anything, it just leaves the last reading standing.
+   * Returns { midi, hz } once the note has settled, or null to keep waiting.
+   */
+  update(midi, hz, now, target = null) {
+    if (!this.pending) return null;
+    if (midi != null) {
+      // The latest steady pitch wins. The window is anchored to the attack, not
+      // to this reading, so a note that keeps moving still gets decided on time.
+      this.pending.midi = midi;
+      this.pending.hz = hz;
+    }
+    // Arriving at the right note ends the wait immediately. Nothing that comes
+    // after it could change the verdict, and waiting would only add lag to the
+    // one outcome that should feel instant.
+    if (target != null && this.pending.midi === target) {
+      const out = this.pending; this.pending = null; return { midi: out.midi, hz: out.hz };
+    }
+    if (now < this.pending.until) return null;
+    const out = this.pending; this.pending = null;
+    return { midi: out.midi, hz: out.hz };
   }
 }

@@ -280,6 +280,7 @@
   "read.outOfTune": "La corda {name} suona scordata. Tocca qui per controllarla — una nota su una corda scordata si sente come un'altra nota.",
   "read.tryHigher": "È più in alto. Continua a cercare.",
   "read.tryLower": "È più in basso. Continua a cercare.",
+  "read.openString": "È la corda {string} a vuoto: corda giusta, nessun dito premuto.",
   "read.foundIt": "{note} — trovata.",
   "stage.landmarks.title": "Tre punti di riferimento",
   "stage.landmarks.blurb": "Solo tre note, e tutte e tre sono corde a vuoto — niente da premere. Il sol sta sulla seconda linea, quella attorno a cui si avvolge la chiave. Il si è la linea centrale. Il mi è lo spazio in alto, appena sotto la linea più alta. Impara dove stanno queste tre e ogni altra nota si trova partendo dalla più vicina.",

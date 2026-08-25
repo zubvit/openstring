@@ -280,6 +280,7 @@
   "read.outOfTune": "La corde {name} sonne faux. Touche ici pour la vérifier — une note jouée sur une corde désaccordée s'entend comme une autre note.",
   "read.tryHigher": "Elle est plus haut. Continue à chercher.",
   "read.tryLower": "Elle est plus bas. Continue à chercher.",
+  "read.openString": "C'est la corde {string} à vide : bonne corde, sans doigt posé.",
   "read.foundIt": "{note} — trouvée.",
   "stage.landmarks.title": "Trois repères",
   "stage.landmarks.blurb": "Trois notes seulement, et toutes trois à vide — rien à presser. Le sol est sur la deuxième ligne, celle qu'entoure la boucle de la clé. Le si est la ligne du milieu. Le mi est l'interligne du haut, juste sous la ligne la plus haute. Sache où sont ces trois-là et toute autre note se trouve en partant de la plus proche.",

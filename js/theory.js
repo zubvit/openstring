@@ -134,6 +134,17 @@ export function notesInRegion({ strings = [1, 2, 3], minFret = 0, maxFret = 3, n
   return out;
 }
 
+/**
+ * The fret on `string` that would sound `midi`, or null if that pitch is not on
+ * that string at all. Fret 0 is the open string — the answer to "my finger is
+ * down and it still sounds like nothing is".
+ */
+export function fretOn(midi, string, { maxFret = 12, tuning = STANDARD_TUNING } = {}) {
+  if (tuning[string] == null || midi == null) return null;
+  const fret = midi - tuning[string];
+  return fret >= 0 && fret <= maxFret ? fret : null;
+}
+
 /** Stable id for a fretboard position — the key progress and scheduling hang off. */
 export function positionId(string, fret) {
   return `s${string}f${fret}`;

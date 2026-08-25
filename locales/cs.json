@@ -286,6 +286,7 @@
   "read.outOfTune": "Struna {name} zní rozladěně. Klepnutím ji zkontrolujete — tón zahraný na rozladěné struně se ozve jako jiný tón.",
   "read.tryHigher": "Je výš. Hledej dál.",
   "read.tryLower": "Je níž. Hledej dál.",
+  "read.openString": "To je prázdná struna {string} — správná struna, ale prst netiskne.",
   "read.foundIt": "{note} — máš to.",
   "stage.landmarks.title": "Tři orientační body",
   "stage.landmarks.blurb": "Jen tři tóny, a všechny tři jsou prázdné struny — nic se nemačká. G leží na druhé lince, té, kterou klíč obtáčí. H je prostřední linka. E je horní mezera, hned pod nejvyšší linkou. Nauč se, kde jsou tyhle tři, a každý další tón najdeš krokem od toho nejbližšího.",

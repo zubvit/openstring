@@ -280,6 +280,7 @@
   "read.outOfTune": "De {name}-snaar klinkt ontstemd. Tik hier om hem te controleren — een noot op een ontstemde snaar wordt als een andere noot gehoord.",
   "read.tryHigher": "Hij ligt hoger. Blijf zoeken.",
   "read.tryLower": "Hij ligt lager. Blijf zoeken.",
+  "read.openString": "Dat is de losse snaar {string} — juiste snaar, geen vinger erop.",
   "read.foundIt": "{note} — gevonden.",
   "stage.landmarks.title": "Drie herkenningspunten",
   "stage.landmarks.blurb": "Maar drie noten, en alle drie losse snaren — niets te grijpen. De G ligt op de tweede lijn, de lijn waar de sleutel omheen krult. De B is de middelste lijn. De E is de bovenste tussenruimte, net onder de hoogste lijn. Weet waar deze drie liggen en elke andere noot vind je door vanaf de dichtstbijzijnde te stappen.",

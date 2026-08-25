@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {
   midiToHz, hzToMidiFloat, centsOff, centsFromTarget, spell, noteName, pitchClassName, isNatural,
   soundingAt, writtenAt, positionsFor, notesInRegion, STANDARD_TUNING,
- compareNote, } from '../js/theory.js';
+ compareNote, fretOn, } from '../js/theory.js';
 
 let n = 0;
 const t = (name, fn) => { fn(); n++; };
@@ -131,6 +131,33 @@ t('the verdict never names the note that was wanted', () => {
   const r = compareNote(64, 60);
   assert.deepEqual(Object.keys(r).sort(), ['direction', 'verdict']);
   assert.ok(!Object.values(r).includes(64));
+});
+
+// Every wrong reading reported from real playing so far turned out to be an
+// open string, which is what fretOn() is for: naming that, rather than saying
+// "higher" to someone already on the right string.
+t('fretOn finds the fret a pitch would need on a given string', () => {
+  assert.equal(fretOn(soundingAt(2, 3), 2), 3, 'D4 is fret 3 of the B string');
+  assert.equal(fretOn(STANDARD_TUNING[2], 2), 0, 'and B3 is that string open');
+  assert.equal(fretOn(STANDARD_TUNING[2], 3), 4, 'the same B lives on string 3 too');
+});
+
+t('fretOn refuses pitches that are not on the string at all', () => {
+  assert.equal(fretOn(STANDARD_TUNING[2] - 1, 2), null, 'below the open string');
+  assert.equal(fretOn(STANDARD_TUNING[2] + 20, 2, { maxFret: 12 }), null, 'past the neck');
+  assert.equal(fretOn(null, 2), null);
+  assert.equal(fretOn(60, 9), null, 'there is no ninth string');
+});
+
+t('the readings he actually reported are open strings, not near misses', () => {
+  // Target A3 = string 3 fret 2; the app reported D3 and A2.
+  assert.equal(fretOn(50, 4), 0, 'D3 is the open D string');
+  assert.equal(fretOn(45, 5), 0, 'A2 is the open A string');
+  // Target D4 = string 2 fret 3; the app reported B3.
+  assert.equal(fretOn(59, 2), 0, 'B3 is the open string he was fretting');
+  // And that last one is not an octave or any other simple fraction of the
+  // target, which is what ruled out the detector-error explanation.
+  assert.notEqual((62 - 59) % 12, 0, 'B3 is not an octave of D4');
 });
 
 console.log(`theory: ${n} groups passed`);

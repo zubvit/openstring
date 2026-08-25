@@ -283,6 +283,7 @@
   "read.outOfTune": "Coarda {name} sună dezacordat. Atinge aici ca s-o verifici — o notă pe o coardă dezacordată se aude ca altă notă.",
   "read.tryHigher": "E mai sus. Caută mai departe.",
   "read.tryLower": "E mai jos. Caută mai departe.",
+  "read.openString": "Aceasta este coarda {string} liberă: coarda corectă, fără deget apăsat.",
   "read.foundIt": "{note} — ai găsit-o.",
   "stage.landmarks.title": "Trei repere",
   "stage.landmarks.blurb": "Doar trei note, și toate trei sunt corzi libere — nimic de apăsat. Sol stă pe a doua linie, cea în jurul căreia se încolăcește cheia. Si este linia din mijloc. Mi este spațiul de sus, chiar sub linia cea mai de sus. Învață unde sunt acestea trei și orice altă notă se găsește pornind de la cea mai apropiată.",

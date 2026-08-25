@@ -280,6 +280,7 @@
   "read.outOfTune": "A corda {name} soa desafinada. Toque aqui para a verificar — uma nota numa corda desafinada ouve-se como outra nota.",
   "read.tryHigher": "Está mais acima. Continua a procurar.",
   "read.tryLower": "Está mais abaixo. Continua a procurar.",
+  "read.openString": "Essa é a corda {string} solta: corda certa, sem dedo pressionado.",
   "read.foundIt": "{note} — encontraste.",
   "stage.landmarks.title": "Três referências",
   "stage.landmarks.blurb": "Só três notas, e as três são cordas soltas — nada para pisar. O sol fica na segunda linha, aquela que a clave envolve. O si é a linha do meio. O mi é o espaço de cima, mesmo por baixo da linha mais alta. Sabe onde estão estas três e qualquer outra nota se encontra avançando a partir da mais próxima.",

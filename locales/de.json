@@ -280,6 +280,7 @@
   "read.outOfTune": "Die {name}-Saite klingt verstimmt. Zum Prüfen hier tippen — ein Ton auf einer verstimmten Saite wird als anderer Ton gehört.",
   "read.tryHigher": "Er liegt höher. Such weiter.",
   "read.tryLower": "Er liegt tiefer. Such weiter.",
+  "read.openString": "Das ist die leere Saite {string} — richtige Saite, kein Finger gegriffen.",
   "read.foundIt": "{note} — gefunden.",
   "stage.landmarks.title": "Drei Orientierungspunkte",
   "stage.landmarks.blurb": "Nur drei Töne, und alle drei sind Leersaiten — nichts zu greifen. Das G sitzt auf der zweiten Linie, der Linie, um die sich der Schlüssel windet. Das H ist die Mittellinie. Das E ist der oberste Zwischenraum, direkt unter der höchsten Linie. Wenn du diese drei kennst, findest du jeden anderen Ton, indem du vom nächstgelegenen aus weitergehst.",

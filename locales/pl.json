@@ -286,6 +286,7 @@
   "read.outOfTune": "Struna {name} brzmi rozstrojona. Dotknij, aby ją sprawdzić — dźwięk zagrany na rozstrojonej strunie słychać jako inny dźwięk.",
   "read.tryHigher": "Jest wyżej. Szukaj dalej.",
   "read.tryLower": "Jest niżej. Szukaj dalej.",
+  "read.openString": "To pusta struna {string} — właściwa struna, ale palec nie dociska.",
   "read.foundIt": "{note} — znalezione.",
   "stage.landmarks.title": "Trzy punkty orientacyjne",
   "stage.landmarks.blurb": "Tylko trzy dźwięki, i wszystkie trzy to puste struny — nic nie trzeba przyciskać. G leży na drugiej linii, tej, którą owija klucz. H to linia środkowa. E to górne pole, tuż pod najwyższą linią. Naucz się, gdzie są te trzy, a każdy inny dźwięk znajdziesz, idąc od najbliższego z nich.",

@@ -277,6 +277,7 @@
   "read.outOfTune": "{name} 弦听起来走音了。点这里检查——走音的弦上弹出的音会被听成另一个音。",
   "read.tryHigher": "它更高。继续找。",
   "read.tryLower": "它更低。继续找。",
+  "read.openString": "这是 {string} 弦的空弦——弦选对了，但手指没有按下去。",
   "read.foundIt": "{note} — 找到了。",
   "stage.landmarks.title": "三个坐标音",
   "stage.landmarks.blurb": "只有三个音，而且三个都是空弦，不用按。G 在第二线上，也就是谱号卷曲缠绕的那条线。B 是中间线。E 在最上面的间里，就在最高那条线的下面。记住这三个的位置，其他任何音都可以从最近的一个数过去找到。",

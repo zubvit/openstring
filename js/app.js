@@ -3,7 +3,7 @@
 import { AudioEngine, Metronome, outputContext, playChord } from './audio.js';
 import { ALL_KEYS, removeStore } from './stores.js';
 import { blobWeight } from './sync.js';
-import { AnswerGate } from './pitch.js';
+import { AnswerGate, Settling } from './pitch.js';
 import { Tuner, tapTempo, readingView, STRING_ORDER } from './tuner.js';
 import { ROOTS, QUALITY_ORDER, shapesFor, shapeNotes, chordToneNames, chordName } from './chords.js';
 import { targetFor, ChordAttempt, ChordProgress, DRILL_POOL } from './chord-drill.js';
@@ -11,7 +11,7 @@ import { buildMelody, IntervalProgress, intervalKey } from './intervals.js';
 import { STANDARD_TUNING } from './theory.js';
 import {
   soundingAt, writtenAt, hzToMidiFloat, centsFromTarget, noteName, pitchClassName, compareNote,
-  positionId, parsePositionId, positionsFor, midiToHz,
+  positionId, parsePositionId, positionsFor, midiToHz, fretOn,
 } from './theory.js';
 import { renderNote, renderPhrase, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
 import { pickNext, isFluent, emptyStat, recentForm, tuningDrift } from './srs.js';
@@ -210,6 +210,8 @@ const read = {
   judged: false,      // resolved: found it, or skipped
   attempts: 0,        // wrong tries at THIS note
   gate: new AnswerGate({ requireOnset: true }),   // an answer is a string being struck
+  // A wrong reading is provisional until the note stops moving - see Settling.
+  settle: new Settling(),
   lastHeard: null,          // the last pitch judged, right or wrong - it is still sounding
   // A question is a phrase. In the ordinary drill it is one note long; with
   // melodies switched on it is a few, read left to right. Everything below
@@ -368,6 +370,7 @@ function nextQuestion() {
   // only the correct ones left every wrong attempt free to decay into the next
   // question and be counted against it a second time.
   read.gate.reset(read.lastHeard);
+  read.settle.clear();
   audio.resetTracking();
 
   setTargetFromStep();
@@ -427,6 +430,8 @@ $('hearNote').addEventListener('click', () => {
   // the note he needs to play is exactly the note he just asked to hear.
   const seconds = playChord([read.target.sounding], { holdS: 1.1 });
   read.graceUntil = performance.now() + seconds * 1000 + 150;
+  // Anything half-heard when he asked is not going to be judged after this.
+  read.settle.clear();
 });
 
 // Tapping the out-of-tune notice goes where the fix is, with the string already
@@ -486,7 +491,14 @@ function judge(heardMidi, hz) {
     main.textContent = t(verdict === 'octave' ? 'read.rightNoteWrongString' : 'read.notThatOne',
       { heard: noteName(heardMidi) });
     main.className = 'verdict-main bad';
-    sub.textContent = t(direction === 'higher' ? 'read.tryHigher' : 'read.tryLower');
+    // "Higher" is no use to someone who is on the right string already and
+    // cannot see why it is refused. If what came out is that string's OPEN
+    // pitch, say so - that is a fact about the fretboard, not a guess about his
+    // hands, and it is the one thing that unsticks him.
+    const open = read.target.fret > 0 && fretOn(heardMidi, read.target.string) === 0;
+    sub.textContent = open
+      ? t('read.openString', { string: stringLabel(read.target.string) })
+      : t(direction === 'higher' ? 'read.tryHigher' : 'read.tryLower');
     drawQuestion();
     // Put the mark back: the question is still standing.
     setTimeout(() => {
@@ -664,12 +676,29 @@ audio.onPitch = (stable, raw) => {
   }
   if (!read.active || read.judged) return;
   if (performance.now() < read.graceUntil) return;
+  const now = performance.now();
+  const steady = stable ? Math.round(hzToMidiFloat(stable.hz)) : null;
+
+  // A note that is still arriving is not an answer yet. While one is settling
+  // the gate is out of the way entirely: the whole point is that a SECOND
+  // pitch from the SAME pluck must be allowed to replace the first, and the
+  // gate's job is to refuse exactly that.
+  if (read.settle.waiting) {
+    const done = read.settle.update(steady, stable ? stable.hz : null, now, read.target.sounding);
+    if (!done) return;
+    read.gate.take(done.midi);
+    judge(done.midi, done.hz);
+    return;
+  }
+
   // The gate does two jobs: it drops the tail of the note just answered, which
   // otherwise arrives as a wrong answer to the next question before a string is
   // touched, and it counts a held note once rather than sixty times a second.
-  const heard = read.gate.accept(stable ? Math.round(hzToMidiFloat(stable.hz)) : null);
+  const heard = read.gate.accept(steady);
   if (heard == null) return;
-  judge(heard, stable.hz);
+  // Right answers commit at once; only a miss is worth a second look.
+  if (heard === read.target.sounding) { judge(heard, stable.hz); return; }
+  read.settle.hold(heard, stable.hz, now);
 };
 
 audio.onLevel = (r) => {
@@ -696,6 +725,7 @@ $('startRead').addEventListener('click', async () => {
   // over would make the first question ignore it if it came up again.
   read.lastHeard = null;
   read.gate.reset(null);
+  read.settle.clear();
   read.startedAt = Date.now();
   read.startedPerf = performance.now();
   read.stageAtStart = stage.id;
@@ -740,6 +770,7 @@ function endReadSession({ idle = false, reason = idle ? 'idle' : 'stopped' } = {
   }
   read.active = false;
   read.target = null;
+  read.settle.clear();
   read.phrase = [];
   read.melody = null;
   read.states = {};
