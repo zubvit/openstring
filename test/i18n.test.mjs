@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { STAGES } from '../js/curriculum.js';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const load = (code) => JSON.parse(fs.readFileSync(path.join(ROOT, 'locales', `${code}.json`), 'utf8'));
@@ -112,7 +113,10 @@ t('every key referenced in the code exists in English', () => {
 
 t('the dynamic key families are complete', () => {
   // Built as t(`stage.${id}.title`) etc, so a missing one only shows at runtime.
-  const stageIds = ['landmarks', 'open-top', 'open-bottom', 'open-all', 'open-chromatic', 'position-v', 'first-twelve'];
+  // Read from the plan itself. Hardcoding the list meant that adding a stage
+  // passed this test and then printed a raw key name on the learner's screen,
+  // and removing one left the test demanding wording for a stage that was gone.
+  const stageIds = STAGES.map((s) => s.id);
   const layers = ['notes', 'timing', 'evenness', 'dynamics', 'colour', 'legato'];
   const patterns = ['quarters', 'half-quarters', 'eighths', 'with-rests', 'dotted', 'syncopated', 'sixteenths'];
   const missing = [];

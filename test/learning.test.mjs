@@ -147,9 +147,44 @@ t('every landmark is inside the staff, with no ledger lines to count', () => {
   assert.equal(place(1).gaps, 3.5, 'half a gap above the fourth line');
 });
 
-t('the octave stage follows, and it contains the landmarks', () => {
-  const pool = poolFor(STAGES[1]);
-  assert.equal(STAGES[1].id, 'open-top');
+// The complaint that produced this test, in his words: "plucking 3 strings was
+// ok. then I suddenly jump to finding a few random positions... it is not
+// incremental, does not build on top of those 3."
+//
+// He was right. The stage after the landmarks used to open eight positions at
+// once, five of them never seen. No method book deals out five: Werner adds ONE
+// fingered note after the open strings, Noad takes a string pair, Shearer adds
+// one to the third string and then two to the second. So the ladder is a tested
+// property now, not a matter of taste - a stage may not deal out a handful of
+// strangers, and it may not take back anything already learned.
+const OPEN_POSITION = ['landmarks', 'string-3', 'strings-23', 'open-top',
+                       'open-bass', 'open-bottom'];
+
+t('the beginner ladder adds a few notes at a time and never takes any back', () => {
+  let prev = [];
+  for (const id of OPEN_POSITION) {
+    const stage = STAGES.find((x) => x.id === id);
+    assert.ok(stage, `${id} is in the plan`);
+    const pool = poolFor(stage);
+    const fresh = pool.filter((x) => !prev.includes(x));
+    assert.ok(fresh.length <= 6, `${id} deals out ${fresh.length} new notes at once`);
+    for (const old of prev) {
+      assert.ok(pool.includes(old), `${id} dropped ${old}, which was already learned`);
+    }
+    prev = pool;
+  }
+});
+
+t('the step straight after the landmarks is a single new note', () => {
+  const before = poolFor(STAGES[0]);
+  const after = poolFor(STAGES[1]);
+  assert.equal(STAGES[1].id, 'string-3');
+  const fresh = after.filter((x) => !before.includes(x));
+  assert.deepEqual(fresh, ['s3f2'], 'A on the third string, and nothing else');
+});
+
+t('the octave stage still contains the landmarks', () => {
+  const pool = poolFor(STAGES.find((x) => x.id === 'open-top'));
   assert.equal(pool.length, 8);
   assert.ok(pool.includes('s1f0'));  // open high E
   assert.ok(pool.includes('s3f0'));  // open G
@@ -162,7 +197,7 @@ t('the octave stage follows, and it contains the landmarks', () => {
 t('advancement requires fluency across the whole region, not a lucky run', () => {
   // The eight-position octave stage: its arithmetic needs a region big enough
   // for one weak spot to be outvoted.
-  const stage = STAGES[1];
+  const stage = STAGES.find((x) => x.id === 'open-top');
   const pool = poolFor(stage);
   const stats = {};
 
@@ -196,7 +231,8 @@ t('the landmark stage needs all three, because there are only three', () => {
 });
 
 t('stages chain and then stop', () => {
-  assert.equal(nextStage('open-top').id, 'open-bottom');
+  assert.equal(nextStage('open-top').id, 'open-bass');
+  assert.equal(nextStage('landmarks').id, 'string-3');
   assert.equal(nextStage(STAGES[STAGES.length - 1].id), null);
 });
 
@@ -384,7 +420,7 @@ t('you can always go back to a stage you have already been at', () => {
 });
 
 t('going back does not re-lock what you had earned', () => {
-  const stats = finish(finish({}, STAGES[0]), STAGES[1]);
+  const stats = finish(finish({}, STAGES[0]), STAGES[1]);  // landmarks, then string-3
   const rows = unlockedStages(STAGES[0].id, stats);
   assert.equal(rows[1].unlocked, true, 'stage two is still open');
   assert.equal(rows[2].unlocked, true, 'and so is the one its work earned');

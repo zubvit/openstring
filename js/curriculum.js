@@ -40,28 +40,70 @@ export const STAGES = [
     advice: 'Do not spell your way up from the bottom line. Look at where the note sits and ask first whether it is one of these three — that recognition, not counting, is what reading is.',
   },
   {
+    // ONE new note.
+    //
+    // The stage that used to sit here opened the whole top of the neck at once:
+    // eight positions, five of them never seen before. That is not a step, it
+    // is a cliff, and it is the opposite of what every method book does. Werner
+    // adds a single fingered note after the open strings, Noad takes the first
+    // and second strings alone, Shearer adds one note to the third string and
+    // then two to the second. Nobody deals out five.
+    //
+    // The third string goes first because its shape is the odd one - open then
+    // second fret - where the first and second strings share a shape between
+    // them. Learning the exception on its own leaves the pair to be learned as
+    // one thing, which is what the next two stages do.
+    id: 'string-3',
+    title: 'The third string',
+    blurb: 'One new note. G is already yours — the open third string, the first of your landmarks. A sits two frets along the same string, and that is the whole stage.',
+    region: { strings: [3], minFret: 0, maxFret: 3, naturalsOnly: true },
+    builds: true,
+    rhythm: ['quarters'],
+    advice: 'A is the next letter up from G, so on the staff it sits in the space directly above the line G lives on. One step up the page, two frets along the string.',
+  },
+  {
+    id: 'strings-23',
+    title: 'Second and third strings',
+    blurb: 'Two new notes, C and D, both on the second string — B there is already a landmark. Five notes now, across two strings.',
+    region: { strings: [2, 3], minFret: 0, maxFret: 3, naturalsOnly: true },
+    builds: true,
+    rhythm: ['quarters', 'half-quarters'],
+    advice: 'Watch the shape. On the second string the notes fall on the open string, the first fret and the third. The first string uses exactly the same shape, so learning it here makes the next stage half free.',
+  },
+  {
     id: 'open-top',
     title: 'Open position, top three strings',
-    blurb: 'E, B and G strings, first three frets, natural notes only. This is exactly one octave — G up to G — with nothing left over. Your three landmarks are in here; the new notes are the ones a step or a skip away from them.',
+    blurb: 'Two last notes: F and G on the first string — E there is already a landmark. The first string repeats the shape you just learned on the second: open, first fret, third fret. That completes an octave, G up to G, with nothing left over.',
     region: { strings: [1, 2, 3], minFret: 0, maxFret: 3, naturalsOnly: true },
+    builds: true,
     rhythm: ['quarters', 'half-quarters'],
     advice: 'Say each note name out loud as you play it. Out loud matters — it forces the name and the place to arrive together. When a note is unfamiliar, find the landmark nearest it and step from there.',
   },
   {
-    id: 'open-bottom',
-    title: 'Open position, bottom three strings',
-    blurb: 'D, A and low E strings, first three frets, naturals. The bass half of open position, learned the same way.',
-    region: { strings: [4, 5, 6], minFret: 0, maxFret: 3, naturalsOnly: true },
-    rhythm: ['quarters', 'half-quarters', 'eighths'],
-    advice: 'These notes sit low on the staff and need ledger lines. Expect to be slower here than on the top strings at first.',
+    // The bass half opens the same way the top half did, and for the same
+    // reason: three open strings, no fingers, nothing that can be fumbled.
+    // Without this the bass arrived as nine notes at once - the identical
+    // cliff, one stage later.
+    id: 'open-bass',
+    title: 'The three bass strings, open',
+    blurb: 'Three notes again, and again nothing to finger: the open D, A and low E. They sit below the staff on ledger lines, which is the only thing that is new about them.',
+    region: { strings: [4, 5, 6], minFret: 0, maxFret: 0, naturalsOnly: true },
+    builds: true,
+    rhythm: ['quarters'],
+    advice: 'Ledger lines are just the staff continuing past its own edge. Count down from the bottom line rather than trying to recognise them whole.',
   },
   {
-    id: 'open-all',
-    title: 'All six strings, open position',
-    blurb: 'The whole of open position, naturals only. The two halves you learned separately, now mixed.',
-    region: { strings: [1, 2, 3, 4, 5, 6], minFret: 0, maxFret: 3, naturalsOnly: true },
-    rhythm: ['quarters', 'eighths', 'with-rests'],
-    advice: 'Mixing is harder than either half alone. If a note is slow, it is usually the string you are unsure of, not the pitch.',
+    // This used to be followed by an "all six strings" stage whose whole point
+    // was mixing the two halves back together. Now that every stage keeps what
+    // came before, they were never apart, and that stage had nothing left to
+    // say - so this one IS the whole of open position.
+    id: 'open-bottom',
+    title: 'Open position, bottom three strings',
+    blurb: 'The frets on the bass strings now: six new notes joining the three open ones you have. That is the whole of open position, all six strings, naturals only.',
+    region: { strings: [4, 5, 6], minFret: 0, maxFret: 3, naturalsOnly: true },
+    builds: true,
+    rhythm: ['quarters', 'half-quarters', 'eighths'],
+    advice: 'These notes sit low on the staff and need ledger lines. Expect to be slower here than on the top strings at first.',
   },
   {
     id: 'open-chromatic',
@@ -89,14 +131,35 @@ export const STAGES = [
   },
 ];
 
-/** Every fretboard position a stage can ask about. */
-export function poolFor(stage) {
-  return notesInRegion(stage.region).map((n) => positionId(n.string, n.fret));
+/**
+ * Full note records for a stage: its rectangle of the neck, and - when the
+ * stage `builds` - everything the stages before it taught.
+ *
+ * Reading is cumulative, and a drill that quietly drops what you already know
+ * reads as going backwards. It also loses the mixing: practising a new note
+ * among old ones is harder in the moment and remembered better afterwards,
+ * which is why the plan is one growing pool rather than a series of separate
+ * boxes. The flag is per stage because the jump out of open position is a
+ * genuine change of subject, not another handful of notes.
+ */
+export function notesFor(stage) {
+  const notes = notesInRegion(stage.region);
+  if (!stage.builds) return notes;
+  const i = STAGES.findIndex((s) => s.id === stage.id);
+  if (i <= 0) return notes;
+  const seen = new Set(notes.map((n) => positionId(n.string, n.fret)));
+  for (const n of notesFor(STAGES[i - 1])) {
+    const id = positionId(n.string, n.fret);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    notes.push(n);
+  }
+  return notes;
 }
 
-/** Full note records (with pitches) for a stage. */
-export function notesFor(stage) {
-  return notesInRegion(stage.region);
+/** Every fretboard position a stage can ask about. */
+export function poolFor(stage) {
+  return notesFor(stage).map((n) => positionId(n.string, n.fret));
 }
 
 export function stageById(id) {
