@@ -20,7 +20,7 @@ import {
   pickChunk, gradeChunk, LAYERS,
 } from './practice.js';
 import { renderPhrase } from './staff.js';
-import { Metronome, playChord } from './audio.js';
+import { Metronome, playChord, outputContext } from './audio.js';
 import { compileTune, compileAccompaniment } from './tune.js';
 import { scheduleAccompaniment, isAccompaniment } from './accompany.js';
 import { PIECES, pieceSpec } from './library.js';
@@ -230,7 +230,7 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     if (!has) return;
 
     $('pieceTitle').textContent = st.piece.title;
-    const bits = [st.spec ? t(`library.source.${sourceKind(st.spec)}`, { source: st.spec.source }) : st.piece.composer,
+    const bits = [st.spec ? sourceLine(st.spec) : st.piece.composer,
       t('piece.noteCount', { count: st.piece.noteCount }),
       t('piece.barCount', { count: st.chunks.filter((c) => c.kind === 'chunk').length })];
     $('pieceMeta').textContent = bits.filter(Boolean).join(' · ');
@@ -249,10 +249,16 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     $('dropPiece').hidden = st.id !== IMPORTED;
   }
 
-  function sourceKind(spec) {
-    if (spec.source === 'trad') return 'trad';
-    if (spec.source === 'original') return 'original';
-    return 'composer';
+  /**
+   * The credit line. `source` carries the licence evidence - "public-domain:
+   * Ludwig van Beethoven, d.1827" - because a public repo needs to be able to
+   * show its working. Only the name belongs on screen.
+   */
+  function sourceLine(spec) {
+    if (spec.source === 'trad') return t('library.source.trad');
+    if (spec.source === 'original') return t('library.source.original');
+    const name = spec.source.replace(/^public-domain:\s*/, '').replace(/,\s*d\.\d{4}\s*$/, '');
+    return t('library.source.composer', { source: name });
   }
 
   function renderChunkList() {
@@ -458,11 +464,16 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     if (!st.current || st.running) return;
     const notes = st.current.notes.filter((n) => !n.isRest);
     if (!notes.length) return;
-    const ctx = audio.ctx;
+    // The microphone may never have been switched on - hearing a piece needs no
+    // permission at all. Taking audio.ctx regardless left every `when` sitting
+    // in the past on the real output clock, so all eight bars fired at once as
+    // a single chord.
+    const ctx = audio.ctx || outputContext();
+    if (!ctx) return;
     const bpm = st.states[st.current.id]?.bpm || st.targetBpm;
     const beat = 60 / bpm;
     const first = notes[0].beat;
-    const base = (ctx?.currentTime ?? 0) + 0.15;
+    const base = ctx.currentTime + 0.15;
     for (const n of notes) {
       playChord([n.sounding], {
         ctx, spreadS: 0, volume: 0.13,
