@@ -23,7 +23,8 @@
 //      1830s for a reason: reading drills teach reading, and pieces are why
 //      anybody bothers.
 
-import { STAGES, stageById, poolFor } from './curriculum.js';
+import { STAGES, stageById } from './curriculum.js';
+import { soundingAt, parsePositionId } from './theory.js';
 import { LESSONS } from './course.js';
 
 export { LESSONS };
@@ -52,14 +53,39 @@ export function nextLesson(id) {
   return LESSONS[lessonIndex(id) + 1] || null;
 }
 
-/** Every position a lesson may ask about: its stage's pool. */
+/**
+ * Every position a lesson may ask about: the running total of what the course
+ * has introduced up to and including it.
+ *
+ * NOT the stage's pool. A stage is split across two or three lessons, so its
+ * pool holds notes the learner has not met yet - and drilling those is exactly
+ * the cliff, in miniature. Lesson one is two notes where its stage has three.
+ */
 export function lessonPool(lesson) {
-  return poolFor(stageById(lesson.stage));
+  const upto = lessonIndex(lesson.id);
+  const out = [];
+  const seen = new Set();
+  for (let i = 0; i <= upto; i++) {
+    for (const id of LESSONS[i].newNotes || []) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+  }
+  return out;
+}
+
+/** The same positions as note records - what a piece is fingered from. */
+export function lessonNotes(lesson) {
+  return lessonPool(lesson).map((id) => {
+    const p = parsePositionId(id);
+    return { string: p.string, fret: p.fret, sounding: soundingAt(p.string, p.fret) };
+  });
 }
 
 /**
- * Positions the lesson treats as ALREADY KNOWN - everything in its stage that is
- * not being introduced today. This is what the warm-up draws from, and it is why
+ * Positions the lesson treats as ALREADY KNOWN - everything the course has
+ * introduced BEFORE today. This is what the warm-up draws from, and it is why
  * old notes keep coming back instead of being finished with.
  */
 export function knownPositions(lesson) {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   LESSONS, lessonById, nextLesson, lessonPlan, currentLesson, unlockedLessons,
-  knownPositions, lessonPool, stepDone, fluent, afterFailure, STEP_ENGINES,
+  knownPositions, lessonPool, lessonNotes, stepDone, fluent, afterFailure, STEP_ENGINES,
 } from '../js/lesson.js';
 import { STAGES } from '../js/curriculum.js';
 
@@ -36,11 +36,22 @@ t('the lessons follow the stage ladder rather than jumping about in it', () => {
 });
 
 // The thing that actually went wrong: five new notes arrived at once.
-t('no lesson introduces more than three new notes', () => {
+t('no lesson introduces more than two new notes', () => {
   for (const l of LESSONS) {
     const n = (l.newNotes || []).length;
-    assert.ok(n > 0, `${l.id} introduces nothing`);
-    assert.ok(n <= 3, `${l.id} introduces ${n} notes at once, which is the cliff again`);
+    assert.ok(n <= 2, `${l.id} introduces ${n} notes at once, which is the cliff again`);
+  }
+});
+
+t('a lesson with nothing new is a consolidation lesson, and says so', () => {
+  // Not a gap in the course. Mixing everything is a harder skill than any of the
+  // notes in it, and it is the only place that skill is practised - but a lesson
+  // that adds nothing must not also pretend to teach something.
+  for (const l of LESSONS) {
+    if ((l.newNotes || []).length) continue;
+    assert.equal(l.steps.some((s) => s.kind === 'learn'), false,
+      `${l.id} introduces nothing but still has a step to learn it`);
+    assert.ok(l.steps.some((s) => s.kind === 'read'), `${l.id} does not mix anything`);
   }
 });
 
@@ -64,6 +75,7 @@ t('every step names an engine that exists', () => {
 
 t('the learn step teaches exactly the notes the lesson says are new', () => {
   for (const l of LESSONS) {
+    if (!(l.newNotes || []).length) continue;
     const learn = l.steps.find((s) => s.kind === 'learn');
     assert.ok(learn, `${l.id} has no step that introduces its new notes`);
     assert.deepEqual([...learn.positions].sort(), [...l.newNotes].sort(),
@@ -87,15 +99,32 @@ t('the warm-up draws on old notes and deliberately excludes the new one', () => 
 
 t('the first lesson has nothing to warm up on, and does not pretend otherwise', () => {
   assert.equal(LESSONS[0].steps.some((s) => s.kind === 'warmup'), false);
+  assert.deepEqual(knownPositions(LESSONS[0]), []);
+});
+
+// The point of splitting the stages into lessons: the pool must grow by what the
+// lesson introduces and nothing else. Reading the stage's pool would put next
+// week's notes in this week's drill.
+t('the pool grows by exactly the notes the lesson adds, never by a stage', () => {
+  let prev = 0;
+  for (const l of LESSONS) {
+    const pool = lessonPool(l);
+    assert.equal(pool.length, prev + (l.newNotes || []).length,
+      `${l.id}: pool jumped from ${prev} to ${pool.length}`);
+    for (const id of l.newNotes || []) assert.ok(pool.includes(id));
+    prev = pool.length;
+  }
+  assert.equal(prev, 17, 'the course should end on the whole of open position');
 });
 
 t('a step is finished by measurement, never by pressing a button', () => {
-  const l = LESSONS[1];                       // one new note: s3f2
+  const l = LESSONS.find((x) => x.newNotes.length === 1);
   const learn = l.steps.findIndex((s) => s.kind === 'learn');
+  const only = l.newNotes[0];
   assert.equal(stepDone(l.steps[learn], learn, ctx()), false, 'nothing played yet');
-  assert.equal(stepDone(l.steps[learn], learn, ctx({ stats: { s3f2: slow } })), false,
+  assert.equal(stepDone(l.steps[learn], learn, ctx({ stats: { [only]: slow } })), false,
     'correct but slow is not learned');
-  assert.equal(stepDone(l.steps[learn], learn, ctx({ stats: { s3f2: good } })), true);
+  assert.equal(stepDone(l.steps[learn], learn, ctx({ stats: { [only]: good } })), true);
 });
 
 t('a piece step is finished when its bars stand up, not when it is opened', () => {
@@ -140,7 +169,8 @@ t('a lesson is complete only when every step is', () => {
   const l = LESSONS[0];
   const stats = Object.fromEntries(l.newNotes.map((id) => [id, good]));
   const rounds = { l1: { 1: true } };
-  const pieces = { 'bell-tower': { bars: 8, solid: 8 }, 'evening-round': { bars: 8, solid: 8 } };
+  const pieces = Object.fromEntries(l.steps.filter((s) => s.piece)
+    .map((s) => [s.piece, { bars: 8, solid: 8 }]));
   assert.equal(lessonPlan(l, ctx({ stats, rounds })).complete, false, 'the duets are not done');
   const full = lessonPlan(l, ctx({ stats, rounds, pieces }));
   assert.equal(full.complete, true);
@@ -153,7 +183,8 @@ t('the app opens on the first thing not yet finished', () => {
   const done = ctx({
     stats,
     rounds: { l1: { 1: true } },
-    pieces: { 'bell-tower': { bars: 8, solid: 8 }, 'evening-round': { bars: 8, solid: 8 } },
+    pieces: Object.fromEntries(LESSONS[0].steps.filter((s) => s.piece)
+      .map((s) => [s.piece, { bars: 8, solid: 8 }])),
   });
   assert.equal(currentLesson(done).id, 'l2');
 });

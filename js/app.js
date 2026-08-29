@@ -22,7 +22,7 @@ import { gradeTiming } from './onset.js';
 import { initPieceView } from './piece-view.js';
 import {
   LESSONS, lessonById, lessonPlan, currentLesson, unlockedLessons,
-  knownPositions, STEP_ENGINES,
+  knownPositions, lessonPool, STEP_ENGINES,
 } from './lesson.js';
 import { pieceSpec } from './library.js';
 import { Sync } from './sync.js';
@@ -188,9 +188,13 @@ function startStep(lesson, index) {
       progress.setStage(stage.id);
       renderStageHeader();
     }
+    // Every reading step is narrowed to what the course has actually taught.
+    // Falling through to the stage would drill notes the lesson has not reached
+    // - lesson one is two notes where its stage has three - which is the cliff
+    // in miniature.
     read.poolOverride = step.kind === 'learn' ? (step.positions || [])
       : step.kind === 'warmup' ? knownPositions(lesson)
-      : null;
+      : lessonPool(lesson);
     if (step.goal) { $('goalSelect').value = step.goal; progress.setGoal(step.goal); paintGoalNote(); }
     gotoTab('read');
   } else if (engine === 'piece') {
@@ -1994,7 +1998,7 @@ initI18n().then(() => {
   buildLanguagePicker();
   pieceView = initPieceView({
     audio, ensureAudio,
-    lessonOf: (n) => (LESSONS.find((l) => l.n === n) || LESSONS[0]).stage,
+    lessonOf: (n) => LESSONS.find((l) => l.n === n) || LESSONS[0],
     onProgress: (byPiece) => { pieceProgress = byPiece; renderLesson(); },
   });
   pieceProgress = pieceView.progress();
@@ -2017,7 +2021,7 @@ initI18n().then(() => {
   // Even if catalogues fail entirely, the built-in English markup still works.
   pieceView = initPieceView({
     audio, ensureAudio,
-    lessonOf: (n) => (LESSONS.find((l) => l.n === n) || LESSONS[0]).stage,
+    lessonOf: (n) => LESSONS.find((l) => l.n === n) || LESSONS[0],
     onProgress: (byPiece) => { pieceProgress = byPiece; renderLesson(); },
   });
   pieceProgress = pieceView.progress();

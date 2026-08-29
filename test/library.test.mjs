@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { PIECES, pieceSpec, piecesForLesson } from '../js/library.js';
-import { LESSONS } from '../js/course.js';
+import { LESSONS, } from '../js/course.js';
+import { lessonPool, lessonNotes } from '../js/lesson.js';
 import { compileTune, compileAccompaniment, pitchesUsed, positionsUsed } from '../js/tune.js';
-import { notesFor, stageById } from '../js/curriculum.js';
-import { positionId, noteName } from '../js/theory.js';
+import { positionId } from '../js/theory.js';
 
 let pass = 0;
 const t = (name, fn) => { fn(); pass++; };
@@ -15,9 +15,11 @@ const t = (name, fn) => { fn(); pass++; };
 // wrong for not finding it. So every note of every tune is checked here.
 
 const lessonOf = (n) => LESSONS.find((l) => l.n === n);
-const taught = (lesson) => notesFor(stageById(lesson.stage));
-const allowed = (lesson) =>
-  new Set(taught(lesson).map((n) => positionId(n.string, n.fret)));
+// Against the LESSON's running total, not its stage. A stage spans two or three
+// lessons, so checking against the stage would wave through a tune that uses a
+// note the learner meets next week - which is the exact failure this file is for.
+const taught = (lesson) => lessonNotes(lesson);
+const allowed = (lesson) => new Set(lessonPool(lesson));
 
 t('every piece belongs to a lesson that exists', () => {
   for (const p of PIECES) {
@@ -73,11 +75,13 @@ t('every piece says where it came from, because this repo is public', () => {
   for (const p of PIECES) {
     assert.ok(p.source, `${p.id} has no source`);
     const ok = p.source === 'trad' || p.source === 'original'
-      || /^public-domain: .+, d\.\d{4}$/.test(p.source);
+      || /^public-domain: .+, d\.\s?\d{4}\b/.test(p.source);
     assert.ok(ok, `${p.id} has an unusable source line: ${p.source}`);
     if (p.source.startsWith('public-domain:')) {
-      const died = Number(p.source.match(/d\.(\d{4})/)[1]);
-      assert.ok(died < 1900, `${p.id}: ${died} is not safely out of copyright`);
+      const died = Number(p.source.match(/d\.\s?(\d{4})/)[1]);
+      // 70 years after death, plus a wide margin, and clear of every term any
+      // jurisdiction uses. This is a public repository; the year is the evidence.
+      assert.ok(died < 1930, `${p.id}: ${died} is not safely out of copyright`);
     }
   }
 });
@@ -135,7 +139,7 @@ t('the melody and the app\'s part are the same length in bars, near enough', () 
 });
 
 t('the first lessons are short enough to finish in a sitting', () => {
-  for (const p of PIECES.filter((x) => x.lesson <= 2)) {
+  for (const p of PIECES.filter((x) => x.lesson <= 3)) {
     const bars = compileTune({ ...p, taught: region(p) }).measures.length;
     assert.ok(bars <= 8, `${p.id} is ${bars} bars, which is a lot for lesson ${p.lesson}`);
   }

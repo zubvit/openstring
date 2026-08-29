@@ -1,86 +1,242 @@
 // The lessons, in order.
 //
 // A stage is a region of the neck; a lesson is a sitting. The two are not the
-// same size and pretending they were is what went wrong: the stage ladder said
-// "now the second string" and the app turned that into one undifferentiated
-// slab of practice with no beginning, no end and no music in it.
+// same size, and pretending they were is what went wrong: the stage ladder said
+// "now the second string" and the app turned that into one undifferentiated slab
+// of practice with no beginning, no end and no music in it.
 //
-// Every lesson here has the same shape, and it is the shape of a real lesson:
+// So a stage is split until each lesson introduces ONE new note - or one pair
+// that is genuinely one skill, like the two remaining open bass strings, or two
+// frets of the same hand shape. That is what the method books do. Werner gives
+// exactly one fingered note after the open strings; Noad takes string pairs;
+// Shearer adds one, then two. Nobody deals out five.
 //
-//   warm up on what you already know  ->  meet the new note by itself
+// Every lesson has the same shape, and it is the shape of a real lesson:
+//
+//   warm up on what you already know  ->  meet the new note alone
 //   ->  read them all mixed together  ->  play a piece  ->  play a duet
 //
 // The warm-up is not filler. Mixing old material in with new feels worse and
-// works better - practising a new thing among old ones is the single most
-// replicated result in the practice literature - and without it a note learned
-// in lesson two is never seen again.
-//
-// The duet is the point of the lesson, not its dessert. It is last because it
+// works better, and without it a note learned in lesson two is never seen again.
+// The duet is the point of the lesson, not its dessert; it comes last because it
 // needs the notes, not because it matters least.
+//
+// `newNotes` is the whole truth about what a lesson costs. Everything else -
+// what the drill may ask, what the warm-up draws on, which pieces are playable -
+// is derived from the running total of these, in js/lesson.js. Nothing states a
+// note set twice.
 
 export const LESSONS = [
   {
     id: 'l1',
     n: 1,
     stage: 'landmarks',
-    title: 'Three open strings',
-    blurb: 'Three notes, and not one of them needs a finger. Get these three and every other note on the guitar can be found by stepping from the nearest one.',
-    newNotes: ['s1f0', 's2f0', 's3f0'],
-    advice: 'Say the name out loud as you play it. Out loud matters — it makes the name and the place arrive together instead of one after the other.',
+    title: 'Two lines',
+    blurb: 'Two notes, and neither needs a finger. G sits on the second line — the one the treble clef curls around, which is why it is called the G clef. B is the middle line. Two lines, two open strings, and by the end of this you will have played a duet.',
+    newNotes: ['s3f0', 's2f0'],
+    advice: 'Do not spell your way up from the bottom line. Look at where the note sits and recognise it. That recognition, not counting, is what reading is.',
     steps: [
-      { kind: 'learn', positions: ['s3f0', 's2f0', 's1f0'] },
+      { kind: 'learn', positions: ['s3f0', 's2f0'] },
       { kind: 'read', goal: 'streak10' },
-      { kind: 'duet', piece: 'bell-tower' },
-      { kind: 'duet', piece: 'evening-round' },
+      { kind: 'duet', piece: 'evening-bells' },
+      { kind: 'duet', piece: 'cuckoo-in-the-pines' },
     ],
   },
   {
     id: 'l2',
     n: 2,
-    stage: 'string-3',
-    title: 'A, on the third string',
-    blurb: 'One new note — second fret of the third string. One is not a small ambition: it is what a method book gives you after the open strings, and four notes is already enough for a tune everybody knows.',
-    newNotes: ['s3f2'],
-    advice: 'Keep the finger down and close behind the fret. If the note buzzes it is almost always the finger sitting on the fret wire rather than behind it.',
+    stage: 'landmarks',
+    title: 'The top space',
+    blurb: 'E, the thinnest string, in the top space just under the highest line. That is the third landmark, and with it every other note on the guitar can be found by stepping from whichever of the three is nearest.',
+    newNotes: ['s1f0'],
+    advice: 'Three landmarks is deliberately few. They are anchors, not a scale — the point is that you never count lines again, you measure from the nearest one you know.',
     steps: [
       { kind: 'warmup', goal: 'notes20' },
-      { kind: 'learn', positions: ['s3f2'] },
+      { kind: 'learn', positions: ['s1f0'] },
       { kind: 'read', goal: 'streak10' },
-      { kind: 'duet', piece: 'hot-cross-buns' },
-      { kind: 'play', piece: 'stepping-stones' },
+      { kind: 'play', piece: 'three-lanterns' },
+      { kind: 'duet', piece: 'starlight' },
     ],
   },
   {
     id: 'l3',
     n: 3,
-    stage: 'strings-23',
-    title: 'C and D, on the second string',
-    blurb: 'Two new notes, and the set becomes six — a full hexachord. An astonishing amount of the world’s folk music lives inside six notes, and four of the pieces here are proof.',
-    newNotes: ['s2f1', 's2f3'],
-    advice: 'C is the first fret and D is the third, both on the B string. Use the first finger for C and the third for D and your hand never has to move.',
+    stage: 'string-3',
+    title: 'Two frets along',
+    blurb: 'The first note you actually finger: A, second fret of the third string. One note is not a small ambition — it is exactly what a method book gives you after the open strings, and four notes is already enough for a tune everybody knows.',
+    newNotes: ['s3f2'],
+    advice: 'Keep the finger close behind the fret, not on the wire. A buzz is almost always the finger sitting on top of the fret rather than behind it.',
     steps: [
       { kind: 'warmup', goal: 'notes20' },
-      { kind: 'learn', positions: ['s2f1', 's2f3'] },
-      { kind: 'read', goal: 'streak20' },
-      { kind: 'duet', piece: 'merrily-we-roll-along' },
-      { kind: 'duet', piece: 'ode-to-joy' },
-      { kind: 'duet', piece: 'au-clair-de-la-lune' },
-      { kind: 'duet', piece: 'frere-jacques' },
+      { kind: 'learn', positions: ['s3f2'] },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'duet', piece: 'hot-cross-buns' },
+      { kind: 'play', piece: 'au-clair-de-la-lune' },
     ],
   },
   {
     id: 'l4',
     n: 4,
-    stage: 'open-top',
-    title: 'F and G, on the first string',
-    blurb: 'The octave closes: G at the bottom, G at the top, and nothing missing in between. From here a tune can go anywhere on the top three strings.',
-    newNotes: ['s1f1', 's1f3'],
-    advice: 'F is the first fret of the high E string and it is the note most often played by accident — check you are on the first string and not the second.',
+    stage: 'strings-23',
+    title: 'One step higher',
+    blurb: 'C, the first fret of the second string. Four notes become five, and one of the most famous four-note figures ever written is now under your hand.',
+    newNotes: ['s2f1'],
+    advice: 'First finger for C. Leave it there while you play the open strings around it — a hand that resets between every note is a hand that will never get fast.',
     steps: [
       { kind: 'warmup', goal: 'notes20' },
-      { kind: 'learn', positions: ['s1f1', 's1f3'] },
+      { kind: 'learn', positions: ['s2f1'] },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'duet', piece: 'shchedryk' },
+      { kind: 'play', piece: 'quiet-steps' },
+    ],
+  },
+  {
+    id: 'l5',
+    n: 5,
+    stage: 'strings-23',
+    title: 'The five-note world',
+    blurb: 'D, the third fret of the second string. Five notes, and the folk repertoire opens up properly — three of the pieces here are tunes you already know by heart.',
+    newNotes: ['s2f3'],
+    advice: 'Third finger for D, first for C, and the hand stays put. This is also the first lesson with a dotted rhythm, so count it out loud before you play it.',
+    steps: [
+      { kind: 'warmup', goal: 'notes20' },
+      { kind: 'learn', positions: ['s2f3'] },
+      { kind: 'rhythm', pattern: 'dotted' },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'play', piece: 'mary-had-a-little-lamb' },
+      { kind: 'duet', piece: 'ode-to-joy' },
+      { kind: 'ear', piece: 'jingle-bells' },
+    ],
+  },
+  {
+    id: 'l6',
+    n: 6,
+    stage: 'open-top',
+    title: 'The first fret',
+    blurb: 'F, the first fret of the thinnest string. It is a half step above E — the smallest distance on the instrument, and the one most often played by accident.',
+    newNotes: ['s1f1'],
+    advice: 'Check you are on the first string and not the second. F and the open E are one fret apart, which is why they get confused, and why hearing the difference matters more here than anywhere so far.',
+    steps: [
+      { kind: 'warmup', goal: 'notes20' },
+      { kind: 'learn', positions: ['s1f1'] },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'duet', piece: 'april-air' },
+      { kind: 'play', piece: 'the-half-step' },
+    ],
+  },
+  {
+    id: 'l7',
+    n: 7,
+    stage: 'open-top',
+    title: 'The octave closed',
+    blurb: 'G at the third fret of the first string — the same letter as the G you started on, an octave up. The top three strings are now complete and a tune can go anywhere on them.',
+    newNotes: ['s1f3'],
+    advice: 'Two Gs, one at each end. Play them one after the other and listen: that sameness is what an octave is, and hearing it is worth more than being told it.',
+    steps: [
+      { kind: 'warmup', goal: 'notes20' },
+      { kind: 'learn', positions: ['s1f3'] },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'duet', piece: 'ode-to-joy-in-c' },
+      { kind: 'play', piece: 'lightly-row' },
+    ],
+  },
+  {
+    id: 'l8',
+    n: 8,
+    stage: 'open-bass',
+    title: 'Below the staff',
+    blurb: 'D, the open fourth string — and the first note that will not fit on the staff at all. It gets its own short line underneath, a ledger line, and everything below the staff works that way.',
+    newNotes: ['s4f0'],
+    advice: 'Expect to be slower down here at first. Notes below the staff are counted from a line that is not printed until the note needs it, so they take longer to recognise. That is normal and it wears off.',
+    steps: [
+      { kind: 'warmup', goal: 'notes20' },
+      { kind: 'learn', positions: ['s4f0'] },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'duet', piece: 'frere-jacques' },
+      { kind: 'play', piece: 'deep-river-bells' },
+    ],
+  },
+  {
+    id: 'l9',
+    n: 9,
+    stage: 'open-bass',
+    title: 'The floor of the instrument',
+    blurb: 'The last two open strings, A and the low E. Two at once because they are one skill — no fingers, both below the staff, and the lowest notes the guitar has.',
+    newNotes: ['s5f0', 's6f0'],
+    advice: 'The low E is the hardest note for the app to hear and the easiest to play badly. Pluck it cleanly rather than hard; a thick string played hard goes sharp before it settles.',
+    steps: [
+      { kind: 'warmup', goal: 'notes20' },
+      { kind: 'learn', positions: ['s5f0', 's6f0'] },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'duet', piece: 'the-foundation' },
+      { kind: 'play', piece: 'six-open-strings' },
+    ],
+  },
+  {
+    id: 'l10',
+    n: 10,
+    stage: 'open-bottom',
+    title: 'Fingers on the fourth',
+    blurb: 'E and F on the fourth string, second and third frets. Two at once because it is one hand shape, and it is the same shape you will use on the fifth and sixth strings next.',
+    newNotes: ['s4f2', 's4f3'],
+    advice: 'Second finger for E, third for F. Same two fingers, same two frets, every bass string from here on — learn the shape once and the rest is bookkeeping.',
+    steps: [
+      { kind: 'warmup', goal: 'notes20' },
+      { kind: 'learn', positions: ['s4f2', 's4f3'] },
+      { kind: 'rhythm', pattern: 'eighths' },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'duet', piece: 'old-macdonald' },
+      { kind: 'play', piece: 'the-fourth-string-song' },
+    ],
+  },
+  {
+    id: 'l11',
+    n: 11,
+    stage: 'open-bottom',
+    title: 'Fingers on the fifth',
+    blurb: 'B and C on the fifth string. The same shape as last time, one string down — which is the first moment the neck starts to feel like a system rather than a list.',
+    newNotes: ['s5f2', 's5f3'],
+    advice: 'If this felt easier than the fourth string did, that is the point. The shape is the same; only the names changed.',
+    steps: [
+      { kind: 'warmup', goal: 'notes20' },
+      { kind: 'learn', positions: ['s5f2', 's5f3'] },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'play', piece: 'joy-descending' },
+      { kind: 'duet', piece: 'walking-home' },
+    ],
+  },
+  {
+    id: 'l12',
+    n: 12,
+    stage: 'open-bottom',
+    title: 'Fingers on the sixth',
+    blurb: 'F and G on the lowest string, first and third frets. The last two notes of open position, and after them there is nothing left to add.',
+    newNotes: ['s6f1', 's6f3'],
+    advice: 'First finger for F, third for G — a different pair from the last two lessons, because the gap here is two frets rather than one. Look at the fretboard picture before you assume.',
+    steps: [
+      { kind: 'warmup', goal: 'notes20' },
+      { kind: 'learn', positions: ['s6f1', 's6f3'] },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'duet', piece: 'ode-in-the-bass' },
+      { kind: 'play', piece: 'old-bear' },
+    ],
+  },
+  {
+    id: 'l13',
+    n: 13,
+    stage: 'open-bottom',
+    title: 'The whole open position',
+    blurb: 'Nothing new. Seventeen notes, all six strings, everything you have learned mixed together — and the run to finish it is twenty in a row rather than ten, because this is the end of open position and it should feel like it.',
+    // Deliberately empty. A consolidation lesson introduces nothing and is not a
+    // gap in the course: mixing everything is a harder skill than any of the
+    // notes in it, and it is the only place that skill gets practised.
+    newNotes: [],
+    advice: 'If a note is slow here it is almost never the pitch — it is the string you are unsure of. Notice which one it is and that is your practice for the week.',
+    steps: [
+      { kind: 'warmup', goal: 'notes20' },
       { kind: 'read', goal: 'streak20' },
-      { kind: 'duet', piece: 'lightly-row' },
+      { kind: 'duet', piece: 'frere-jacques-in-c' },
+      { kind: 'play', piece: 'the-whole-house' },
     ],
   },
 ];

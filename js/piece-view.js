@@ -24,7 +24,7 @@ import { Metronome, playChord, outputContext } from './audio.js';
 import { compileTune, compileAccompaniment } from './tune.js';
 import { scheduleAccompaniment, isAccompaniment } from './accompany.js';
 import { PIECES, pieceSpec } from './library.js';
-import { stageById, notesFor } from './curriculum.js';
+import { lessonNotes } from './lesson.js';
 import { t } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
@@ -122,7 +122,7 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
    * fretboard picture can never point at a string he has not been taught.
    */
   function withRegion(spec) {
-    return { ...spec, taught: spec.taught || notesFor(stageById(lessonOf(spec.lesson))) };
+    return { ...spec, taught: spec.taught || lessonNotes(lessonOf(spec.lesson)) };
   }
 
   function openPiece(id, { silent = false } = {}) {
