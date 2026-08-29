@@ -251,8 +251,23 @@ table.heatmap td { padding: 1px; }
 
 .foot { text-align: center; font-size: .8rem; color: var(--ink-soft); padding: 1.5rem 1rem 2.5rem; }
 
-@media (max-width: 520px) {
-  .tabs { order: 3; width: 100%; justify-content: center; }
+/* Seven tabs cannot sit beside the brand on a phone, and letting them wrap
+   made the topbar three rows tall - a third of a short screen spent on chrome
+   before any music appeared. One row that scrolls sideways instead: every tab
+   keeps its full-size target, the row snaps so a tab is not left half-cut,
+   and the half-visible one at the edge is what says "there is more". */
+@media (max-width: 560px) {
+  .tabs {
+    order: 3; width: 100%;
+    flex-wrap: nowrap; justify-content: flex-start;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    /* Bleed to the screen edge, so the cut-off tab shows at the very rim. */
+    margin-inline: -1rem; padding-inline: .6rem;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; scroll-snap-align: start; }
   .mic-state { margin-left: auto; }
 }
 
@@ -444,10 +459,6 @@ svg.chordbox { width: 132px; height: auto; }
 .cb-finger { fill: #fff; font-size: 9px; font-weight: 600; }
 .cb-fretnum { fill: var(--ink-soft); font-size: 10px; }
 
-/* Six tabs no longer fit a phone in one row. */
-@media (max-width: 560px) {
-  .tabs { flex-wrap: wrap; justify-content: center; row-gap: .2rem; }
-}
 .chord-symbol { fill: var(--ink); font-size: 12px; font-weight: 600; }
 
 /* The plan, picked from where you practise. */
@@ -518,3 +529,73 @@ select.stage-title { width: 100%; }
 /* An open string is a ring beside the nut, not a blob on top of it. */
 .fb-dot.open { fill: none; stroke: var(--accent); stroke-width: 2.5; }
 .fb-dot.wrong.open { fill: none; stroke: var(--bad); stroke-width: 2.5; }
+
+/* Tabs are buttons too - on a phone they are THE navigation, hit dozens of
+   times a session, and at .4rem padding they were 38px tall. */
+@media (pointer: coarse) {
+  .tab { min-height: 44px; display: inline-flex; align-items: center; }
+}
+
+/* --- one-screen phone ----------------------------------------------------
+   iPhone 16 Pro with Safari's chrome open: roughly 393 x 660 of page. The
+   whole point of "Show me where it is" is looking at the note and the neck
+   TOGETHER - and at desktop sizes the fretboard landed below the fold, so
+   every glance at it scrolled the note away. Everything here shaves the Read
+   column until staff + fretboard + verdict + Start stand inside 660px at
+   once. Desktop keeps its sizes: none of this applies above 480px. */
+@media (max-width: 480px) {
+  main { padding: .5rem .6rem; }
+  .topbar { padding: .45rem .6rem; row-gap: .1rem; }
+  .card { padding: .7rem; margin-bottom: .7rem; }
+
+  .stage-bar { margin-bottom: .4rem; }
+  /* The stage blurb ran six lines on a phone, pushing the staff halfway down
+     the screen - a paragraph of orientation costing the thing it orients.
+     Two lines carry the gist; the drill below is what the screen is for. */
+  .stage-blurb {
+    font-size: .78rem;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .ring { width: 44px; height: 44px; font-size: .7rem; }
+  .ring span { width: 34px; height: 34px; }
+
+  /* The staff was min(100%, 320px) wide - on a 393px screen that is nearly
+     full width and ~190px tall. The note is no easier to read for being
+     huge, and those pixels are exactly the ones the fretboard needs. The
+     host's reserved height shrinks with it, or it just holds blank space. */
+  svg.staff { width: min(100%, 220px); }
+  .staff-host { min-height: 130px; }
+  svg.fretboard { width: min(100%, 232px); }
+  .hint-host { margin-top: .35rem; }
+
+  .verdict { min-height: 2.3rem; margin: .35rem 0 .1rem; }
+  .verdict-main { font-size: .95rem; }
+  .verdict-sub { font-size: .8rem; }
+
+  .heard { margin: .35rem 0; gap: .3rem; }
+  .heard-note { font-size: 1.15rem; min-height: 1.4rem; }
+
+  .controls { margin-top: .5rem; gap: .35rem .6rem; }
+  .goal-pick { margin-top: .5rem; }
+}
+
+/* --- chrome that gets out of the way -------------------------------------
+   On a phone the topbar is two rows tall, and it is sticky - scrolled into
+   the middle of a session it covered a quarter of the screen while saying
+   nothing new. js/chrome.js watches the scroll direction and sets
+   `chrome-hidden` on <body>: down hides the bar, any upward scroll brings it
+   straight back. Narrow screens only - on a desktop everything fits and
+   hiding the navigation would take something away for no room gained.
+   A transform, not display:none: the bar keeps its layout slot, so nothing
+   below it jumps, and being sticky it simply slides off its own edge.
+   #lessonStrip is untouched on purpose - it is the way back to the lesson. */
+@media (max-width: 480px) {
+  body.chrome-hidden .topbar { transform: translateY(-102%); }
+  /* A keyboard user tabbing through the header must not have it slide out
+     from under their focus. */
+  body.chrome-hidden .topbar:focus-within { transform: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .topbar { transition: transform .22s ease; }
+  }
+}

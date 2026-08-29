@@ -156,4 +156,52 @@ t('the hint names the strings rather than asking him to count rows', () => {
   assert.match(label[0], /\$\{open\}/, 'the fretboard rows show only numbers');
 });
 
+t('a phone shows the note and the neck at the same time', () => {
+  // iPhone 16 Pro with Safari open: ~660px of page. At desktop sizes the
+  // staff alone was ~190px tall and the fretboard landed below the fold, so
+  // every glance at "where it is" scrolled "what it is" away - the two things
+  // the drill exists to connect. The phone block caps both drawings.
+  const block = /@media \(max-width: 480px\)\s*\{([\s\S]*?)\n\}/.exec(css);
+  assert.ok(block, 'the phone compaction block is gone');
+  assert.match(block[1], /svg\.staff\s*\{[^}]*width\s*:\s*min\(100%,\s*2\d\dpx\)/,
+    'the staff must be capped near 220px on a phone, not 320px');
+  assert.match(block[1], /svg\.fretboard\s*\{[^}]*width\s*:\s*min\(100%,\s*2\d\dpx\)/,
+    'the fretboard must shrink with the staff, or the pair still overflows');
+  assert.match(block[1], /\.staff-host\s*\{[^}]*min-height\s*:\s*1[0-4]\dpx/,
+    'the host must not hold 152px of blank space around a 130px drawing');
+});
+
+t('the drawings scale by CSS, never by regenerating the SVG', () => {
+  // Both SVGs size themselves through the viewBox: the CSS width plus
+  // height:auto is what keeps them responsive. If either drawing ever gains
+  // a fixed pixel height in CSS it will squash rather than scale.
+  assert.match(css, /svg\.staff\s*\{\s*width[^}]*height\s*:\s*auto/,
+    'svg.staff must keep height: auto');
+  assert.match(css, /svg\.fretboard\s*\{\s*width[^}]*height\s*:\s*auto/,
+    'svg.fretboard must keep height: auto');
+});
+
+t('the topbar hides by sliding, and slides back for a keyboard', () => {
+  // js/chrome.js sets one class; the CSS must move the bar with a transform.
+  // display:none would drop its layout slot and jump everything below it,
+  // and a transition would then have nothing to animate.
+  assert.match(css, /body\.chrome-hidden \.topbar\s*\{\s*transform\s*:\s*translateY\(-1\d\d%\)/,
+    'the hidden bar must slide up by transform, not vanish by display');
+  assert.match(css, /body\.chrome-hidden \.topbar:focus-within\s*\{\s*transform\s*:\s*none/,
+    'a bar that slides out from under keyboard focus is a trap');
+  // The slide animates only for people who have not asked for calm.
+  assert.match(css, /@media \(prefers-reduced-motion: no-preference\)\s*\{\s*\.topbar\s*\{\s*transition/,
+    'the transition must sit behind prefers-reduced-motion');
+});
+
+t('seven tabs make one scrolling row, not a stack', () => {
+  // Wrapping seven tabs made the topbar three rows tall - a third of a short
+  // screen spent on chrome. The row scrolls sideways inside its own box; the
+  // page itself must never scroll sideways for it.
+  const rail = /@media \(max-width: 560px\)\s*\{[\s\S]*?\.tabs\s*\{([^}]*)\}/.exec(css);
+  assert.ok(rail, 'the phone tab rail rule is gone');
+  assert.match(rail[1], /flex-wrap\s*:\s*nowrap/, 'tabs are wrapping again');
+  assert.match(rail[1], /overflow-x\s*:\s*auto/, 'a nowrap row with no overflow scrolls the page');
+});
+
 console.log(`layout: ${pass} groups passed`);
