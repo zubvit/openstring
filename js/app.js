@@ -1,7 +1,7 @@
 // Openstring - wiring the drills to the audio engine and the progress store.
 
 import { AudioEngine, Metronome, outputContext, playChord } from './audio.js';
-import { ALL_KEYS, removeStore } from './stores.js';
+import { ALL_KEYS, removeStore, readStore, writeStore } from './stores.js';
 import { blobWeight } from './sync.js';
 import { AnswerGate, Settling } from './pitch.js';
 import { Tuner, tapTempo, readingView, STRING_ORDER } from './tuner.js';
@@ -20,6 +20,11 @@ import { Progress } from './progress.js';
 import { STAGES, stageById, nextStage, poolFor, readyToAdvance, unlockedStages, RHYTHMS, expectedOnsets } from './curriculum.js';
 import { gradeTiming } from './onset.js';
 import { initPieceView } from './piece-view.js';
+import {
+  LESSONS, lessonById, lessonPlan, currentLesson, unlockedLessons,
+  knownPositions, STEP_ENGINES,
+} from './lesson.js';
+import { pieceSpec } from './library.js';
 import { Sync } from './sync.js';
 import { initI18n, setLocale, getLocale, availableLocales, applyToDom, t } from './i18n.js';
 
@@ -35,6 +40,209 @@ const audio = new AudioEngine();
 let pieceView = null;
 let stage = stageById(progress.data.stageId || STAGES[0].id);
 
+// ------------------------------------------------------------------ lesson
+//
+// The course, and the one screen that says what to do now.
+//
+// Everything here is routing: a step decides which existing drill to point at
+// and with what settings, hands over, and waits to be told the drill reached its
+// finish line. No drilling happens in this section, and no step is ever marked
+// finished by a button - the measurements decide, exactly as the stage ladder
+// does.
+
+const LESSON_KEY = 'openstring.lesson.v1';
+const lessonState = readStore(LESSON_KEY) || { id: null, rounds: {} };
+let pieceProgress = {};
+// The step being worked on right now, or nothing when he is just wandering.
+const session = { lessonId: null, stepIndex: -1 };
+
+function saveLesson() { try { writeStore(LESSON_KEY, lessonState); } catch { /* ignore */ } }
+
+function lessonCtx() {
+  return { stats: progress.data.stats, pieces: pieceProgress, rounds: lessonState.rounds };
+}
+
+/** The lesson on screen: the one he last opened, else the first unfinished one. */
+function activeLesson() {
+  const chosen = lessonState.id && LESSONS.find((l) => l.id === lessonState.id);
+  return chosen || currentLesson(lessonCtx());
+}
+
+/**
+ * Where a question comes from.
+ *
+ * Normally the whole stage. Inside a step it is narrowed: the learn step asks
+ * only about the note being introduced, and the warm-up asks only about notes
+ * that are NOT - which is the whole mechanism by which old material keeps coming
+ * back instead of being finished with.
+ */
+function activePool() {
+  const pool = read.poolOverride;
+  return pool && pool.length ? pool : poolFor(stage);
+}
+
+function gotoTab(name) {
+  document.querySelector(`.tab[data-view="${name}"]`)?.click();
+}
+
+function stepTitle(step, lesson) {
+  switch (step.kind) {
+    case 'warmup': return t('lesson.step.warmup');
+    case 'learn':  return t('lesson.step.learn', { notes: listOfNotes(step.positions || []) });
+    case 'read':   return t('lesson.step.read');
+    case 'rhythm': return t('lesson.step.rhythm');
+    case 'play':   return t('lesson.step.play', { title: pieceSpec(step.piece)?.title || '' });
+    case 'duet':   return t('lesson.step.duet', { title: pieceSpec(step.piece)?.title || '' });
+    case 'ear':    return t('lesson.step.ear', { title: pieceSpec(step.piece)?.title || '' });
+    default:       return step.kind;
+  }
+}
+
+/** "A" for one, "G, B and E" for three - never "G and B and E". */
+function listOfNotes(ids) {
+  const names = ids.map(nameOfPosition);
+  if (names.length < 2) return names.join('');
+  return names.slice(0, -1).join(', ') + t('lesson.and') + names[names.length - 1];
+}
+
+function nameOfPosition(id) {
+  const p = parsePositionId(id);
+  return p ? pitchClassName(soundingAt(p.string, p.fret)) : id;
+}
+
+function renderLesson() {
+  const lesson = activeLesson();
+  const plan = lessonPlan(lesson, lessonCtx());
+
+  $('lessonPos').textContent = t('lesson.nOf', { n: lesson.n, to: LESSONS.length });
+  $('lessonTitle').textContent = t(`lesson.${lesson.id}.title`);
+  $('lessonBlurb').textContent = t(`lesson.${lesson.id}.blurb`);
+  $('lessonAdvice').textContent = t(`lesson.${lesson.id}.advice`);
+  $('lessonRing').style.setProperty('--pct', plan.percent);
+  $('lessonPct').textContent = `${plan.percent}%`;
+
+  $('lessonSteps').innerHTML = plan.steps.map((s) => {
+    const cls = ['lesson-step'];
+    if (s.done) cls.push('done');
+    if (s.current) cls.push('current');
+    if (!s.unlocked) cls.push('locked');
+    const engine = STEP_ENGINES[s.step.kind];
+    return `<li class="${cls.join(' ')}">
+      <span class="step-mark" aria-hidden="true">${s.done ? '✓' : s.index + 1}</span>
+      <span class="step-body">
+        <span class="step-title">${esc(stepTitle(s.step, lesson))}</span>
+        <span class="step-kind muted small">${esc(t(`lesson.engine.${engine}`))}</span>
+      </span>
+      ${s.unlocked && !s.done
+        ? `<button class="btn small primary step-go" data-step="${s.index}">${esc(t(s.current ? 'lesson.doThis' : 'lesson.again'))}</button>`
+        : s.done
+          ? `<button class="btn small step-go" data-step="${s.index}">${esc(t('lesson.again'))}</button>`
+          : `<span class="muted small">${esc(t('lesson.locked'))}</span>`}
+    </li>`;
+  }).join('');
+
+  // The whole course, so it is obvious there IS one and where this sits in it.
+  $('lessonMap').innerHTML = unlockedLessons(lessonCtx()).map(({ lesson: l, plan: p, unlocked }) => `
+    <li class="map-row ${l.id === lesson.id ? 'current' : ''} ${unlocked ? '' : 'locked'}">
+      <button class="map-open" data-lesson="${l.id}"${unlocked ? '' : ' disabled'}>
+        <span class="map-n">${l.n}</span>
+        <span class="map-title">${esc(t(`lesson.${l.id}.title`))}</span>
+        <span class="map-pct muted small">${p.complete ? '✓' : `${p.percent}%`}</span>
+      </button>
+    </li>`).join('');
+}
+
+$('lessonSteps').addEventListener('click', (e) => {
+  const btn = e.target.closest('.step-go');
+  if (btn) startStep(activeLesson(), Number(btn.dataset.step));
+});
+
+$('lessonMap').addEventListener('click', (e) => {
+  const btn = e.target.closest('.map-open');
+  if (!btn) return;
+  lessonState.id = btn.dataset.lesson;
+  saveLesson();
+  renderLesson();
+});
+
+/**
+ * Hand a step to whichever drill does it, with its settings already decided.
+ *
+ * That "already decided" is the entire point of the lesson screen. Presenting
+ * six tabs and a stage dropdown makes him his own teacher again exactly when he
+ * knows least, which is what he said had gone wrong.
+ */
+function startStep(lesson, index) {
+  const step = lesson.steps[index];
+  if (!step) return;
+  session.lessonId = lesson.id;
+  session.stepIndex = index;
+  lessonState.id = lesson.id;
+  saveLesson();
+
+  const engine = STEP_ENGINES[step.kind];
+  if (engine === 'read') {
+    const want = stageById(lesson.stage);
+    if (want && want.id !== stage.id) {
+      stage = want;
+      progress.setStage(stage.id);
+      renderStageHeader();
+    }
+    read.poolOverride = step.kind === 'learn' ? (step.positions || [])
+      : step.kind === 'warmup' ? knownPositions(lesson)
+      : null;
+    if (step.goal) { $('goalSelect').value = step.goal; progress.setGoal(step.goal); paintGoalNote(); }
+    gotoTab('read');
+  } else if (engine === 'piece') {
+    if (!pieceView?.open(step.piece)) return;
+    $('duetToggle').checked = step.kind !== 'play';
+    gotoTab('piece');
+  } else if (engine === 'rhythm') {
+    gotoTab('rhythm');
+  }
+  showStrip(lesson, step, index);
+}
+
+/** The bar that says which step he is inside, on whatever tab it sent him to. */
+function showStrip(lesson, step, index) {
+  $('lessonStripText').textContent = t('lesson.stripText', {
+    n: lesson.n, step: index + 1, of: lesson.steps.length, what: stepTitle(step, lesson),
+  });
+  $('lessonStrip').hidden = false;
+}
+
+function leaveStep() {
+  session.lessonId = null;
+  session.stepIndex = -1;
+  read.poolOverride = null;
+  $('lessonStrip').hidden = true;
+}
+
+$('lessonBack').addEventListener('click', () => {
+  leaveStep();
+  renderLesson();
+  gotoTab('lesson');
+});
+
+/**
+ * A drill reached its finish line while a step was open.
+ *
+ * Only for the steps whose completion leaves no other trace: a note becoming
+ * fluent and a piece's bars standing up at tempo are both already recorded, and
+ * writing a second copy of that here is how the two would drift apart.
+ */
+function markStepDone(engine) {
+  if (!session.lessonId || session.stepIndex < 0) return;
+  const lesson = lessonById(session.lessonId);
+  const step = lesson.steps[session.stepIndex];
+  if (!step || STEP_ENGINES[step.kind] !== engine) return;
+  if (!['warmup', 'read', 'rhythm'].includes(step.kind)) return;
+  const rounds = lessonState.rounds[lesson.id] || (lessonState.rounds[lesson.id] = {});
+  rounds[session.stepIndex] = true;
+  saveLesson();
+  renderLesson();
+}
+
 // ------------------------------------------------------------------ tabs
 
 document.querySelectorAll('.tab').forEach((tab) => {
@@ -42,6 +250,10 @@ document.querySelectorAll('.tab').forEach((tab) => {
     document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('is-active', t === tab));
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('is-active', v.id === `view-${tab.dataset.view}`));
     if (tab.dataset.view === 'progress') renderProgress();
+    if (tab.dataset.view === 'lesson') renderLesson();
+    // Wandering off to a tab the step does not use means he has left the step.
+    // The strip would otherwise keep claiming he is inside one while he tunes.
+    if (session.lessonId && !['read', 'piece', 'rhythm', 'lesson'].includes(tab.dataset.view)) leaveStep();
     // Leaving the tools tab shuts them both down. A metronome still ticking
     // behind a drill would fight the drill's own metronome, and a tuner still
     // holding the wide analysis window would slow the drills down.
@@ -210,6 +422,9 @@ const read = {
   judged: false,      // resolved: found it, or skipped
   attempts: 0,        // wrong tries at THIS note
   gate: new AnswerGate({ requireOnset: true }),   // an answer is a string being struck
+  // Narrows the question pool while a lesson step is open - the new note alone,
+  // or deliberately everything BUT the new note. Null means the whole stage.
+  poolOverride: null,
   // A wrong reading is provisional until the note stops moving - see Settling.
   settle: new Settling(),
   lastHeard: null,          // the last pitch judged, right or wrong - it is still sounding
@@ -337,7 +552,7 @@ function nextQuestion() {
   const over = roundVerdict();
   if (over) { endReadSession({ reason: over }); return; }
 
-  const pool = poolFor(stage);
+  const pool = activePool();
 
   // With melodies on, the question is a short tune whose distances the
   // scheduler chose. If the region is too small or too awkward to make one -
@@ -792,6 +1007,9 @@ function endReadSession({ idle = false, reason = idle ? 'idle' : 'stopped' } = {
       : (read.asked ? t('read.sessionDone', { correct: read.correct, asked: read.asked }) : t('read.prompt'));
   }
   $('verdictMain').className = 'verdict-main' + (reason === 'stage' ? ' good' : '');
+  // Reaching the finish line is the only thing that closes a reading step. A
+  // session he abandoned halfway is not one, however long it lasted.
+  if (reason === 'round' || reason === 'stage') markStepDone('read');
   showRoundActions(reason, nxt);
   // The old "keep looking" line used to survive the end of the session and sit
   // under the summary telling him to hunt for a note that was no longer there.
@@ -1772,7 +1990,14 @@ checkStorage();
 initI18n().then(() => {
   applyToDom();
   buildLanguagePicker();
-  pieceView = initPieceView({ audio, ensureAudio });
+  pieceView = initPieceView({
+    audio, ensureAudio,
+    lessonOf: (n) => (LESSONS.find((l) => l.n === n) || LESSONS[0]).stage,
+    onProgress: (byPiece) => { pieceProgress = byPiece; renderLesson(); },
+  });
+  pieceProgress = pieceView.progress();
+  pieceView.setUnlockedThrough(activeLesson().n);
+  renderLesson();
   renderSync();
   renderStageHeader();
   fillPatterns();
@@ -1788,7 +2013,14 @@ initI18n().then(() => {
   drawChordQuestion();
 }).catch(() => {
   // Even if catalogues fail entirely, the built-in English markup still works.
-  pieceView = initPieceView({ audio, ensureAudio });
+  pieceView = initPieceView({
+    audio, ensureAudio,
+    lessonOf: (n) => (LESSONS.find((l) => l.n === n) || LESSONS[0]).stage,
+    onProgress: (byPiece) => { pieceProgress = byPiece; renderLesson(); },
+  });
+  pieceProgress = pieceView.progress();
+  pieceView.setUnlockedThrough(activeLesson().n);
+  renderLesson();
   renderSync();
   renderStageHeader();
   fillPatterns();

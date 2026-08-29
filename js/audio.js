@@ -411,11 +411,16 @@ export function outputContext() {
  * from an A major, and this is a reference, not an instrument.
  *
  * @param midis  SOUNDING midi numbers, low to high
+ * @param when   absolute audio-clock time to start at, or null for "now"
  */
-export function playChord(midis, { ctx = null, spreadS = 0.09, holdS = 1.6, volume = 0.16 } = {}) {
+export function playChord(midis, { ctx = null, spreadS = 0.09, holdS = 1.6, volume = 0.16, when = null } = {}) {
   const c = ctx || outputContext();
   if (!c || !midis?.length) return 0;
-  const start = c.currentTime + 0.05;
+  // `when` is an absolute audio-clock time, for a part that has to land ON a
+  // beat rather than as soon as a button was pressed. Scheduling a whole duet
+  // from setTimeout drifts audibly within a couple of bars; the audio clock
+  // does not.
+  const start = when != null ? when : c.currentTime + 0.05;
 
   midis.forEach((midi, i) => {
     const hz = 440 * Math.pow(2, (midi - 69) / 12);

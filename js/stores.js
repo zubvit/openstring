@@ -55,9 +55,15 @@ export function removeStore(key) {
  * devices is an inconvenience; blowing the size cap would break sync itself.
  */
 export const EXTRA_STORES = [
+  // v1 is the single imported piece from before there was a library. It is
+  // still listed so an old export still restores, and so Erase still finds it.
   { key: 'openstring.piece.v1', sync: false },
+  { key: 'openstring.pieces.v2', sync: false },
   { key: 'openstring.chords.v1', sync: true },
   { key: 'openstring.intervals.v1', sync: true },
+  // Which lesson he is on and which rounds he has finished. Small, and the one
+  // thing that would make a new device feel like starting the course again.
+  { key: 'openstring.lesson.v1', sync: true },
 ];
 
 /** Everything the app owns, for Erase. */

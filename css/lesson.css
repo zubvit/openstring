@@ -1,0 +1,187 @@
+/* The lesson screen and the built-in library.
+ *
+ * A separate file rather than more of app.css, because the compact-layout work
+ * owns that one and two things editing the same stylesheet is how a merge eats
+ * somebody's afternoon. Everything here uses the variables app.css defines, so
+ * light and dark come for free. */
+
+/* ---------------------------------------------------------------- lesson */
+
+.lesson-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.lesson-title { margin: 2px 0 6px; font-size: 1.35rem; line-height: 1.25; }
+.lesson-blurb { margin: 0; color: var(--ink-soft); max-width: 58ch; }
+.lesson-pos { display: block; }
+
+.lesson-advice {
+  margin: 14px 2px 18px;
+  color: var(--ink-soft);
+  font-style: italic;
+  max-width: 62ch;
+}
+
+.lesson-steps {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lesson-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+}
+
+/* The step to do now is the only thing on the page asking to be pressed. That
+   is the whole design: an app that presents six equal choices has handed the
+   teaching back to the beginner. */
+.lesson-step.current { border-color: var(--accent); background: var(--accent-soft); }
+.lesson-step.done .step-title { color: var(--ink-soft); }
+.lesson-step.locked { opacity: .55; }
+
+.step-mark {
+  flex: 0 0 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: .85rem;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+.lesson-step.done .step-mark { background: var(--good); border-color: var(--good); color: #fff; }
+.lesson-step.current .step-mark { border-color: var(--accent); color: var(--accent); }
+
+.step-body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.step-title { line-height: 1.35; }
+.step-kind { text-transform: lowercase; }
+.step-go { white-space: nowrap; }
+
+/* The whole course, so it is visible that there IS one. */
+.lesson-map { list-style: none; margin: 0; padding: 0; }
+.map-row + .map-row { border-top: 1px solid var(--line); }
+.map-open {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.map-open:hover:not(:disabled) { background: var(--accent-soft); }
+.map-open:disabled { cursor: default; opacity: .5; }
+.map-row.current .map-open { font-weight: 600; }
+.map-n {
+  flex: 0 0 1.9em;
+  text-align: right;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.map-title { flex: 1; min-width: 0; }
+.map-pct { flex: 0 0 auto; }
+
+/* The bar that says which step he is inside, on whatever tab it sent him to.
+   Without it, following a step into the Read tab looks exactly like wandering
+   into the Read tab, and the course silently stops existing. */
+.lesson-strip {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--line);
+  font-size: .9rem;
+}
+.lesson-strip-text { color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lesson-back {
+  flex: 0 0 auto;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 11px;
+  font: inherit;
+  font-size: .88rem;
+  color: inherit;
+  cursor: pointer;
+}
+.lesson-back:hover { background: var(--panel); }
+
+/* --------------------------------------------------------------- library */
+
+.lib-list { display: flex; flex-direction: column; gap: 6px; }
+
+.lib-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas: "name kind meta" "bar bar bar";
+  gap: 4px 10px;
+  align-items: center;
+  width: 100%;
+  padding: 9px 11px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lib-row:hover:not(:disabled) { border-color: var(--accent); }
+.lib-row.current { border-color: var(--accent); background: var(--accent-soft); }
+.lib-row.locked, .lib-row:disabled { opacity: .5; cursor: default; }
+.lib-name { grid-area: name; font-weight: 600; min-width: 0; }
+.lib-kind {
+  grid-area: kind;
+  font-size: .78rem;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.lib-meta { grid-area: meta; white-space: nowrap; }
+.lib-row .chunk-bar { grid-area: bar; }
+
+.lib-more { margin-top: 12px; }
+
+/* ------------------------------------------------------------ the phone */
+
+@media (max-width: 480px) {
+  .lesson-head { padding: 12px 14px; gap: 10px; }
+  .lesson-title { font-size: 1.15rem; }
+  .lesson-blurb { font-size: .92rem; }
+  .lesson-step { padding: 10px 11px; gap: 9px; }
+  .step-kind { display: none; }
+  .lesson-advice { margin: 10px 2px 14px; font-size: .92rem; }
+  .lib-row { grid-template-columns: 1fr auto; grid-template-areas: "name kind" "meta meta" "bar bar"; }
+}

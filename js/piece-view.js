@@ -1,28 +1,54 @@
-// The Pieces tab: import a score, drill it chunk by chunk, join the chunks up.
+// The Pieces tab: pick a piece, drill it chunk by chunk, join the chunks up,
+// then play the whole thing with the app taking the other part.
+//
+// This tab used to have exactly one door into it: import a MusicXML file. So
+// unless you owned notation software the app contained no music at all, and a
+// beginner's entire experience of it was single notes on flashcards. He said so
+// plainly - "it is not incremental", "I want the app to become my teacher" - and
+// the missing half was never the drilling, which was already good. It was that
+// nothing he did ever turned into a piece of music.
+//
+// So there is now a built-in library graded to the lessons (js/library.js), the
+// app plays the accompaniment (js/accompany.js), and there is a button that
+// plays a piece straight through without grading anything, because sometimes the
+// point is to hear it rather than to be marked on it.
 
 import { parseMusicXML, toSequence, harmonySequence, performanceJoins } from './musicxml.js';
 import { readStore, writeStore, removeStore } from './stores.js';
 import {
   makeChunks, makeSeam, newChunkState, applyAttempt, chunkMastered,
-  pickChunk, gradeChunk, LAYERS, LAYER_LABELS,
+  pickChunk, gradeChunk, LAYERS,
 } from './practice.js';
 import { renderPhrase } from './staff.js';
-import { Metronome } from './audio.js';
+import { Metronome, playChord } from './audio.js';
+import { compileTune, compileAccompaniment } from './tune.js';
+import { scheduleAccompaniment, isAccompaniment } from './accompany.js';
+import { PIECES, pieceSpec } from './library.js';
+import { stageById, notesFor } from './curriculum.js';
 import { t } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
-const STORE_KEY = 'openstring.piece.v1';
+const STORE_KEY = 'openstring.pieces.v2';
+const OLD_KEY = 'openstring.piece.v1';
+const IMPORTED = '@imported';
 
-export function initPieceView({ audio, ensureAudio }) {
+export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgress = null }) {
   const st = {
+    id: null,            // library id, or IMPORTED
+    spec: null,          // library spec, when this is a built-in
     piece: null,
     sequence: [],
     harmonies: [],
+    accomp: [],
     chunks: [],
     states: {},
+    byId: {},            // per piece: { states, targetBpm }
+    imported: null,      // { piece, sequence } - the one file he may bring in
     current: null,
     running: false,
+    wholeRun: false,
     events: [],
+    appPlayed: [],
     metro: null,
     targetBpm: 80,
     lastChunkId: null,
@@ -32,26 +58,98 @@ export function initPieceView({ audio, ensureAudio }) {
   // ---------------------------------------------------------------- storage
 
   function save() {
-    if (!st.piece) { removeStore(STORE_KEY); return; }
-    try {
-      writeStore(STORE_KEY, ({
-        piece: st.piece, sequence: st.sequence, states: st.states, targetBpm: st.targetBpm,
-      }));
-    } catch { /* practice still works without persistence */ }
+    if (st.id) st.byId[st.id] = { states: st.states, targetBpm: st.targetBpm };
+    const payload = { current: st.id, byId: st.byId, imported: st.imported };
+    // Nothing worth keeping: no built-in has been touched and no file imported.
+    if (!Object.keys(st.byId).length && !st.imported) { removeStore(STORE_KEY); return; }
+    try { writeStore(STORE_KEY, payload); } catch { /* practice still works without it */ }
+    report();
   }
+
+  /**
+   * How far each piece has got, for the lesson list to read.
+   *
+   * Deliberately derived rather than stored: "this piece is done" is not a flag
+   * somebody sets, it is a count of bars that stood up at tempo, and a flag
+   * would let a lesson be finished by a piece that had since been reset.
+   */
+  function progressByPiece() {
+    const out = {};
+    for (const [id, rec] of Object.entries(st.byId)) {
+      const spec = pieceSpec(id);
+      if (!spec) continue;
+      const target = rec.targetBpm || spec.bpm || 80;
+      const bars = compileTune(withRegion(spec)).measures.length;
+      const solid = Object.values(rec.states || {})
+        .filter((s) => chunkMastered(s, target)).length;
+      out[id] = { bars, solid: Math.min(solid, bars) };
+    }
+    return out;
+  }
+
+  function report() { onProgress?.(progressByPiece()); }
 
   function load() {
     try {
-      const d = readStore(STORE_KEY);
+      const d = readStore(STORE_KEY) || migrate();
       if (!d) return false;
-      st.piece = d.piece; st.sequence = d.sequence; st.states = d.states || {};
-      st.targetBpm = d.targetBpm || 80;
-      // Recomputed rather than stored: a piece imported before chord symbols
-      // existed simply has none, and gets them if it is imported again.
-      st.harmonies = harmonySequence(st.piece);
-      rebuildChunks();
+      st.byId = d.byId || {};
+      st.imported = d.imported || null;
+      if (d.current) openPiece(d.current, { silent: true });
+      report();
       return true;
     } catch { return false; }
+  }
+
+  /** A piece imported before the library existed keeps its practice history. */
+  function migrate() {
+    const old = readStore(OLD_KEY);
+    if (!old?.piece) return null;
+    removeStore(OLD_KEY);
+    const moved = {
+      current: IMPORTED,
+      byId: { [IMPORTED]: { states: old.states || {}, targetBpm: old.targetBpm || 80 } },
+      imported: { piece: old.piece, sequence: old.sequence },
+    };
+    writeStore(STORE_KEY, moved);
+    return moved;
+  }
+
+  // ------------------------------------------------------------------ pieces
+
+  /**
+   * A built-in tune is fingered only where its lesson has actually been, so the
+   * fretboard picture can never point at a string he has not been taught.
+   */
+  function withRegion(spec) {
+    return { ...spec, taught: spec.taught || notesFor(stageById(lessonOf(spec.lesson))) };
+  }
+
+  function openPiece(id, { silent = false } = {}) {
+    if (id === IMPORTED) {
+      if (!st.imported) return false;
+      st.spec = null;
+      st.piece = st.imported.piece;
+      st.sequence = st.imported.sequence;
+      st.accomp = [];
+    } else {
+      const spec = pieceSpec(id);
+      if (!spec) return false;
+      st.spec = withRegion(spec);
+      st.piece = compileTune(st.spec);
+      st.sequence = toSequence(st.piece);
+      st.accomp = compileAccompaniment(st.spec);
+    }
+    st.id = id;
+    st.harmonies = harmonySequence(st.piece);
+    const rec = st.byId[id] || {};
+    st.states = rec.states || {};
+    st.targetBpm = rec.targetBpm || st.spec?.bpm || st.piece.tempo || 80;
+    st.current = null;
+    st.lastChunkId = null;
+    rebuildChunks();
+    if (!silent) { save(); renderAll(); nextChunk(); }
+    return true;
   }
 
   function rebuildChunks() {
@@ -82,7 +180,44 @@ export function initPieceView({ audio, ensureAudio }) {
     st.chunks = [...base, ...seams];
   }
 
+  // ----------------------------------------------------------------- library
+
+  let unlockedThrough = 1;
+
+  /** Which lessons he has reached; anything beyond is shown but not playable. */
+  function setUnlockedThrough(n) { unlockedThrough = n; renderLibrary(); }
+
+  function libraryRow(spec, locked) {
+    const done = progressByPiece()[spec.id];
+    const pct = done && done.bars ? Math.round((done.solid / done.bars) * 100) : 0;
+    const kind = t(`library.kind.${spec.kind}`);
+    return `<button class="lib-row${locked ? ' locked' : ''}${st.id === spec.id ? ' current' : ''}"
+        data-piece="${spec.id}"${locked ? ' disabled' : ''}>
+      <span class="lib-name">${spec.title}</span>
+      <span class="lib-kind">${kind}</span>
+      <span class="lib-meta muted small">${t('library.lessonN', { n: spec.lesson })}</span>
+      <span class="chunk-bar"><span style="width:${pct}%"></span></span>
+    </button>`;
+  }
+
+  function renderLibrary() {
+    const open = PIECES.filter((p) => p.lesson <= unlockedThrough);
+    const shut = PIECES.filter((p) => p.lesson > unlockedThrough);
+    $('libList').innerHTML = open.length
+      ? open.map((p) => libraryRow(p, false)).join('')
+      : `<p class="muted">${t('library.none')}</p>`;
+    $('libLocked').innerHTML = shut.map((p) => libraryRow(p, true)).join('');
+    $('libLocked').closest('details').hidden = !shut.length;
+  }
+
+  $('libList').addEventListener('click', (e) => {
+    const row = e.target.closest('.lib-row');
+    if (row?.dataset.piece) openPiece(row.dataset.piece);
+  });
+
   // ------------------------------------------------------------------- view
+
+  function renderAll() { renderHead(); renderLibrary(); renderChunkList(); }
 
   function renderHead() {
     const has = !!st.piece;
@@ -90,17 +225,20 @@ export function initPieceView({ audio, ensureAudio }) {
     $('pieceHead').hidden = !has;
     $('pieceDrill').hidden = !has;
     $('chunkListCard').hidden = !has;
+    $('duetToggleWrap').hidden = !st.accomp.length;
+    $('playWhole').hidden = !has;
     if (!has) return;
 
     $('pieceTitle').textContent = st.piece.title;
-    const bits = [st.piece.composer,
+    const bits = [st.spec ? t(`library.source.${sourceKind(st.spec)}`, { source: st.spec.source }) : st.piece.composer,
       t('piece.noteCount', { count: st.piece.noteCount }),
       t('piece.barCount', { count: st.chunks.filter((c) => c.kind === 'chunk').length })];
     $('pieceMeta').textContent = bits.filter(Boolean).join(' · ');
 
     const note = $('octaveNote');
-    note.textContent = t(st.piece.octaveConvention.noteKey);
-    note.classList.toggle('warn', ['assumed', 'unverified', 'inconsistent'].includes(st.piece.octaveConvention.basis));
+    note.textContent = st.spec ? (st.spec.why || '') : t(st.piece.octaveConvention.noteKey);
+    note.classList.toggle('warn', !st.spec
+      && ['assumed', 'unverified', 'inconsistent'].includes(st.piece.octaveConvention.basis));
 
     const solid = st.chunks.filter((c) => st.states[c.id] && chunkMastered(st.states[c.id], st.targetBpm)).length;
     const pct = st.chunks.length ? Math.round((solid / st.chunks.length) * 100) : 0;
@@ -108,9 +246,17 @@ export function initPieceView({ audio, ensureAudio }) {
     $('piecePct').textContent = `${pct}%`;
     $('targetOut').textContent = String(st.targetBpm);
     $('targetBpm').value = String(st.targetBpm);
+    $('dropPiece').hidden = st.id !== IMPORTED;
+  }
+
+  function sourceKind(spec) {
+    if (spec.source === 'trad') return 'trad';
+    if (spec.source === 'original') return 'original';
+    return 'composer';
   }
 
   function renderChunkList() {
+    if (!st.piece) { $('chunkList').innerHTML = ''; return; }
     $('chunkList').innerHTML = st.chunks.map((c) => {
       const s = st.states[c.id] || newChunkState();
       const pct = Math.min(100, Math.round((s.bestBpm / st.targetBpm) * 100));
@@ -137,8 +283,6 @@ export function initPieceView({ audio, ensureAudio }) {
       : (chunk.lastMeasure !== chunk.firstMeasure
           ? t('piece.barRange', { from: chunk.firstMeasure, to: chunk.lastMeasure })
           : t('piece.bar', { n: chunk.firstMeasure }));
-    // Only the chord names that fall inside this chunk, or a two-bar excerpt
-    // would carry the whole piece's harmony across the top of it.
     const beats = chunk.notes.map((n) => n.beat ?? 0);
     const from = Math.min(...beats);
     const to = Math.max(...beats.map((b, i) => b + (chunk.notes[i].beats ?? 1)));
@@ -172,15 +316,12 @@ export function initPieceView({ audio, ensureAudio }) {
       const piece = parseMusicXML(text);
       const seq = toSequence(piece);
       if (!seq.some((n) => !n.isRest)) throw new Error(t('piece.noNotes'));
-      st.piece = piece;
-      st.sequence = seq;
-      st.harmonies = harmonySequence(piece);
-      st.states = {};
-      st.targetBpm = piece.tempo ? Math.max(40, Math.min(160, Math.round(piece.tempo / 4) * 4)) : 80;
-      rebuildChunks();
-      save();
-      renderHead(); renderChunkList();
-      nextChunk();
+      st.imported = { piece, sequence: seq };
+      st.byId[IMPORTED] = {
+        states: {},
+        targetBpm: piece.tempo ? Math.max(40, Math.min(160, Math.round(piece.tempo / 4) * 4)) : 80,
+      };
+      openPiece(IMPORTED);
     } catch (ex) {
       err.hidden = false;
       err.textContent = ex.message.includes('.mxl')
@@ -191,8 +332,11 @@ export function initPieceView({ audio, ensureAudio }) {
 
   $('dropPiece').addEventListener('click', () => {
     if (!confirm(t('piece.removeConfirm'))) return;
-    st.piece = null; st.sequence = []; st.harmonies = []; st.chunks = []; st.states = {}; st.current = null;
-    save(); renderHead();
+    st.imported = null;
+    delete st.byId[IMPORTED];
+    st.id = null; st.piece = null; st.sequence = []; st.harmonies = [];
+    st.accomp = []; st.chunks = []; st.states = {}; st.current = null;
+    save(); renderAll();
   });
 
   $('targetBpm').addEventListener('input', (e) => {
@@ -219,28 +363,44 @@ export function initPieceView({ audio, ensureAudio }) {
     renderChunkList();
   }
 
-  $('startPiece').addEventListener('click', async () => {
-    if (st.running || !st.current) return;
+  /** The stretch of the accompaniment that belongs to a chunk, moved to its start. */
+  function accompFor(chunk) {
+    if (!st.accomp.length || !$('duetToggle').checked) return [];
+    const notes = chunk.notes.filter((n) => !n.isRest);
+    if (!notes.length) return [];
+    const from = Math.min(...chunk.notes.map((n) => n.beat ?? 0));
+    const to = Math.max(...chunk.notes.map((n) => (n.beat ?? 0) + (n.beats ?? 1)));
+    const first = notes[0].beat;
+    return st.accomp
+      .filter((e) => e.beat >= from - 1e-6 && e.beat < to - 1e-6)
+      .map((e) => ({ ...e, beat: e.beat - first }));
+  }
+
+  async function begin({ whole }) {
+    if (st.running) return;
+    if (!whole && !st.current) return;
     if (!(await ensureAudio({ onError: (message) => {
       $('pVerdictMain').textContent = message;
       $('pVerdictMain').className = 'verdict-main bad';
     } }))) return;
 
-    const chunk = st.current;
-    const state = st.states[chunk.id];
-    const bpm = state.bpm;
+    const chunk = whole ? wholePieceChunk() : st.current;
+    const state = whole ? newChunkState(st.targetBpm) : st.states[chunk.id];
+    const bpm = whole ? st.targetBpm : state.bpm;
     const beat = 60 / bpm;
 
     st.running = true;
+    st.wholeRun = whole;
     st.events = [];
+    st.appPlayed = [];
     $('startPiece').disabled = true;
+    $('playWhole').disabled = true;
     $('stopPiece').disabled = false;
 
     const metro = new Metronome(audio.ctx);
     // The metronome ticks quarter notes, so the accent has to fall every
     // QUARTER-beat bar length - not every `beatsPerBar`, which counts eighths in
-    // 6/8 and halves in cut time. It also used the piece's last meter for every
-    // chunk, so a piece that changes time signature counted the wrong bar in.
+    // 6/8 and halves in cut time.
     const here = st.piece.measures.find((m) => m.number === chunk.firstMeasure);
     metro.beatsPerBar = Math.max(1, Math.round(here?.lengthBeats ?? st.piece.beatsPerBar ?? 4));
     st.metro = metro;
@@ -252,26 +412,64 @@ export function initPieceView({ audio, ensureAudio }) {
     const startTime = metro.timeOfBeat(0);
     const endsAt = startTime + (last.beat - first + last.beats) * beat + 0.8;
 
+    // The app's part, scheduled on the audio clock so it lands with the click
+    // rather than near it.
+    const part = whole
+      ? ($('duetToggle').checked ? st.accomp.map((e) => ({ ...e, beat: e.beat - first })) : [])
+      : accompFor(chunk);
+    st.appPlayed = scheduleAccompaniment(audio.ctx, part, {
+      timeOfBeat: (b) => metro.timeOfBeat(b), bpm,
+    });
+
     audio.resetTracking();
     $('pVerdictMain').textContent = t('drill.countingIn');
     let announced = false;
 
-    // NOTE: this loop used to name its clock `t`, which shadowed the translate
-    // function imported at the top of the file - so any translated string in
-    // here would have thrown "t is not a function" sixty times a second. It also
-    // decided the count-in was over by comparing the text on screen against an
-    // English literal, which stops working the moment anything is translated.
     const tick = () => {
       if (!st.running) return;
       const now = audio.now();
       if (!announced && now > startTime) {
         announced = true;
-        $('pVerdictMain').textContent = t('drill.playing');
+        $('pVerdictMain').textContent = whole ? t('piece.playingThrough') : t('drill.playing');
       }
-      if (now >= endsAt) { finish(chunk, state, bpm, startTime); return; }
+      if (now >= endsAt) { finish(chunk, state, bpm, startTime, whole); return; }
       st.raf = requestAnimationFrame(tick);
     };
     tick();
+  }
+
+  /** The whole piece as one chunk, for playing it rather than being marked on it. */
+  function wholePieceChunk() {
+    const notes = st.sequence;
+    return {
+      id: '@whole', kind: 'chunk', notes,
+      firstMeasure: notes[0]?.measure ?? 1,
+      lastMeasure: notes[notes.length - 1]?.measure ?? 1,
+    };
+  }
+
+  $('startPiece').addEventListener('click', () => begin({ whole: false }));
+  $('playWhole').addEventListener('click', () => begin({ whole: true }));
+
+  // Hearing it is not cheating - it is how you learn a piece above your reading
+  // level, which is the only way anybody has ever had real music to play while
+  // their reading catches up.
+  $('hearChunk').addEventListener('click', () => {
+    if (!st.current || st.running) return;
+    const notes = st.current.notes.filter((n) => !n.isRest);
+    if (!notes.length) return;
+    const ctx = audio.ctx;
+    const bpm = st.states[st.current.id]?.bpm || st.targetBpm;
+    const beat = 60 / bpm;
+    const first = notes[0].beat;
+    const base = (ctx?.currentTime ?? 0) + 0.15;
+    for (const n of notes) {
+      playChord([n.sounding], {
+        ctx, spreadS: 0, volume: 0.13,
+        holdS: Math.min(2.4, (n.beats || 1) * beat * 0.95),
+        when: base + (n.beat - first) * beat,
+      });
+    }
   });
 
   function stopPlaying() {
@@ -280,6 +478,7 @@ export function initPieceView({ audio, ensureAudio }) {
     cancelAnimationFrame(st.raf);
     st.metro?.stop();
     $('startPiece').disabled = false;
+    $('playWhole').disabled = false;
     $('stopPiece').disabled = true;
     $('pVerdictMain').textContent = t('drill.stopped');
   }
@@ -290,15 +489,28 @@ export function initPieceView({ audio, ensureAudio }) {
     if (st.running && ev.sounding != null) st.events.push(ev);
   };
 
-  function finish(chunk, state, bpm, startTime) {
+  function finish(chunk, state, bpm, startTime, whole) {
     st.running = false;
     cancelAnimationFrame(st.raf);
     st.metro?.stop();
     $('startPiece').disabled = false;
+    $('playWhole').disabled = false;
     $('stopPiece').disabled = true;
 
+    // The microphone heard the app's own part too. Crediting those to him would
+    // mark notes he never played as played; blaming him for them would be worse.
+    const mine = st.events.filter((ev) => !isAccompaniment(st.appPlayed, ev.sounding, ev.time));
+
+    if (whole) {
+      const g = gradeChunk(chunk.notes, mine, { bpm, startTime, layer: 'notes' });
+      $('pVerdictMain').textContent = g.passed ? t('piece.playedItThrough') : t('piece.playedItAnyway');
+      $('pVerdictMain').className = `verdict-main ${g.passed ? 'good' : ''}`;
+      $('pVerdictSub').textContent = g.results?.notes?.detail || '';
+      return;
+    }
+
     const layer = LAYERS[state.layerIndex];
-    const g = gradeChunk(chunk.notes, st.events, { bpm, startTime, layer });
+    const g = gradeChunk(chunk.notes, mine, { bpm, startTime, layer });
 
     const next = applyAttempt(state, { passed: g.passed, targetBpm: st.targetBpm });
     st.states[chunk.id] = next;
@@ -331,6 +543,7 @@ export function initPieceView({ audio, ensureAudio }) {
 
   // Redraw the piece view too - its labels are built in JavaScript.
   window.addEventListener('openstring:redraw', () => {
+    renderLibrary();
     if (!st.piece) return;
     renderHead();
     renderChunkList();
@@ -342,8 +555,16 @@ export function initPieceView({ audio, ensureAudio }) {
     }
   });
 
-  if (load()) { renderHead(); renderChunkList(); nextChunk(); }
-  else renderHead();
+  load();
+  renderAll();
+  if (st.piece) nextChunk();
 
-  return { hasPiece: () => !!st.piece, isRunning: () => st.running, stop: stopPlaying };
+  return {
+    hasPiece: () => !!st.piece,
+    isRunning: () => st.running,
+    stop: stopPlaying,
+    open: (id) => { const ok = openPiece(id); if (ok) renderAll(); return ok; },
+    setUnlockedThrough,
+    progress: progressByPiece,
+  };
 }
