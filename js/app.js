@@ -209,6 +209,7 @@ function showStrip(lesson, step, index) {
     n: lesson.n, step: index + 1, of: lesson.steps.length, what: stepTitle(step, lesson),
   });
   $('lessonStrip').hidden = false;
+  document.body.classList.add('in-step');
 }
 
 function leaveStep() {
@@ -216,6 +217,7 @@ function leaveStep() {
   session.stepIndex = -1;
   read.poolOverride = null;
   $('lessonStrip').hidden = true;
+  document.body.classList.remove('in-step');
 }
 
 $('lessonBack').addEventListener('click', () => {

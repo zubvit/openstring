@@ -88,7 +88,10 @@ t('the drill itself ends, and offers the next stage where the player is', () => 
 
   // nextQuestion must consult it BEFORE picking another note, or the round
   // always runs one note long.
-  const next = /function nextQuestion\(\)\s*\{([\s\S]*?)const pool = poolFor/.exec(js);
+  // Matched up to wherever the pool comes from rather than to `poolFor`
+  // specifically: a lesson step narrows the pool, and pinning the test to one
+  // function name made a legitimate change look like a regression.
+  const next = /function nextQuestion\(\)\s*\{([\s\S]*?)const pool =/.exec(js);
   assert.ok(next, 'nextQuestion has moved');
   assert.match(next[1], /roundVerdict\(\)/, 'nextQuestion asks for another note without checking');
 

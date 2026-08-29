@@ -184,4 +184,16 @@
   .step-kind { display: none; }
   .lesson-advice { margin: 10px 2px 14px; font-size: .92rem; }
   .lib-row { grid-template-columns: 1fr auto; grid-template-areas: "name kind" "meta meta" "bar bar"; }
+
+  /* The strip is a status line, not a heading. At full size it pushed the
+     Start button three pixels below the fold on a 393x660 phone - which is
+     exactly the "I cannot see both" complaint, reintroduced by the fix for it. */
+  .lesson-strip { padding: 3px 10px; gap: 8px; font-size: .82rem; }
+  .lesson-back { padding: 1px 9px; font-size: .82rem; }
+
+  /* Inside a step, the stage bar says the same thing twice: the strip above it
+     already names the lesson and the step. On a phone that duplicate costs a
+     hundred pixels, which is most of the fretboard. It stays on desktop, where
+     the space is free and the stage picker is a useful thing to have to hand. */
+  body.in-step .stage-bar { display: none; }
 }
