@@ -7,6 +7,7 @@
 <meta name="i18n-title" content="app.title">
 <meta name="description" content="Read a note, play it on the guitar, and be told what you actually played and when. Runs entirely in your browser. No account, no subscription.">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/lesson.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🎸</text></svg>">
 </head>
 <body>
@@ -55,7 +56,8 @@
 <header class="topbar">
   <div class="brand" data-i18n="app.name">Openstring</div>
   <nav class="tabs" role="tablist">
-    <button class="tab is-active" data-view="read" role="tab" data-i18n="tab.read">Read</button>
+    <button class="tab is-active" data-view="lesson" role="tab" data-i18n="tab.lesson">Lesson</button>
+    <button class="tab" data-view="read" role="tab" data-i18n="tab.read">Read</button>
     <button class="tab" data-view="rhythm" role="tab" data-i18n="tab.rhythm">Rhythm</button>
     <button class="tab" data-view="chords" role="tab" data-i18n="tab.chords">Chords</button>
     <button class="tab" data-view="piece" role="tab" data-i18n="tab.pieces">Pieces</button>
@@ -68,8 +70,42 @@
 
 <main>
 
+<!-- The strip that says which lesson step you are inside, on whatever tab the
+     step sends you to. Hidden whenever you are just wandering around. -->
+<div class="lesson-strip" id="lessonStrip" hidden>
+  <button class="lesson-back" id="lessonBack" data-i18n="lesson.back">← Lesson</button>
+  <span class="lesson-strip-text" id="lessonStripText"></span>
+</div>
+
+<!-- ------------------------------------------------------------- LESSON -->
+<section class="view is-active" id="view-lesson">
+
+  <div class="lesson-head">
+    <div>
+      <div class="lesson-pos muted small" id="lessonPos"></div>
+      <h2 class="lesson-title" id="lessonTitle"></h2>
+      <p class="lesson-blurb" id="lessonBlurb"></p>
+    </div>
+    <div class="stage-mastery">
+      <div class="ring" id="lessonRing"><span id="lessonPct">0%</span></div>
+      <div class="muted small" data-i18n="lesson.done">done</div>
+    </div>
+  </div>
+
+  <ol class="lesson-steps" id="lessonSteps"></ol>
+
+  <p class="lesson-advice" id="lessonAdvice"></p>
+
+  <div class="card lesson-map-card">
+    <h2 data-i18n="lesson.mapHeading">The whole course</h2>
+    <p class="muted" data-i18n="lesson.mapIntro">Every lesson, in order. You can go back to any lesson you have already reached.</p>
+    <ol class="lesson-map" id="lessonMap"></ol>
+  </div>
+
+</section>
+
 <!-- ------------------------------------------------------------ READING -->
-<section class="view is-active" id="view-read">
+<section class="view" id="view-read">
   <div class="stage-bar">
     <div>
       <div class="stage-pick">
@@ -86,6 +122,7 @@
 
   <div class="card drill">
     <div id="staffHost" class="staff-host"></div>
+    <div id="hintHost" class="hint-host" hidden></div>
 
     <div class="verdict" id="readVerdict" aria-live="polite">
       <div class="verdict-main" id="verdictMain" data-i18n="read.prompt">Press start, then play the note you see.</div>
@@ -116,7 +153,6 @@
       <p class="goal-note" id="goalNote"></p>
     </div>
 
-    <div id="hintHost" class="hint-host" hidden></div>
   </div>
 
   <div class="card session" id="sessionCard" hidden>
@@ -225,6 +261,16 @@
 <!-- -------------------------------------------------------------- PIECES -->
 <section class="view" id="view-piece">
 
+  <div class="card" id="pieceLibraryCard">
+    <h2 data-i18n="library.heading">Music you can play now</h2>
+    <p class="muted" id="libraryIntro" data-i18n="library.intro">Short pieces and duets built only from notes you have already met. On a duet the app plays the other part.</p>
+    <div class="lib-list" id="libList"></div>
+    <details class="note-box lib-more">
+      <summary data-i18n="library.lockedHeading">Not yet unlocked</summary>
+      <div class="lib-list lib-locked" id="libLocked"></div>
+    </details>
+  </div>
+
   <div class="card" id="pieceEmpty">
     <h2 data-i18n="piece.heading">Practise a piece</h2>
     <p class="muted" data-i18n-html="piece.intro"></p>
@@ -268,6 +314,8 @@
     <div class="controls">
       <button class="btn primary" id="startPiece" data-i18n="piece.start">Start</button>
       <button class="btn" id="stopPiece" data-i18n="piece.stop" disabled>Stop</button>
+      <button class="btn" id="hearChunk" data-i18n="piece.hearIt">Play it for me</button>
+      <label class="check" id="duetToggleWrap" hidden><input type="checkbox" id="duetToggle" checked> <span data-i18n="piece.duet">Play the other part</span></label>
       <span class="muted small" id="chunkTempo"></span>
     </div>
   </div>
@@ -417,5 +465,6 @@
 </footer>
 
 <script type="module" src="js/app.js"></script>
+<script type="module" src="js/chrome.js"></script>
 </body>
 </html>
