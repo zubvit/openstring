@@ -234,3 +234,24 @@
   .coach-why, .coach-move { font-size: .84rem; }
   .coach-item { padding-left: 22px; }
 }
+
+/* One line saying what to do right now. Everything else on the piece screen is
+   information; this is the only instruction, so it is allowed to be loud. */
+.do-now {
+  margin: 10px 0 0;
+  padding: 9px 12px;
+  background: var(--accent-soft);
+  border-radius: 10px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.do-now:empty { display: none; }
+
+/* Which note comes first. Four identical dots say where the fingers go and
+   nothing about the order, which is half of what he is asking the picture. */
+.fb-order { font-size: 8.5px; font-weight: 700; fill: var(--panel); }
+.fb-order.open { fill: var(--accent); }
+
+@media (max-width: 480px) {
+  .do-now { font-size: .92rem; padding: 8px 10px; }
+}

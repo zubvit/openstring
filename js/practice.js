@@ -212,6 +212,19 @@ export function gradeChunk(expected, played, { bpm = 60, startTime = 0, layer = 
   const hit = pairs.filter((p) => p.ev);
   const results = {};
 
+  // What happened to each note, in the order they are written - so the staff
+  // can colour the noteheads afterwards. "I do not know what I got right" was
+  // the first thing he said after a real attempt, and the grader already knew;
+  // it just kept it to itself and reported a sentence instead.
+  //
+  // Three states, not two: a note played WRONG and a note not played AT ALL are
+  // different mistakes with different fixes, and merging them would tell him to
+  // fix his reading when the problem was that his hand never got there.
+  const noteStates = pairs.map((p) => {
+    if (!p.ev) return 'missed';
+    return p.ev.sounding === p.target.sounding ? 'correct' : 'wrong';
+  });
+
   // --- notes
   const rightPitch = hit.filter((p) => p.ev.sounding === p.target.sounding).length;
   const wrongPitch = hit.length - rightPitch;
@@ -287,7 +300,7 @@ export function gradeChunk(expected, played, { bpm = 60, startTime = 0, layer = 
   const upto = LAYERS.slice(0, LAYERS.indexOf(layer) + 1);
   const passed = upto.every((l) => results[l].ok);
 
-  return { passed, layer, results, checked: upto };
+  return { passed, layer, results, checked: upto, noteStates };
 }
 
 function correlation(a, b) {

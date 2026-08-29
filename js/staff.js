@@ -142,6 +142,10 @@ export function renderFretboard({
   strings = ALL_STRINGS, minFret = 0, maxFret = 4,
   mark = null,        // { string, fret } to highlight
   wrongMark = null,   // { string, fret } played by mistake
+  // A whole bar's worth, in playing order: { string, fret, n }. The number is
+  // the point - a bar of four notes drawn as four identical dots says where the
+  // fingers go and nothing about which comes first, which is half the question.
+  marks = [],
   width = 260,
 } = {}) {
   const nFrets = maxFret - minFret;
@@ -179,7 +183,7 @@ export function renderFretboard({
     }
   }
 
-  const dot = (m, cls) => {
+  const dot = (m, cls, n = null) => {
     if (!m) return;
     const i = ordered.indexOf(m.string);
     if (i === -1 || m.fret < minFret || m.fret > maxFret) return;
@@ -193,13 +197,18 @@ export function renderFretboard({
     // already do.
     if (m.fret === 0) {
       parts.push(`<circle cx="${padL - 13}" cy="${y}" r="5.5" class="${cls} open"/>`);
+      if (n != null) parts.push(`<text x="${padL - 13}" y="${y + 3.4}" class="fb-order open" text-anchor="middle">${n}</text>`);
       return;
     }
     const x = padL + (m.fret - minFret - 0.5) * colW;
     parts.push(`<circle cx="${x}" cy="${y}" r="6.5" class="${cls}"/>`);
+    if (n != null) parts.push(`<text x="${x}" y="${y + 3.4}" class="fb-order" text-anchor="middle">${n}</text>`);
   };
   dot(wrongMark, 'fb-dot wrong');
   dot(mark, 'fb-dot');
+  // Later notes drawn over earlier ones, so a bar that returns to the same
+  // place shows the number it will be needed at next rather than hiding it.
+  marks.forEach((m) => dot(m, 'fb-dot', m.n));
 
   return `<svg viewBox="0 0 ${width} ${height}" class="fretboard" role="img" aria-label="fretboard diagram">${parts.join('')}</svg>`;
 }

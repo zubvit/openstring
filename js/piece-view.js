@@ -19,7 +19,7 @@ import {
   makeChunks, makeSeam, newChunkState, applyAttempt, chunkMastered,
   pickChunk, gradeChunk, LAYERS,
 } from './practice.js';
-import { renderPhrase } from './staff.js';
+import { renderPhrase, renderFretboard } from './staff.js';
 import { Metronome, playChord, outputContext } from './audio.js';
 import { compileTune, compileAccompaniment } from './tune.js';
 import { scheduleAccompaniment, isAccompaniment } from './accompany.js';
@@ -288,7 +288,7 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     }).join('');
   }
 
-  function renderChunkStaff(chunk) {
+  function renderChunkStaff(chunk, states = {}) {
     // A backward seam is the jump to the top of a repeat, and calling that "the
     // join between bars 3 and 1" would describe something the page does not do.
     $('chunkLabel').textContent = chunk.kind === 'seam'
@@ -302,7 +302,45 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     const from = Math.min(...beats);
     const to = Math.max(...beats.map((b, i) => b + (chunk.notes[i].beats ?? 1)));
     const chords = (st.harmonies || []).filter((h) => h.beat >= from && h.beat < to);
-    $('chunkStaff').innerHTML = renderPhrase(chunk.notes, { width: 520, chords });
+    $('chunkStaff').innerHTML = renderPhrase(chunk.notes, { width: 520, chords, states });
+    paintChunkHint(chunk, states);
+  }
+
+  /**
+   * Where the fingers go for this bar, in order.
+   *
+   * The reading drill has always had this and the piece drill never did, so the
+   * moment he opened a piece he was looking at two noteheads and nothing else.
+   * Numbered, because four identical dots say where the fingers go and nothing
+   * about which comes first.
+   */
+  function paintChunkHint(chunk, states = {}) {
+    const host = $('chunkHint');
+    if (!$('showChunkHint').checked) { host.hidden = true; host.innerHTML = ''; return; }
+    const notes = chunk.notes.filter((n) => !n.isRest && n.string != null);
+    if (!notes.length) { host.hidden = true; host.innerHTML = ''; return; }
+    const frets = notes.map((n) => n.fret);
+    host.hidden = false;
+    host.innerHTML = renderFretboard({
+      minFret: 0,
+      maxFret: Math.max(3, Math.max(...frets)),
+      marks: notes.map((n, i) => ({ string: n.string, fret: n.fret, n: i + 1 })),
+      width: 300,
+    });
+  }
+
+  /**
+   * One line saying what to do RIGHT NOW.
+   *
+   * "idk what exactly I need to do" - looking at a staff, five buttons and a row
+   * of grey chips. Everything on that screen was information; none of it was an
+   * instruction.
+   */
+  function sayWhatToDo(chunk) {
+    const played = st.states[chunk.id]?.attempts > 0;
+    $('chunkDo').textContent = played
+      ? t('piece.doAgain', { bpm: st.states[chunk.id].bpm })
+      : t('piece.doFirst');
   }
 
   /** A reason line, or nothing at all - never a blank element holding space. */
@@ -382,6 +420,10 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     save(); renderAll();
   });
 
+  $('showChunkHint').addEventListener('change', () => {
+    if (st.current) paintChunkHint(st.current);
+  });
+
   $('targetBpm').addEventListener('input', (e) => {
     st.targetBpm = Number(e.target.value);
     $('targetOut').textContent = e.target.value;
@@ -392,7 +434,14 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
 
   function nextChunk() {
     if (!st.chunks.length) return;
-    const c = pickChunk(st.chunks, st.states, { avoid: st.lastChunkId, targetBpm: st.targetBpm });
+    // A piece he has never touched starts at the beginning. The scheduler is
+    // right to jump about once there is something to know about him, but its
+    // first act on a new piece was to open at bar 6 of 8 - which reads as the
+    // app losing its place, and gives him no way in.
+    const untouched = !Object.keys(st.states).length;
+    const c = untouched
+      ? st.chunks.find((x) => x.kind !== 'seam') || st.chunks[0]
+      : pickChunk(st.chunks, st.states, { avoid: st.lastChunkId, targetBpm: st.targetBpm });
     st.current = c;
     st.lastChunkId = c.id;
     if (!st.states[c.id]) st.states[c.id] = newChunkState(Math.max(40, Math.round(st.targetBpm * 0.6 / 2) * 2));
@@ -400,6 +449,7 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     renderLayers(st.states[c.id]);
     const s = st.states[c.id];
     sayWhy('chunkWhy', whyThisChunk(c, s, { targetBpm: st.targetBpm }));
+    sayWhatToDo(c);
     $('chunkMove').textContent = '';
     $('chunkTempo').textContent = t('piece.tempoAiming', { bpm: s.bpm, target: st.targetBpm });
     $('pVerdictMain').textContent = t('piece.playAfterCountIn');
@@ -588,6 +638,12 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     sub.textContent = g.checked.map((l) => `${t(`layer.${l}`)}: ${g.results[l].detail}`).join(' · ');
 
     renderLayers(next, g.results);
+    // The thing he actually asked for: which notes he got. The grader already
+    // knew and was reporting a sentence instead.
+    const marks = {};
+    (g.noteStates || []).forEach((v, i) => { marks[i] = v; });
+    renderChunkStaff(chunk, marks);
+    $('chunkDo').textContent = g.passed ? t('piece.doClean') : t('piece.doLook');
     $('chunkTempo').textContent = t('piece.tempoAiming', { bpm: next.bpm, target: st.targetBpm });
 
     rebuildChunks();

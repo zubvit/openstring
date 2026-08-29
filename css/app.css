@@ -132,6 +132,10 @@ svg.staff { width: min(100%, 320px); height: auto; }
 .notehead { fill: var(--ink); }
 .notehead.correct { fill: var(--good); }
 .notehead.wrong { fill: var(--bad); }
+/* A note that never came is not the same mistake as a wrong one, and filling
+   both in red would tell him to fix his reading when his hand simply never got
+   there. Hollow reads as absence, which is what it is. */
+.notehead.missed { fill: none; stroke: var(--bad); stroke-width: 1.6; }
 .stem { stroke: var(--ink); stroke-width: 1.6; }
 .staff-label { fill: var(--ink-soft); font-size: 11px; }
 

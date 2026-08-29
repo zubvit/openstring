@@ -251,4 +251,54 @@ t('re-timing does not damage the original chunk', () => {
   assert.deepEqual(start.notes.map((x) => x.beat), [0, 1], 'the bar itself is untouched');
 });
 
+// He asked for this in as many words: "is it possible to visually show me what
+// notes I played right". The grader already knew and was reporting a sentence.
+t('the grade says what happened to each note, in written order', () => {
+  const notes = [
+    { sounding: 55, beat: 0, beats: 1, isRest: false },
+    { sounding: 59, beat: 1, beats: 1, isRest: false },
+    { sounding: 64, beat: 2, beats: 1, isRest: false },
+  ];
+  const played = [{ time: 0, sounding: 55 }, { time: 1, sounding: 60 }];
+  const g = gradeChunk(notes, played, { bpm: 60, startTime: 0, layer: 'notes' });
+  assert.deepEqual(g.noteStates, ['correct', 'wrong', 'missed']);
+});
+
+t('a note never played and a note played wrong are told apart', () => {
+  // Different mistakes with different fixes. Merging them would tell him to fix
+  // his reading when his hand simply never got there.
+  const notes = [
+    { sounding: 55, beat: 0, beats: 1, isRest: false },
+    { sounding: 59, beat: 1, beats: 1, isRest: false },
+  ];
+  const nothing = gradeChunk(notes, [], { bpm: 60, startTime: 0 });
+  assert.deepEqual(nothing.noteStates, ['missed', 'missed']);
+  const wrong = gradeChunk(notes, [{ time: 0, sounding: 54 }, { time: 1, sounding: 58 }],
+    { bpm: 60, startTime: 0 });
+  assert.deepEqual(wrong.noteStates, ['wrong', 'wrong']);
+});
+
+t('rests are not notes and do not take a colour', () => {
+  const notes = [
+    { sounding: 55, beat: 0, beats: 1, isRest: false },
+    { sounding: null, beat: 1, beats: 1, isRest: true },
+    { sounding: 59, beat: 2, beats: 1, isRest: false },
+  ];
+  const g = gradeChunk(notes, [{ time: 0, sounding: 55 }, { time: 2, sounding: 59 }],
+    { bpm: 60, startTime: 0 });
+  assert.equal(g.noteStates.length, 2, 'one state per sounded note, so the staff can index it');
+  assert.deepEqual(g.noteStates, ['correct', 'correct']);
+});
+
+t('every note right is every notehead green', () => {
+  const notes = [
+    { sounding: 55, beat: 0, beats: 1, isRest: false },
+    { sounding: 59, beat: 1, beats: 1, isRest: false },
+  ];
+  const g = gradeChunk(notes, [{ time: 0, sounding: 55 }, { time: 1, sounding: 59 }],
+    { bpm: 60, startTime: 0 });
+  assert.ok(g.noteStates.every((x) => x === 'correct'));
+  assert.equal(g.results.notes.ok, true);
+});
+
 console.log(`practice: ${pass} groups passed`);
