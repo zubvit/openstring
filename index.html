@@ -129,6 +129,8 @@
       <div class="verdict-sub" id="verdictSub"></div>
     </div>
 
+    <p class="coach-why" id="readWhy" hidden></p>
+
     <button type="button" class="tune-nudge" id="tuneNudge" hidden></button>
 
     <div class="round-actions" id="roundActions" hidden></div>
@@ -302,12 +304,15 @@
 
   <div class="card drill" id="pieceDrill" hidden>
     <div class="chunk-label" id="chunkLabel"></div>
+    <p class="coach-why" id="chunkWhy"></p>
     <div id="chunkStaff" class="chunk-staff"></div>
 
     <div class="verdict">
       <div class="verdict-main" id="pVerdictMain" data-i18n="piece.pressStart">Press start.</div>
       <div class="verdict-sub" id="pVerdictSub"></div>
     </div>
+
+    <p class="coach-move" id="chunkMove"></p>
 
     <div class="layer-row" id="layerRow"></div>
 
@@ -319,6 +324,15 @@
       <label class="check" id="duetToggleWrap" hidden><input type="checkbox" id="duetToggle" checked> <span data-i18n="piece.duet">Play the other part</span></label>
       <span class="muted small" id="chunkTempo"></span>
     </div>
+  </div>
+
+  <!-- What a teacher would say about the sitting, rather than about the notes.
+       The app already made these decisions; it just never said them out loud. -->
+  <div class="card coach-card" id="coachCard" hidden>
+    <h2 data-i18n="coach.heading">How you are practising</h2>
+    <p class="muted" data-i18n="coach.intro">Not whether you played the right notes — the app already tells you that. This is about how you went about it, which is the part that decides whether it sticks.</p>
+    <ul class="coach-list" id="coachList"></ul>
+    <p class="muted small" id="coachCount"></p>
   </div>
 
   <div class="card" id="chunkListCard" hidden>

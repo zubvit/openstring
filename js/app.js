@@ -15,6 +15,7 @@ import {
 } from './theory.js';
 import { renderNote, renderPhrase, renderFretboard, renderChordBox, renderChordStack } from './staff.js';
 import { pickNext, isFluent, emptyStat, recentForm, tuningDrift } from './srs.js';
+import { whyThisNote } from './coach.js';
 import { GOALS, DEFAULT_GOAL_ID, goalById, goalProgress, roundOver } from './goals.js';
 import { Progress } from './progress.js';
 import { STAGES, stageById, nextStage, poolFor, readyToAdvance, unlockedStages, RHYTHMS, expectedOnsets } from './curriculum.js';
@@ -570,9 +571,17 @@ function nextQuestion() {
 
   if (read.melody) {
     read.phrase = read.melody.notes;
+    // A phrase has no single reason - the scheduler chose the DISTANCES, not
+    // the notes - so it says nothing rather than inventing one.
+    read.why = null;
+    paintWhy();
   } else {
     const id = pickNext(pool, progress.data.stats, { avoid: read.lastId });
     read.phrase = [id];
+    // Why this one. The scheduler has always had a reason and has never given
+    // it, which makes a drill that is carefully ordered feel like a shuffle.
+    read.why = whyThisNote(progress.data.stats[id]);
+    paintWhy();
   }
 
   read.lastId = read.phrase[read.phrase.length - 1];
@@ -850,6 +859,22 @@ function goalLabel(g) {
   return t(`goal.${g.id}`);
 }
 
+/**
+ * Why the drill asked for this note.
+ *
+ * Only while a question is up. The reading drill is where most of the time
+ * goes and it has never said why it wanted a particular note, which makes a
+ * carefully ordered drill feel like a shuffle - and a shuffle is the one thing
+ * it is not.
+ */
+function paintWhy() {
+  const el = $('readWhy');
+  if (!el) return;
+  const show = read.active && read.why && !read.judged;
+  el.hidden = !show;
+  el.textContent = show ? t(read.why.key, read.why.vars) : '';
+}
+
 function paintGoalNote() {
   const note = $('goalNote');
   if (!note) return;
@@ -1020,6 +1045,8 @@ function endReadSession({ idle = false, reason = idle ? 'idle' : 'stopped' } = {
   // The old "keep looking" line used to survive the end of the session and sit
   // under the summary telling him to hunt for a note that was no longer there.
   $('verdictSub').textContent = '';
+  read.why = null;
+  paintWhy();
   // Leave the staff empty rather than showing the last answer indefinitely.
   showEmptyStaff();
   $('hintHost').hidden = true;

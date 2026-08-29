@@ -197,3 +197,40 @@
      the space is free and the stage picker is a useful thing to have to hand. */
   body.in-step .stage-bar { display: none; }
 }
+
+/* ------------------------------------------------------------- the coach */
+
+/* The app made all of these decisions already and said none of them out loud.
+   Styled quietly on purpose: this is a teacher thinking aloud beside you, not
+   a verdict, and anything that reads as marking gets ignored by week two. */
+.coach-why, .coach-move {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: .88rem;
+  line-height: 1.45;
+  max-width: 62ch;
+}
+.coach-move { margin-top: 8px; font-style: italic; }
+
+.coach-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.coach-item {
+  position: relative;
+  padding: 8px 0 8px 26px;
+  line-height: 1.5;
+}
+.coach-item + .coach-item { border-top: 1px solid var(--line); }
+.coach-item::before {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  font-weight: 600;
+}
+/* Not a tick and a cross. A cross reads as a mark out of ten, and the whole
+   point is that this is not a score. */
+.coach-item.good::before { content: "✓"; color: var(--good); }
+.coach-item.work::before { content: "→"; color: var(--warn); }
+
+@media (max-width: 480px) {
+  .coach-why, .coach-move { font-size: .84rem; }
+  .coach-item { padding-left: 22px; }
+}

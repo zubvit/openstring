@@ -24,10 +24,14 @@ import { Metronome, playChord, outputContext } from './audio.js';
 import { compileTune, compileAccompaniment } from './tune.js';
 import { scheduleAccompaniment, isAccompaniment } from './accompany.js';
 import { PIECES, pieceSpec } from './library.js';
+import { whyThisChunk, whyThisMove, observe, summarise } from './coach.js';
 import { lessonNotes } from './lesson.js';
 import { t } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
+// Translations are data from a file; nothing here builds markup out of them raw.
+const esc = (v) => String(v)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const STORE_KEY = 'openstring.pieces.v2';
 const OLD_KEY = 'openstring.piece.v1';
 const IMPORTED = '@imported';
@@ -53,6 +57,10 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     targetBpm: 80,
     lastChunkId: null,
     raf: 0,
+    // Every attempt this sitting, for the coach. Deliberately NOT persisted:
+    // "how you practised today" is about today, and a log that survives the
+    // week would average his best sitting into his worst and describe neither.
+    log: [],
   };
 
   // ---------------------------------------------------------------- storage
@@ -147,6 +155,7 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     st.targetBpm = rec.targetBpm || st.spec?.bpm || st.piece.tempo || 80;
     st.current = null;
     st.lastChunkId = null;
+    st.log = [];
     rebuildChunks();
     if (!silent) { save(); renderAll(); nextChunk(); }
     return true;
@@ -227,7 +236,7 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     $('chunkListCard').hidden = !has;
     $('duetToggleWrap').hidden = !st.accomp.length;
     $('playWhole').hidden = !has;
-    if (!has) return;
+    if (!has) { $('coachCard').hidden = true; return; }
 
     $('pieceTitle').textContent = st.piece.title;
     const bits = [st.spec ? sourceLine(st.spec) : st.piece.composer,
@@ -296,6 +305,34 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     $('chunkStaff').innerHTML = renderPhrase(chunk.notes, { width: 520, chords });
   }
 
+  /** A reason line, or nothing at all - never a blank element holding space. */
+  function sayWhy(id, why) {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = why ? t(why.key, why.vars) : '';
+    el.hidden = !why;
+  }
+
+  /**
+   * What kind of practice this sitting was.
+   *
+   * Deliberately not a score and deliberately short. The point is to name the
+   * method so it transfers to a piece the app has never seen - if it reads as
+   * marking, it gets ignored, and then it teaches nothing.
+   */
+  function renderCoach() {
+    const seen = observe(st.log, { targetBpm: st.targetBpm });
+    const card = $('coachCard');
+    card.hidden = !seen.length;
+    if (!seen.length) return;
+    $('coachList').innerHTML = seen.map((o) =>
+      `<li class="coach-item ${o.good ? 'good' : 'work'}">${esc(t(o.key, o.vars))}</li>`).join('');
+    const n = summarise(st.log);
+    $('coachCount').textContent = t('coach.tally', {
+      attempts: n.attempts, clean: n.clean, drills: n.drills, runs: n.runs,
+    });
+  }
+
   function renderLayers(state, results = null) {
     $('layerRow').innerHTML = LAYERS.map((l, i) => {
       let cls = 'layer-chip';
@@ -362,6 +399,8 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
     renderChunkStaff(c);
     renderLayers(st.states[c.id]);
     const s = st.states[c.id];
+    sayWhy('chunkWhy', whyThisChunk(c, s, { targetBpm: st.targetBpm }));
+    $('chunkMove').textContent = '';
     $('chunkTempo').textContent = t('piece.tempoAiming', { bpm: s.bpm, target: st.targetBpm });
     $('pVerdictMain').textContent = t('piece.playAfterCountIn');
     $('pVerdictMain').className = 'verdict-main';
@@ -514,6 +553,8 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
 
     if (whole) {
       const g = gradeChunk(chunk.notes, mine, { bpm, startTime, layer: 'notes' });
+      st.log.push({ chunkId: '@whole', kind: 'whole', bpm, passed: g.passed, at: Date.now() });
+      renderCoach();
       $('pVerdictMain').textContent = g.passed ? t('piece.playedItThrough') : t('piece.playedItAnyway');
       $('pVerdictMain').className = `verdict-main ${g.passed ? 'good' : ''}`;
       $('pVerdictSub').textContent = g.results?.notes?.detail || '';
@@ -525,6 +566,12 @@ export function initPieceView({ audio, ensureAudio, lessonOf = () => 1, onProgre
 
     const next = applyAttempt(state, { passed: g.passed, targetBpm: st.targetBpm });
     st.states[chunk.id] = next;
+    st.log.push({
+      chunkId: chunk.id, kind: chunk.kind === 'seam' ? 'seam' : 'chunk',
+      bpm, passed: g.passed, at: Date.now(), label: $('chunkLabel').textContent,
+    });
+    sayWhy('chunkMove', whyThisMove(state, next, { targetBpm: st.targetBpm, passed: g.passed }));
+    renderCoach();
 
     const main = $('pVerdictMain');
     const sub = $('pVerdictSub');
