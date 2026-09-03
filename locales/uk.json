@@ -86,6 +86,8 @@
  "rhythmPattern.with-rests": "Паузи",
  "rhythmPattern.dotted": "Пунктирний ритм",
  "rhythmPattern.syncopated": "Не на долю",
+ "rhythmPattern.swing": "Свінг",
+ "rhythmPattern.sparse": "Довгі паузи",
  "rhythmPattern.sixteenths": "Шістнадцяті",
  "rhythmPattern.groupCurrent": "Для цього етапу",
  "rhythmPattern.groupBeyond": "Поза цим етапом",

@@ -119,14 +119,14 @@ export const STAGES = [
     blurb: 'Frets five to eight, all six strings. The first shift away from the open strings.',
     region: { strings: [1, 2, 3, 4, 5, 6], minFret: 5, maxFret: 8, naturalsOnly: true },
     advice: 'Nothing is open here, so your hand has no anchor. That is the point — this is where the neck starts to generalise.',
-    rhythm: ['eighths', 'dotted', 'syncopated'],
+    rhythm: ['eighths', 'dotted', 'syncopated', 'swing'],
   },
   {
     id: 'first-twelve',
     title: 'The first twelve frets',
     blurb: 'The whole neck up to the octave, naturals and accidentals. The same pitch now lives in several places and you choose.',
     region: { strings: [1, 2, 3, 4, 5, 6], minFret: 0, maxFret: 12, naturalsOnly: false },
-    rhythm: ['dotted', 'syncopated', 'sixteenths'],
+    rhythm: ['dotted', 'syncopated', 'swing', 'sparse', 'sixteenths'],
     advice: 'From here on, reading is about choosing the most comfortable place, not finding the only one.',
   },
 ];
@@ -207,6 +207,21 @@ export const RHYTHMS = {
   'with-rests':    { title: 'Rests',                    meter: [4, 4], durations: [1, -1, 1, 1], bpm: [50, 90] },
   'dotted':        { title: 'Dotted rhythms',           meter: [4, 4], durations: [1.5, 0.5, 1, 1], bpm: [50, 88] },
   'syncopated':    { title: 'Off the beat',             meter: [4, 4], durations: [0.5, 1, 1, 1, 0.5], bpm: [50, 84] },
+  // Swing, written the way swing is actually written: three to one, a dotted
+  // eighth and a sixteenth. Played swing sits nearer two to one and drifts with
+  // tempo, but two thirds and one third cannot be held exactly in binary floating
+  // point - eight of them sum to 3.9999999999999996, and the bar-length check
+  // below is right to reject that. Three to one is exact, it is what appears on
+  // the page, and it is the difference the ear has to learn first: the second note
+  // of the pair arrives late, not halfway.
+  'swing':         { title: 'Swing',                    meter: [4, 4], durations: [0.75, 0.25, 0.75, 0.25, 0.75, 0.25, 0.75, 0.25], bpm: [50, 88] },
+  // Long rests. 'with-rests' takes away a single beat, which you can ride through
+  // on momentum without ever really counting. This takes away two of the four and
+  // puts the first note on the second half of beat one, so the bar opens with
+  // silence and you enter off the beat with no note behind you to lean on. The
+  // pulse has to still be running in your head - which is the one thing a click
+  // can actually check.
+  'sparse':        { title: 'Long rests',               meter: [4, 4], durations: [-0.5, 0.5, -1, 0.5, -0.5, 1], bpm: [50, 90] },
   'sixteenths':    { title: 'Sixteenths',               meter: [4, 4], durations: [0.25, 0.25, 0.25, 0.25, 1, 1, 1], bpm: [44, 76] },
 };
 

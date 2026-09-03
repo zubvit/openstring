@@ -255,6 +255,26 @@ t('every rhythm pattern fills whole bars', () => {
   }
 });
 
+t('swing lands the short note late, not halfway', () => {
+  // The whole point of the pattern. At 60bpm a beat is a second, so the pairs
+  // should fall on the beat and three quarters of the way through it - never on
+  // the half, which is what plain eighths already do.
+  assert.deepEqual(expectedOnsets('swing', 60), [0, 0.75, 1, 1.75, 2, 2.75, 3, 3.75]);
+  // Exactly representable, so eight of them really do close the bar. Written as
+  // thirds this sum comes to 3.9999999999999996 and the bar check above fails.
+  const total = RHYTHMS['swing'].durations.reduce((a, d) => a + Math.abs(d), 0);
+  assert.equal(total, 4);
+});
+
+t('long rests open with silence and enter off the beat', () => {
+  // Three notes in four beats, the first on the second half of beat one. Two of
+  // the four beats are silent, and the leading rest must delay the first onset
+  // rather than being dropped.
+  assert.deepEqual(expectedOnsets('sparse', 60), [0.5, 2, 3]);
+  const rest = RHYTHMS['sparse'].durations.filter((d) => d < 0).reduce((a, d) => a - d, 0);
+  assert.equal(rest, 2, 'half the bar should be silent');
+});
+
 t('every stage names rhythms that exist', () => {
   for (const s of STAGES) {
     for (const r of s.rhythm || []) assert.ok(RHYTHMS[r], `${s.id} refers to missing rhythm "${r}"`);
