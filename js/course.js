@@ -239,4 +239,30 @@ export const LESSONS = [
       { kind: 'play', piece: 'the-whole-house' },
     ],
   },
+  {
+    // The first accidental, and it is chosen so that nothing else has to change.
+    // F sharp is the one gap left on the lowest string, so the three naturals he
+    // already owns there - E, F, G - close up into a four-step chromatic run the
+    // moment it arrives. One new note buys a whole new kind of line, which is the
+    // cheapest lesson in the course and very nearly the largest.
+    id: 'l14',
+    n: 14,
+    stage: 'open-chromatic',
+    title: 'The note between',
+    blurb: 'F sharp, second fret of the lowest string. One note, and it fills the last gap on that string — so E, F, F sharp, G becomes four steps with nothing missing in between. That run is the whole lesson, and both pieces are built on it.',
+    newNotes: ['s6f2'],
+    advice: 'Second finger, and leave the first one hovering over F. The point of this note is not the note — it is that the lowest string can now move a semitone at a time, which is what makes a line sound like it is walking instead of jumping.',
+    steps: [
+      { kind: 'warmup', goal: 'notes20' },
+      { kind: 'learn', positions: ['s6f2'] },
+      // Long rests before the reading, not after: both pieces stop dead in the
+      // middle of a bar, and counting through that is a separate skill from
+      // finding the note. Meeting it with no pitch to worry about first is the
+      // same reason the dotted rhythm gets its own step back in lesson five.
+      { kind: 'rhythm', pattern: 'sparse' },
+      { kind: 'read', goal: 'streak10' },
+      { kind: 'play', piece: 'the-note-between' },
+      { kind: 'duet', piece: 'four-steps-and-a-door' },
+    ],
+  },
 ];

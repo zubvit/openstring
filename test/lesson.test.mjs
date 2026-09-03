@@ -4,6 +4,7 @@ import {
   knownPositions, lessonPool, lessonNotes, stepDone, fluent, afterFailure, STEP_ENGINES,
 } from '../js/lesson.js';
 import { STAGES } from '../js/curriculum.js';
+import { notesInRegion, positionId } from '../js/theory.js';
 
 let pass = 0;
 const t = (name, fn) => { fn(); pass++; };
@@ -114,7 +115,17 @@ t('the pool grows by exactly the notes the lesson adds, never by a stage', () =>
     for (const id of l.newNotes || []) assert.ok(pool.includes(id));
     prev = pool.length;
   }
-  assert.equal(prev, 17, 'the course should end on the whole of open position');
+  // Not a count. "17" was the whole of open position on the day it was written,
+  // so every lesson added past open position failed a test about pool growth for
+  // a reason that had nothing to do with pool growth. What actually matters is
+  // that the course never finishes with an open-position natural still untaught -
+  // so assert that, and let the course get longer without lying about why.
+  const finalPool = new Set(lessonPool(LESSONS[LESSONS.length - 1]));
+  const openNaturals = notesInRegion({
+    strings: [1, 2, 3, 4, 5, 6], minFret: 0, maxFret: 3, naturalsOnly: true,
+  }).map((n) => positionId(n.string, n.fret));
+  const untaught = openNaturals.filter((id) => !finalPool.has(id));
+  assert.deepEqual(untaught, [], 'the course ends leaving open-position naturals untaught');
 });
 
 t('a step is finished by measurement, never by pressing a button', () => {

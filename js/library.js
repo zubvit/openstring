@@ -473,6 +473,47 @@ export const PIECES = [
        + 'naturals, top of the staff to below it - the graduation read for the '
        + 'whole stage.',
   },
+
+  // ------------------------------------------------------------ lesson 14
+  // Both tunes are built on the same four steps - E, F, F sharp, G - and on the
+  // silence straight after them. A phrase that walks up and then stops is how a
+  // line gets a shape rather than just a direction, and it is the only honest way
+  // to practise a rest: the note that matters is the one you come back in on, and
+  // there is no way to fake that if the click is still running.
+  {
+    id: 'the-note-between',
+    title: 'The Note Between',
+    source: 'original',
+    kind: 'tune',
+    lesson: 14,
+    meter: [4,4],
+    bpm: 66,
+    melody: 'E2 F2 F#2 G2 | A2/2 r/2 | E2 F2 F#2 G2 | B2/2 r/2 | E3/2 D3/2 '
+          + '| C3/2 B2/2 | A2 G2 F#2 F2 | E2/4',
+    accomp: 'E3/4 | E3/2 B2/2 | E3/4 | G3/2 B3/2 | C4/2 B3/2 | A3/2 G3/2 '
+          + '| B3/4 | E3/4',
+    why: 'The run twice over, each time answered by a held note and two beats of '
+       + 'nothing, then a descent that finally uses the fourth and fifth strings '
+       + 'so the piece is not all played with one finger.',
+  },
+  {
+    id: 'four-steps-and-a-door',
+    title: 'Four Steps and a Door',
+    source: 'original',
+    kind: 'duet',
+    lesson: 14,
+    meter: [4,4],
+    bpm: 63,
+    melody: 'E2 F2 F#2 G2 | A2/2 r/2 | E2 F2 F#2 G2 | B2/2 r/2 | G2 F#2 F2 E2 '
+          + '| r E2 r G2 | A2 G2 F#2 F2 | E2/4',
+    accomp: 'E3/2 B3/2 | E3 G3 B3/2 | E3/2 B3/2 | E3 G3 B3/2 | C4/2 B3/2 '
+          + '| A3/2 G3/2 | F#3/2 A3/2 | E3/4',
+    why: 'His part never leaves the lowest string, so the whole tune is the four '
+       + 'steps up, the four steps back down, and one bar where he enters on beat '
+       + 'two and again on beat four with rests either side. The accompaniment '
+       + 'moves underneath so the same four notes mean something different each '
+       + 'time they come round.',
+  },
 ];
 
 const BY_ID = new Map(PIECES.map((p) => [p.id, p]));
